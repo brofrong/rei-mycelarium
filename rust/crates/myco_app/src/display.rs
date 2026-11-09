@@ -178,7 +178,10 @@ pub fn save_dir() -> PathBuf {
     let automated = ["MYCO_INPUT", "MYCO_DUMP", "MYCO_SHOT"]
         .iter()
         .any(|k| std::env::var_os(k).is_some_and(|v| !v.is_empty()));
-    save_dir_for(std::env::var_os("MYCO_SAVE_DIR").map(PathBuf::from), automated)
+    save_dir_for(
+        std::env::var_os("MYCO_SAVE_DIR").map(PathBuf::from),
+        automated,
+    )
 }
 
 /// [`save_dir`] from its inputs: an automated run never falls back to the real save folder.

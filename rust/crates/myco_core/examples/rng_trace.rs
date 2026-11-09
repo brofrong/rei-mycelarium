@@ -13,7 +13,12 @@ fn main() {
     let mut sim = Sim::title_screen(Some(seed));
     println!("RNG 0 {}", sim.rng.state());
     let input = StepInput {
-        view: myco_core::sim::ViewRect { x: 0.0, y: 0.0, w: 1920.0, h: 1080.0 },
+        view: myco_core::sim::ViewRect {
+            x: 0.0,
+            y: 0.0,
+            w: 1920.0,
+            h: 1080.0,
+        },
         ..Default::default()
     };
     for _ in 0..steps {

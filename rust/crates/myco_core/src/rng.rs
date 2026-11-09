@@ -147,10 +147,10 @@ pub mod draw_trace {
         static ENV: std::sync::Once = std::sync::Once::new();
         ENV.call_once(|| {
             // MYCO_TRACE_DRAWS=<from>-<to>, as the LÖVE port reads it
-            if let Some((a, b)) = std::env::var("MYCO_TRACE_DRAWS")
-                .ok()
-                .and_then(|v| v.split_once('-').map(|(a, b)| (a.parse().ok(), b.parse().ok())))
-            {
+            if let Some((a, b)) = std::env::var("MYCO_TRACE_DRAWS").ok().and_then(|v| {
+                v.split_once('-')
+                    .map(|(a, b)| (a.parse().ok(), b.parse().ok()))
+            }) {
                 if let (Some(a), Some(b)) = (a, b) {
                     set_range(a, b);
                 }

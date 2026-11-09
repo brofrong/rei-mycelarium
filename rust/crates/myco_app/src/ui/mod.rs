@@ -381,7 +381,11 @@ pub fn menu_step(
     mut flags: ResMut<UiFlags>,
     mut tree: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut ui: (ResMut<UiBlockers>, ResMut<UiCapture>, ResMut<RestartPending>),
+    mut ui: (
+        ResMut<UiBlockers>,
+        ResMut<UiCapture>,
+        ResMut<RestartPending>,
+    ),
     mut loc: ResMut<LocaleRes>,
     cams: Res<Cameras>,
     display: Res<Display>,

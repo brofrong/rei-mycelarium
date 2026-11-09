@@ -475,7 +475,8 @@ fn main_menu_restart_happens_after_the_step() {
     use std::time::Duration;
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, SimBridgePlugin));
-    let mut game = myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "R", Some(7));
+    let mut game =
+        myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "R", Some(7));
     game.title_open = false;
     game.intro_active = false;
     app.insert_resource(SimRes(game))
@@ -504,11 +505,22 @@ fn main_menu_restart_happens_after_the_step() {
     let sim = &app.world().resource::<SimRes>().0;
     assert_ne!(sim.session, old_session, "replaced by a fresh title");
     assert!(sim.title_open);
-    assert_eq!(sim.frame, 1, "the old game took the step; the clock goes on");
-    let fresh = myco_core::sim::Sim::title_screen(Some(7));
     assert_eq!(
-        sim.forest.backdrop_leaves.is_some(),
-        fresh.forest.backdrop_leaves.is_some(),
-        "the new title has not stepped yet"
+        sim.frame, 1,
+        "the old game took the step; the clock goes on"
     );
+    // the new title has not stepped yet: its RNG is where a fresh title's is (draws since
+    // game_init's reseed), not past a step's draws
+    let draws = |s: &myco_core::sim::Sim| {
+        let mut r = myco_core::rng::Rng::new(s.rng.seed());
+        (0..100_000).find(|_| {
+            let hit = r.state() == s.rng.state();
+            r.next01();
+            hit
+        })
+    };
+    // a fresh room makes about a dozen draws (game_init, world_init, the start stump); the
+    // title's first step makes ~160 more (the backdrop leaves)
+    let n = draws(sim).expect("from the title's own seed");
+    assert!(n < 60, "the new title has not stepped yet ({n} draws)");
 }

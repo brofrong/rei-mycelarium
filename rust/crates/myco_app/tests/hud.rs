@@ -680,7 +680,10 @@ fn upgrade_click_marks_the_menu_open_in_the_same_step() {
     world
         .run_system_once(myco_app::ui::hud::hud_step_game)
         .unwrap();
-    assert!(world.resource::<TreeScreen>().open, "the click opened the tree");
+    assert!(
+        world.resource::<TreeScreen>().open,
+        "the click opened the tree"
+    );
     assert!(
         world.resource::<PendingInput>().menu_open,
         "this step's input already has menu_open"

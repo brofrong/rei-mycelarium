@@ -166,7 +166,6 @@ impl Autopilot {
     }
 }
 
-
 // ---------------------------------------------------------------------------------------------
 // Development hooks for render comparisons. Each one acts only when its variable is set; with
 // none set they change nothing.
@@ -304,7 +303,9 @@ impl Plugin for AutopilotPlugin {
                 FixedUpdate,
                 (
                     run_script.in_set(SimSet::Prepare),
-                    dev_hooks_game_start.in_set(SimSet::Prepare).after(run_script),
+                    dev_hooks_game_start
+                        .in_set(SimSet::Prepare)
+                        .after(run_script),
                     ui_demo.in_set(SimSet::After),
                     dump_state.in_set(SimSet::After),
                 ),
@@ -550,18 +551,25 @@ mod tests {
         assert_eq!(h.cave_take.as_deref(), Some("purple"));
         assert!(h.force_rain && h.bw && h.ui_demo);
         // with no hook set, nothing in the game state changes
-        let mut sim = myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "", Some(7));
+        let mut sim =
+            myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "", Some(7));
         let before = myco_core::save::to_love_json(&sim.to_save().0).unwrap();
         DevHooks::default().apply_at_boot(&mut sim);
         DevHooks::default().apply_at_game_start(&mut sim);
-        assert_eq!(myco_core::save::to_love_json(&sim.to_save().0).unwrap(), before);
+        assert_eq!(
+            myco_core::save::to_love_json(&sim.to_save().0).unwrap(),
+            before
+        );
     }
 
     #[test]
     fn frame_n_actions_reach_step_n_plus_one() {
         let s = parse_script("0:key:a;1:down:1;3:up:1;3:key:space");
         let at = |step| actions_before_step(&s, step).cloned().collect::<Vec<_>>();
-        assert!(at(1).is_empty(), "frame 0 never runs; nothing precedes step 1");
+        assert!(
+            at(1).is_empty(),
+            "frame 0 never runs; nothing precedes step 1"
+        );
         assert_eq!(at(2), vec![Action::Down(1)]);
         assert!(at(3).is_empty());
         assert_eq!(at(4), vec![Action::Up(1), Action::Key("space".into())]);

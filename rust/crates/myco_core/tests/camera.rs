@@ -413,7 +413,10 @@ fn camera_button_click_skips_the_placement_check() {
         ..Default::default()
     };
     progress::hud_begin_step(&mut sim, &input);
-    assert!(sim.mushrooms.place_preview.is_some(), "placement runs without a click");
+    assert!(
+        sim.mushrooms.place_preview.is_some(),
+        "placement runs without a click"
+    );
     for cmd in [
         Command::CameraJumpOrigin,
         Command::CameraJumpEdge { dir: -1.0 },
@@ -441,18 +444,29 @@ fn camera_pan_command_moves_the_logic_camera_in_the_step() {
     assert_eq!((sim.camera.view_x, sim.camera.view_y), (1234.0, 300.0));
     camera::camera_pan_to(&mut sim, -1e9, 1e9);
     let b = camera::camera_bounds(&sim, w, h);
-    assert_eq!((sim.camera.x, sim.camera.y), (b.x1, b.y2), "clamped to the bounds");
+    assert_eq!(
+        (sim.camera.x, sim.camera.y),
+        (b.x1, b.y2),
+        "clamped to the bounds"
+    );
     // through a whole step
     let mut a = open_sim();
     a.state.state.cam_box = [-8000.0, 0.0, 8000.0, 4000.0];
     let mut b2 = open_sim();
     b2.state.state.cam_box = a.state.state.cam_box;
     let input = StepInput {
-        commands: vec![Command::CameraPan { x: 2000.0, y: 120.0 }],
+        commands: vec![Command::CameraPan {
+            x: 2000.0,
+            y: 120.0,
+        }],
         ..Default::default()
     };
     a.step(&input);
     b2.step(&input);
     assert_eq!(a.camera.x, b2.camera.x);
-    assert!((a.camera.x - 2000.0).abs() < 50.0, "panned near 2000: {}", a.camera.x);
+    assert!(
+        (a.camera.x - 2000.0).abs() < 50.0,
+        "panned near 2000: {}",
+        a.camera.x
+    );
 }
