@@ -120,6 +120,9 @@ pub struct Gm<'a> {
     matrix: Option<(f64, f64, f64)>,
     /// `gpu_set_blendmode(bm_add)` for the following geometry (`bm_normal` when false)
     additive: bool,
+    /// `gpu_set_tex_filter`: textured quads sample bilinear when on (ruling R27: off by default,
+    /// the state the original's frame starts with)
+    linear: bool,
 }
 
 impl<'a> Gm<'a> {
@@ -134,7 +137,18 @@ impl<'a> Gm<'a> {
             font: UiFont::Gm("fnt_gm_20".into()),
             matrix: None,
             additive: false,
+            linear: false,
         }
+    }
+
+    /// `gpu_set_tex_filter(on)` for the textured quads that follow.
+    pub fn set_tex_filter(&mut self, on: bool) {
+        self.linear = on;
+    }
+
+    /// `gpu_get_tex_filter()`.
+    pub fn tex_filter(&self) -> bool {
+        self.linear
     }
 
     /// `gpu_set_blendmode(bm_add)` (true) / `gpu_set_blendmode(bm_normal)` (false) for the
@@ -329,8 +343,13 @@ impl<'a> Gm<'a> {
         let ox = (def.origin.x - fr.trim_offset.x) as f64;
         let oy = (def.origin.y - fr.trim_offset.y) as f64;
         let size = fr.rect.size();
+        let image = self
+            .assets
+            .page_for(fr.page_index, self.linear)
+            .cloned()
+            .unwrap_or_else(|| fr.page.clone());
         self.items.push(DrawItem::Quad {
-            image: fr.page.clone(),
+            image,
             rect: fr.rect,
             x: x - ox * xs,
             y: y - oy * ys,

@@ -102,7 +102,12 @@ pub struct SoundDef {
 #[derive(Resource, Debug)]
 pub struct GameAssets {
     pub root: PathBuf,
+    /// texture pages, sampled nearest (ruling R27: the original's filter is off outside the
+    /// glow/BW/cloud blocks and the perk icons)
     pub pages: Vec<Handle<Image>>,
+    /// the same pages sampled bilinear, for draws inside `gpu_set_tex_filter(true)` (the cave
+    /// perk icons); filled once the pages load ([`build_linear_pages`]); empty in tests
+    pub pages_linear: Vec<Handle<Image>>,
     pub sprites: Vec<SpriteDef>,
     sprite_by_name: HashMap<String, usize>,
     pub gm_fonts: Vec<GmFont>,
@@ -119,6 +124,16 @@ impl GameAssets {
     pub fn sprite(&self, name: &str) -> &SpriteDef {
         self.try_sprite(name)
             .unwrap_or_else(|| panic!("unknown sprite {name}"))
+    }
+
+    /// Page `i` as the painter samples it: bilinear with the filter on, else nearest.
+    pub fn page_for(&self, i: usize, linear: bool) -> Option<&Handle<Image>> {
+        if linear {
+            if let Some(h) = self.pages_linear.get(i) {
+                return Some(h);
+            }
+        }
+        self.pages.get(i)
     }
 
     pub fn try_sprite(&self, name: &str) -> Option<&SpriteDef> {
@@ -327,6 +342,7 @@ impl GameAssets {
         Ok(GameAssets {
             root: root.to_path_buf(),
             pages,
+            pages_linear: Vec::new(),
             sprites,
             sprite_by_name,
             gm_fonts,
@@ -370,19 +386,61 @@ pub struct AssetsPlugin;
 
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, load_game_assets);
+        app.add_systems(PreStartup, load_game_assets)
+            .add_systems(Update, build_linear_pages);
     }
 }
 
-fn load_game_assets(mut commands: Commands, server: Res<AssetServer>) {
+/// Once a page has loaded, its bilinear twin (`GameAssets::pages_linear`) is a copy with a
+/// linear sampler.
+pub fn build_linear_pages(
+    assets: Option<Res<GameAssets>>,
+    mut images: ResMut<Assets<Image>>,
+    mut done: Local<usize>,
+) {
+    use bevy::image::ImageSampler;
+    let Some(a) = assets else { return };
+    if *done >= a.pages_linear.len() {
+        return;
+    }
+    let mut n = 0;
+    for (page, lin) in a.pages.iter().zip(&a.pages_linear) {
+        if images.contains(lin.id()) {
+            n += 1;
+            continue;
+        }
+        if let Some(img) = images.get(page) {
+            let mut copy = img.clone();
+            copy.sampler = ImageSampler::linear();
+            let _ = images.insert(lin.id(), copy);
+            n += 1;
+        }
+    }
+    *done = n;
+}
+
+fn load_game_assets(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    images: Res<Assets<Image>>,
+) {
+    use bevy::image::{ImageLoaderSettings, ImageSampler};
     let root = assets_root();
     match GameAssets::load(
         &root,
-        |p| server.load(p.to_owned()),
+        |p| {
+            server
+                .load_builder()
+                .with_settings(|s: &mut ImageLoaderSettings| {
+                    s.sampler = ImageSampler::nearest();
+                })
+                .load(p.to_owned())
+        },
         |p| server.load(p.to_owned()),
         |p| server.load(p.to_owned()),
     ) {
-        Ok(a) => {
+        Ok(mut a) => {
+            a.pages_linear = a.pages.iter().map(|_| images.reserve_handle()).collect();
             info!(
                 "assets: {} ({} sprites, {} pages)",
                 root.display(),

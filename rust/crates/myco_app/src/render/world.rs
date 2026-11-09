@@ -374,6 +374,8 @@ pub struct DrawCtx<'a> {
     /// the blurred glow image (`global.food_glow_seed` after the passes)
     pub glow_image: Option<&'a Handle<Image>>,
     pub now: f64,
+    /// the texture filter the frame starts with (ruling R27; [`WorldDrawState::start_linear`])
+    pub start_linear: bool,
 }
 
 /// The food glow request of one frame (`world_draw_food_glow`'s surface work).
@@ -462,11 +464,12 @@ pub fn world_draw(
     let r0 = gml::clamp(((vy - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let shade = merge_colour(0.0, C_WHITE, vis("food_shade"));
-    // Texture filter state: the LÖVE port's `gpu_get_tex_filter()` always returns true, so the
-    // HUD's `cave_perk_icons_draw` leaves `gpu_set_tex_filter(true)` behind every frame; world
-    // drawing therefore starts linear-filtered until the food glow switches it off (as below).
-    out.back.set_filter(true);
-    out.front.set_filter(true);
+    // Texture filter (ruling R27): every gpu_set_tex_filter(true) in the original is paired with
+    // false at its block's end, and only repeller_clouds_draw / cave_perk_icons_draw save and
+    // restore it, so a frame starts with what the last one left: off after the first frame
+    // (the mycelium glow pass ends with false every frame). `start_linear` carries it.
+    out.back.set_filter(ctx.start_linear);
+    out.front.set_filter(ctx.start_linear);
     let b = &mut out.back;
     let mut r = r0;
     while r <= r1 {
@@ -1582,6 +1585,9 @@ pub fn cave_popups_draw(
 pub fn cave_perk_icons_draw(g: &mut Gm, state: &GameState, mut x: f64, y: f64) {
     let px = vis("cave_icon_px");
     let gap = vis("cave_icon_gap_px");
+    // old_filter = gpu_get_tex_filter(); gpu_set_tex_filter(cave_icon_smooth) ... restore
+    let old_filter = g.tex_filter();
+    g.set_tex_filter(vis("cave_icon_smooth") >= 0.5);
     for d in cave_defs() {
         if !perk_has(state, d.kind.id()) {
             continue;
@@ -1604,6 +1610,7 @@ pub fn cave_perk_icons_draw(g: &mut Gm, state: &GameState, mut x: f64, y: f64) {
         );
         x += px + gap;
     }
+    g.set_tex_filter(old_filter);
 }
 
 /// `anon__68900__caves_debug_draw`: nearest bones first.
@@ -1804,11 +1811,18 @@ struct GlowCamera(usize, AssetId<Image>);
 #[derive(Resource, Clone, Copy, Debug, PartialEq)]
 pub struct WorldDrawState {
     pub end_linear: bool,
+    /// The filter a frame starts with (ruling R27): on for the very first frame (the default
+    /// filter), off from then on (each frame's mycelium glow pass ends with
+    /// `gpu_set_tex_filter(false)`, and nothing turns it on at a frame's start).
+    pub start_linear: bool,
 }
 
 impl Default for WorldDrawState {
     fn default() -> Self {
-        WorldDrawState { end_linear: true }
+        WorldDrawState {
+            end_linear: true,
+            start_linear: true,
+        }
     }
 }
 
@@ -1963,13 +1977,18 @@ fn draw_world(
         stones: stones.as_deref(),
         glow_image: Some(&glow_out),
         now,
+        start_linear: draw_state.start_linear,
     };
     let frame = world_draw(sim, &ctx, &mut flares, rv.x, rv.y, rv.w, rv.h);
     let end_linear = if rv.y + rv.h < sim.world.params.surface_y {
-        true
+        draw_state.start_linear
     } else {
         frame.front.linear
     };
+    if draw_state.start_linear {
+        // the rest of the first frame (mycelium glow pass) leaves the filter off
+        draw_state.start_linear = false;
+    }
     if draw_state.end_linear != end_linear {
         draw_state.end_linear = end_linear;
     }

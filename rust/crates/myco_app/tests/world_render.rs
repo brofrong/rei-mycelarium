@@ -180,6 +180,7 @@ fn world_draw_follows_the_original_passes() {
         stones: None,
         glow_image: Some(&img),
         now: 1000.0,
+        start_linear: false,
     };
     // above the surface: nothing
     let sy = sim.world.params.surface_y;
@@ -284,4 +285,46 @@ fn deposit_without_deep_falls_back_to_its_row() {
     let tinted = verts[6].col;
     assert_eq!(white, [1.0, 1.0, 1.0, 1.0], "above the deep line: untinted");
     assert_ne!(tinted, white, "below the deep line: deep_stone_colour");
+}
+
+/// Ruling R27: the world starts drawing with the filter the frame starts with (off after the
+/// first frame), and the perk icons turn it on (`cave_icon_smooth`) and restore it.
+#[test]
+fn texture_filter_follows_the_original_state() {
+    use myco_app::render::world::cave_perk_icons_draw;
+    use myco_app::ui::gm_draw::{DrawItem, Gm};
+    let Some(mut a) = assets() else { return };
+    let mut sim = sim();
+    let mut flares = LakeFlares::default();
+    let img = Handle::<Image>::default();
+    let sy = sim.world.params.surface_y;
+    let ctx = DrawCtx {
+        assets: &a,
+        stones: None,
+        glow_image: Some(&img),
+        now: 1000.0,
+        start_linear: false,
+    };
+    let f = world_draw(&mut sim, &ctx, &mut flares, -960.0, sy - 540.0, 1920.0, 1080.0);
+    assert!(!f.back.filter(), "soil, seams, dirt, bones and caves draw nearest");
+    // perk icons: bilinear twin pages while drawn, the painter's filter restored after
+    let mut images = Assets::<Image>::default();
+    a.pages_linear = (0..a.pages.len()).map(|_| images.add(Image::default())).collect();
+    let linear_ids: Vec<_> = a.pages_linear.iter().map(|h| h.id()).collect();
+    let mut st = sim.state.clone();
+    st.state.cave_perks = serde_json::from_str(r#"{"purple": 1, "blue": 1}"#).unwrap();
+    let mut g = Gm::new(&a);
+    assert!(!g.tex_filter());
+    cave_perk_icons_draw(&mut g, &st, 10.0, 10.0);
+    assert!(!g.tex_filter(), "old_filter restored");
+    let quads: Vec<_> = g
+        .items
+        .iter()
+        .filter_map(|i| match i {
+            DrawItem::Quad { image, .. } => Some(image.id()),
+            _ => None,
+        })
+        .collect();
+    assert!(!quads.is_empty());
+    assert!(quads.iter().all(|id| linear_ids.contains(id)));
 }
