@@ -148,8 +148,9 @@ pub fn tasks_header_rect(
     let scale = vis("tasks_title_scale");
     let mut m = Gm::new(assets);
     m.font = uf.font.clone();
-    let tw = m.string_width(&b.title) * scale;
-    let th = m.string_height("A") * scale;
+    let k = super::hud::eff_scale(&m, scale);
+    let tw = m.string_width(&b.title) * k;
+    let th = m.string_height("A") * k;
     HeaderRect {
         r: R::new(
             x - 8.0,
@@ -326,7 +327,7 @@ pub fn tasks_block_draw(
         g.set_alpha(ia);
         text(g, tx, iy, &it.text, xs, xs);
         if it.done && it.reward {
-            let rx = tx + g.string_width(&it.text) * xs + vis("tasks_reward_gap");
+            let rx = tx + g.string_width(&it.text) * super::hud::eff_scale(g, xs) + vis("tasks_reward_gap");
             let pulse = (f * std::f64::consts::PI).sin() * 0.35 + 1.0;
             let rs = xs * pulse;
             let s = format!("+{}", super::hud::fmt_num(reward_points));
@@ -334,7 +335,7 @@ pub fn tasks_block_draw(
             g.set_colour(C_HOVER);
             text(g, rx, iy, &s, rs, rs);
             let isc = icon * pulse;
-            let sx = rx + g.string_width(&s) * rs + 4.0;
+            let sx = rx + g.string_width(&s) * super::hud::eff_scale(g, rs) + 4.0;
             g.sprite_ext(
                 "UPGRADE",
                 0,
@@ -632,8 +633,9 @@ pub fn tutorial_draw(
         }
         sc = goal_fit(&GmMeasure(g), &txt, sc, gw - pad * 2.0, 0.0, -1.0);
         if t.anchor != "world" {
-            let hw = g.string_width(&txt) * sc * 0.5;
-            let hh = g.string_height(&txt) * sc * 0.5;
+            let k = super::hud::eff_scale(g, sc);
+            let hw = g.string_width(&txt) * k * 0.5;
+            let hh = g.string_height(&txt) * k * 0.5;
             tx = gml::clamp(tx, pad + hw, gw - pad - hw);
             ty = gml::clamp(ty, pad + hh, gh - pad - hh);
         }

@@ -160,6 +160,11 @@ static PX_PER_UNIT: std::sync::atomic::AtomicU64 =
 /// The owner's minimum text size on screen (logical px).
 pub const MIN_TEXT_PX: f64 = 14.0;
 
+/// Set the logical px per GUI unit (normally kept by `track_gui_scale`; tests).
+pub fn set_px_per_unit(k: f64) {
+    PX_PER_UNIT.store(k.to_bits(), std::sync::atomic::Ordering::Relaxed);
+}
+
 pub fn px_per_unit() -> f64 {
     f64::from_bits(PX_PER_UNIT.load(std::sync::atomic::Ordering::Relaxed))
 }

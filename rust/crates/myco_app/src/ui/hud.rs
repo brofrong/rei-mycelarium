@@ -957,6 +957,12 @@ pub fn text(g: &mut Gm, x: f64, y: f64, s: &str, xs: f64, ys: f64) {
     g.text_transformed(x, y, s, xs * k, ys * k);
 }
 
+/// The scale text drawn with [`text`] at scale `sc` really gets (the minimum size applied) in
+/// the painter's current font: layout measures with it so enlarged text keeps its place.
+pub fn eff_scale(g: &Gm, sc: f64) -> f64 {
+    min_text_scale(sc, g.string_height("M"), MIN_TEXT_PX)
+}
+
 /// Text at scale `sc` but at least `min_px` logical px tall.
 pub fn text_ex(g: &mut Gm, x: f64, y: f64, s: &str, sc: f64, min_px: f64) {
     let lh = g.string_height("M");
@@ -1033,7 +1039,7 @@ pub fn hud_icon_number(
 ) {
     let s = assets.sprite(spr).size.as_dvec2();
     let (w, h) = (s.x * iscale, s.y * iscale);
-    let tw = g.string_width(text) * tscale;
+    let tw = g.string_width(text) * eff_scale(g, tscale);
     let x = cx - (w + hud.ui.icon_gap + tw) * 0.5;
     g.sprite_ext(spr, 0, x, cy - h * 0.5, iscale, iscale, C_WHITE, 1.0);
     g.halign = 0;
@@ -1107,8 +1113,8 @@ pub fn draw_top(
             "hud_cm"
         })
         .to_string();
-    let len_w = g.string_width(&len_str) * u.length_scale;
-    let unit_w = g.string_width(&unit_str) * u.unit_scale;
+    let len_w = g.string_width(&len_str) * eff_scale(g, u.length_scale);
+    let unit_w = g.string_width(&unit_str) * eff_scale(g, u.unit_scale);
     let len_x = u.length_x - (len_w + u.unit_gap + unit_w) * 0.5;
     g.halign = 0;
     hud_text(g, len_x, u.text_y, &len_str, u.length_scale);
@@ -1546,8 +1552,9 @@ pub fn draw_tooltip(
         g.font = uf.small.clone();
         let tsc = hud_fit(g, &tip, 1.25, gw * 0.6, 0.0);
         let pad = 12.0;
-        let tw = g.string_width(&tip) * tsc + pad * 2.0;
-        let th = g.string_height(&tip) * tsc + pad * 2.0;
+        let k = eff_scale(g, tsc);
+        let tw = g.string_width(&tip) * k + pad * 2.0;
+        let th = g.string_height(&tip) * k + pad * 2.0;
         let tx = gml::clamp(mx + 20.0, 8.0, gw - tw - 8.0);
         let ty = gml::clamp(my + 24.0, 8.0, gh - th - 8.0);
         g.halign = 0;
