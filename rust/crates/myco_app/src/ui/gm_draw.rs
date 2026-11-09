@@ -69,6 +69,10 @@ impl TtfFont {
     }
 
     /// `locale_font_fit(file, ref)`: the size whose line height matches the reference font's.
+    ///
+    /// TODO(T17): partial port. It skips the "HEXN" ink-height refinement loop and takes the
+    /// reference height as the max glyph height instead of `string_height("Mg")`; T17 owns
+    /// `locale_font_fit` and should complete it.
     pub fn fit(handle: Handle<Font>, bytes: Vec<u8>, ref_h: f64, ref_size: f64) -> Option<TtfFont> {
         let font = FontArc::try_from_vec(bytes).ok()?;
         let mut t = TtfFont {
@@ -123,6 +127,9 @@ pub enum DrawItem {
 /// Bevy blends in linear light, GameMaker/LÖVE in sRGB: a translucent black veil (the tree
 /// screen's 0.86 backdrop) looks much lighter in linear space. For pure black the sRGB result
 /// `dst·(1 − a)` is reproduced exactly by `a' = 1 − (1 − a)^2.2`; other colours keep `a`.
+///
+/// TODO(R21): only corrects `col == 0`. T13 switches blending to sRGB space (ruling R21); once
+/// that lands, remove `gamma_alpha` (it would double-correct the veil).
 pub fn gamma_alpha(col: f64, alpha: f64) -> f64 {
     if col == 0.0 {
         1.0 - (1.0 - alpha.clamp(0.0, 1.0)).powf(2.2)

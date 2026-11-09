@@ -17,7 +17,7 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlocking};
+use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlocking, UiCapture};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -572,6 +572,7 @@ pub fn tree_icon_scale(spr: &str) -> f64 {
 }
 
 /// `shroom_sheet_cells` (Task 9's row; an unmarked copy until T9 lands in myco_core).
+/// TODO(T9): replace with the canonical `shroom_sheet_cells` / `mushroom_cell_width`.
 fn shroom_sheet_cells(spr: &str) -> f64 {
     match spr {
         "sporeshroom"
@@ -1116,6 +1117,7 @@ impl TreeView {
     }
 
     /// `hud_tree_label_back`: a rounded translucent plate behind a label.
+    /// TODO(T17): unmarked copy of the T17 row `hud_tree_label_back`; mark or move it in T17.
     #[allow(clippy::too_many_arguments)]
     fn label_back(&self, gm: &mut Gm, cx: f64, y: f64, w: f64, h: f64, scale: f64, alpha: f64) {
         if alpha <= 0.0 {
@@ -1137,6 +1139,7 @@ impl TreeView {
     }
 }
 
+/// TODO(T17): unmarked copy of the T17 row `hud_fit`; T17 should mark it here or move it.
 /// `hud_fit`: the scale that keeps `s` within `maxw` × `maxh` (maxh 0: no height limit).
 pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
     let mut k = sc;
@@ -1151,6 +1154,7 @@ pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
     k
 }
 
+/// TODO(T17): unmarked copy of the T17 row `hud_text_box`; T17 should mark it here or move it.
 /// `hud_text_box`: text fitted into a button rectangle, left-padded, vertically centred.
 fn hud_text_box(gm: &mut Gm, r: Rect4, s: &str, sc: f64, pad: f64) {
     let (ha, va) = (gm.halign, gm.valign);
@@ -1652,10 +1656,11 @@ fn collect_wheel(mut screen: ResMut<TreeScreen>, mut wheel: MessageReader<MouseW
 
 /// Before each simulation step: the tree branch of obj_hud Step_1 on the step's input. A click
 /// on a node becomes `Command::BuyUpgrade`, applied in the same step by `hud_begin_step`.
-fn tree_step_system(
+pub fn tree_step_system(
     mut screen: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
     mut blocking: ResMut<UiBlocking>,
+    mut capture: ResMut<UiCapture>,
     cams: Res<Cameras>,
     sim: Res<SimRes>,
 ) {
@@ -1666,15 +1671,22 @@ fn tree_step_system(
     screen.cache.mode = myco_core::balance::game_mode(&sim.0.state);
     let wheel = std::mem::take(&mut screen.wheel);
     if screen.open {
-        // obj_hud Step_1's Escape chain ends in `menu_open = false` (Task 17 owns the chain)
+        // obj_hud Step_1's Escape chain ends in `menu_open = false`.
+        // TODO(T17): simplified. The original chain (ui_4.lua:963-977) first closes slots,
+        // credits, debug, logo, and only then the tree; it is also skipped while
+        // `cine_blocking`. T17 owns that chain and should move this check into it.
         if pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open {
             screen.open = false;
         }
     }
+    // TODO(T17): the original returns before the tree branch while a cine blocks or the tasks
+    // popup is open (ui_4.lua:1053-1056); T17 owns those and should gate this system on them.
     if !screen.open {
         screen.view.closed_step();
         pending.menu_open = false;
         blocking.0 = false;
+        // `global.ui_capture_mouse` is recomputed every step (ui_4.lua:1051)
+        capture.tree = false;
         return;
     }
     let cursor = pending.cursor_override.or(pending.cursor);
@@ -1702,7 +1714,7 @@ fn tree_step_system(
         screen.open = false;
     }
     pending.menu_open = screen.open;
-    pending.ui_captured = screen.open || pending.ui_captured;
+    capture.tree = screen.open;
     blocking.0 = screen.open;
 }
 

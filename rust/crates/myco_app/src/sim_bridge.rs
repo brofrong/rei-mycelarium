@@ -123,6 +123,21 @@ pub struct ForceFocus(pub bool);
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiBlocking(pub bool);
 
+/// Per-step mouse capture by UI screens (`global.ui_capture_mouse`, recomputed every step,
+/// ui_4.lua:1051). Each screen writes its own flag every step; `step_sim` ORs them into
+/// `StepInput.ui_captured` together with `PendingInput.ui_captured`.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct UiCapture {
+    /// the upgrade-tree screen is open (Task 19)
+    pub tree: bool,
+}
+
+impl UiCapture {
+    pub fn any(&self) -> bool {
+        self.tree
+    }
+}
+
 /// Fixed-step system sets, in order.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SimSet {
@@ -141,6 +156,7 @@ impl Plugin for SimBridgePlugin {
             .init_resource::<PendingInput>()
             .init_resource::<ForceFocus>()
             .init_resource::<UiBlocking>()
+            .init_resource::<UiCapture>()
             .add_message::<SimEventMsg>()
             .configure_sets(
                 FixedUpdate,
@@ -304,10 +320,12 @@ fn step_sim(
     mut sim: ResMut<SimRes>,
     mut pending: ResMut<PendingInput>,
     mut cams: ResMut<Cameras>,
+    capture: Res<UiCapture>,
     history: Option<ResMut<StepHistory>>,
     mut out: MessageWriter<SimEventMsg>,
 ) {
-    let input = pending.take_step(&cams);
+    let mut input = pending.take_step(&cams);
+    input.ui_captured |= capture.any();
     sim.0.step(&input);
     if let Some(mut h) = history {
         h.0.push(input);

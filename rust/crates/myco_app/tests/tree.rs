@@ -209,3 +209,48 @@ fn tree_step_matches_love() {
         }
     }
 }
+
+/// `global.ui_capture_mouse` is recomputed every step: captured while the tree is open, released
+/// on the first step after it closes (review fix: it used to stick).
+#[test]
+fn tree_capture_is_recomputed_each_step() {
+    use bevy::prelude::*;
+    use bevy::time::TimeUpdateStrategy;
+    use myco_app::camera::Cameras;
+    use myco_app::sim_bridge::{SimBridgePlugin, SimRes, SimSet, StepHistory};
+    use myco_app::ui::tree::{tree_step_system, TreeScreen};
+
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, SimBridgePlugin));
+    app.insert_resource(SimRes(Sim::new_game(GameMode::Exploration, "t", Some(7))));
+    app.insert_resource(Cameras::default());
+    app.insert_resource(StepHistory::default());
+    app.insert_resource(TreeScreen::default());
+    app.add_systems(FixedUpdate, tree_step_system.in_set(SimSet::Prepare));
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
+    app.update();
+    let step = app.world().resource::<Time<Fixed>>().timestep();
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(step));
+    let run_step = |app: &mut App| {
+        let n = app.world().resource::<StepHistory>().0.len();
+        while app.world().resource::<StepHistory>().0.len() == n {
+            app.update();
+        }
+        let last = app
+            .world()
+            .resource::<StepHistory>()
+            .0
+            .last()
+            .unwrap()
+            .clone();
+        (last.ui_captured, last.menu_open)
+    };
+    assert_eq!(run_step(&mut app), (false, false), "closed");
+    app.world_mut().resource_mut::<TreeScreen>().open();
+    assert_eq!(run_step(&mut app), (true, true), "open");
+    assert_eq!(run_step(&mut app), (true, true), "still open");
+    app.world_mut().resource_mut::<TreeScreen>().close();
+    assert_eq!(run_step(&mut app), (false, false), "closed again");
+}
