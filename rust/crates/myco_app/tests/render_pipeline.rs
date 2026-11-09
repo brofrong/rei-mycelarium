@@ -355,3 +355,77 @@ fn gm_quad_batch_draws_texels_tint_and_blend() {
     );
     assert!((add[0] as i32 - 64).abs() <= 2, "added rect {add:?}");
 }
+
+/// A black | white 2×1 image stretched over the target with the filter on: GameMaker filters
+/// encoded values, so the midpoint is ≈ 128 (filtering in linear light would give ≈ 188). A
+/// black→white `draw_rectangle_colour` gradient likewise reaches ≈ 128 halfway.
+fn draw_filtered(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut mats: ResMut<Assets<myco_app::render::batch::GmQuad>>,
+    mut images: ResMut<Assets<Image>>,
+    white: Res<myco_app::render::batch::WhiteTexture>,
+    mut pool: ResMut<Pool>,
+    mut img: Local<Option<Handle<Image>>>,
+) {
+    use myco_app::render::batch::{BatchTarget, QuadBatch, C_WHITE};
+    let img = img
+        .get_or_insert_with(|| {
+            images.add(Image::new(
+                Extent3d {
+                    width: 2,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+                TextureDimension::D2,
+                vec![0, 0, 0, 255, 255, 255, 255, 255],
+                TextureFormat::Rgba8UnormSrgb,
+                RenderAssetUsages::default(),
+            ))
+        })
+        .clone();
+    let mut b = QuadBatch::new();
+    b.set_filter(true);
+    // texels 0.5..1.5 (centre to centre) across the top half: x -32..32, y -32..0
+    b.image_ext(
+        &img,
+        [0.5, 0.0, 1.0, 1.0],
+        [0.0, 0.0, 1.0, 1.0],
+        -32.0,
+        -32.0,
+        64.0,
+        32.0,
+        0.0,
+        C_WHITE,
+        1.0,
+    );
+    b.set_filter(false);
+    // bottom half: horizontal gradient black -> white
+    b.rect_colour(-32.0, 0.0, 31.0, 31.0, [0.0, C_WHITE, C_WHITE, 0.0], 1.0);
+    let mut t = BatchTarget {
+        commands: &mut commands,
+        meshes: &mut meshes,
+        materials: &mut mats,
+        white: &white.0,
+    };
+    pool.0.sync(&mut t, &b, 1.0, 0.01, &default());
+}
+
+#[test]
+fn filtering_and_gradients_interpolate_encoded_values() {
+    let mut app = headless_app();
+    app.add_plugins(myco_app::render::batch::BatchPlugin)
+        .init_resource::<Pool>()
+        .add_systems(Update, draw_filtered);
+    let data = run(&mut app, 30);
+    let filt = pixel(&data, 32, 16);
+    let grad = pixel(&data, 32, 48);
+    assert!(
+        (filt[0] as i32 - 128).abs() <= 6,
+        "filtered midpoint {filt:?}, want ≈128"
+    );
+    assert!(
+        (grad[0] as i32 - 128).abs() <= 6,
+        "gradient midpoint {grad:?}, want ≈128"
+    );
+}

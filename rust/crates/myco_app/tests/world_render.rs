@@ -251,3 +251,37 @@ fn merge_colour_rounds_like_love() {
         (191 + (64 << 8)) as f64
     );
 }
+
+#[test]
+fn deposit_without_deep_falls_back_to_its_row() {
+    use myco_app::render::world::world_draw_stone_deposits;
+    use myco_core::state::StoneCellSave;
+    let Some(a) = assets() else { return };
+    let mut sim = sim();
+    let cw = sim.world.params.chunk_w as f64;
+    let deep_y = sim.world.deep_y();
+    let row_above = ((deep_y - 48.0) / 48.0).floor() as i64 - 1;
+    let row_below = (deep_y / 48.0).ceil() as i64 + 1;
+    let mut ch = sim.world.get_chunk(0).clone();
+    let cell = |row: i64| StoneCellSave {
+        col: 1,
+        row,
+        tc: 3,
+        tr: 3,
+        deep: None,
+        ..Default::default()
+    };
+    ch.stone_cells = vec![cell(row_above), cell(row_below)];
+    let mut b = QuadBatch::new();
+    let (vy, vh) = (
+        row_above as f64 * 48.0 - 10.0,
+        (row_below - row_above + 2) as f64 * 48.0,
+    );
+    world_draw_stone_deposits(&mut b, &a, &sim.world, &ch, 0.0, vy, cw, vh);
+    let verts: Vec<_> = b.runs.iter().flat_map(|r| r.verts.iter()).collect();
+    assert_eq!(verts.len(), 12, "both cells drawn");
+    let white = verts[0].col;
+    let tinted = verts[6].col;
+    assert_eq!(white, [1.0, 1.0, 1.0, 1.0], "above the deep line: untinted");
+    assert_ne!(tinted, white, "below the deep line: deep_stone_colour");
+}

@@ -904,7 +904,8 @@ pub fn world_draw_stone_deposits(
         if r <= l {
             continue;
         }
-        let col = if c.deep {
+        let deep = c.deep.unwrap_or(py + 48.0 > w.deep_y());
+        let col = if deep {
             vis("deep_stone_colour")
         } else {
             C_WHITE
@@ -1952,13 +1953,24 @@ fn draw_world(
             continue;
         }
         let (w, h) = (glow.size.x as f32, glow.size.y as f32);
-        *proj = Projection::Orthographic(OrthographicProjection {
-            scaling_mode: bevy::camera::ScalingMode::Fixed {
-                width: w,
-                height: h,
-            },
-            ..OrthographicProjection::default_2d()
-        });
+        // written only when the surface size changes, with `area` already computed (as
+        // camera::apply_cameras does; R21a)
+        let current = match &*proj {
+            Projection::Orthographic(o) => Some((o.area.width(), o.area.height())),
+            _ => None,
+        };
+        if current != Some((w, h)) {
+            use bevy::camera::CameraProjection;
+            let mut o = OrthographicProjection {
+                scaling_mode: bevy::camera::ScalingMode::Fixed {
+                    width: w,
+                    height: h,
+                },
+                ..OrthographicProjection::default_2d()
+            };
+            o.update(w, h);
+            *proj = Projection::Orthographic(o);
+        }
         // the surface's top-left is world (0, 0) (y down)
         tf.set_if_neq(Transform::from_xyz(w * 0.5, -h * 0.5, 0.0));
         if gc.1 != targets[gc.0].id() {

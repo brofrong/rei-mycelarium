@@ -637,9 +637,10 @@ fn paint_gui(
                 if let Some(m) = meshes.get_mut(&h) {
                     colour_mesh(m.into_inner(), verts);
                 }
-                if let Ok((mut tf, mut vis)) = q_mesh.get_mut(e) {
-                    tf.translation.z = z;
-                    vis.set_if_neq(Visibility::Visible);
+                if let Ok((mut tf, _)) = q_mesh.get_mut(e) {
+                    if tf.translation.z != z {
+                        tf.translation.z = z;
+                    }
                 }
                 mi += 1;
             }
@@ -679,7 +680,7 @@ fn paint_gui(
                     s.set_if_neq(sprite);
                     let t = Transform::from_translation(pos);
                     tf.set_if_neq(t);
-                    vis.set_if_neq(Visibility::Visible);
+                    let _ = &mut vis;
                 }
                 qi += 1;
             }
@@ -727,25 +728,33 @@ fn paint_gui(
                     }
                     c.set_if_neq(tcol);
                     tf.set_if_neq(pos);
-                    vis.set_if_neq(Visibility::Visible);
+                    let _ = &mut vis;
                 }
                 ti += 1;
             }
         }
     }
-    for (e, _) in &pools.meshes[mi..] {
-        if let Ok((_, mut vis)) = q_mesh.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
+    // Spare slots stay visible and draw nothing (empty geometry, transparent sprite, empty
+    // text): no Visibility churn on pooled entities.
+    for (_, h) in &pools.meshes[mi..] {
+        if meshes.get(h).is_some_and(|m| m.count_vertices() != 3) {
+            if let Some(mut m) = meshes.get_mut(h) {
+                *m = empty_colour_mesh();
+            }
         }
     }
     for e in &pools.quads[qi..] {
-        if let Ok((_, _, mut vis)) = q_quad.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
+        if let Ok((mut s, _, _)) = q_quad.get_mut(*e) {
+            if s.color != Color::NONE {
+                s.color = Color::NONE;
+            }
         }
     }
     for e in &pools.texts[ti..] {
-        if let Ok((_, _, _, _, mut vis)) = q_text.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
+        if let Ok((mut t, _, _, _, _)) = q_text.get_mut(*e) {
+            if !t.0.is_empty() {
+                t.0.clear();
+            }
         }
     }
 }

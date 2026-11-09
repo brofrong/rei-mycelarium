@@ -145,7 +145,7 @@ impl Plugin for BatchPlugin {
     }
 }
 
-/// One vertex: world position (y down), texel coordinates, linear RGBA.
+/// One vertex: world position (y down), texel coordinates, encoded RGBA (see [`lin`]).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct QVert {
     pub pos: [f32; 2],
@@ -172,9 +172,11 @@ impl Run {
     }
 }
 
-/// GameMaker colour (BGR) + alpha as linear RGBA (what Bevy vertex colours are).
+/// GameMaker colour (BGR) + alpha as the gamma-encoded RGBA vertex colour [`GmQuad`] expects
+/// (interpolated across a quad in encoded space, like GameMaker; the shader decodes it when the
+/// camera composites in linear).
 pub fn lin(col: f64, alpha: f64) -> [f32; 4] {
-    gm_colour_f(col, alpha).to_linear().to_f32_array()
+    gm_colour_f(col, alpha).to_srgba().to_f32_array()
 }
 
 /// The painter. Positions are world coordinates (y down).
@@ -535,6 +537,9 @@ struct Slot {
     mesh: Handle<Mesh>,
     material: Handle<GmQuad>,
     key: Option<SlotKey>,
+    /// what the mesh holds now (empty: the degenerate triangle) and the entity's z
+    verts: Vec<QVert>,
+    z: f32,
 }
 
 /// Pooled entities drawing a [`QuadBatch`]: run `i` at z = `base + i·step`.
@@ -595,25 +600,44 @@ impl BatchPool {
                     mesh,
                     material,
                     key: Some(key),
+                    verts: run.verts.clone(),
+                    z,
                 });
                 continue;
             }
             let slot = &mut self.slots[i];
-            if let Some(mut m) = t.meshes.get_mut(&slot.mesh) {
-                fill_mesh(&mut m, &run.verts);
-            }
+            slot.update(t, &run.verts, z);
             if slot.key != Some(key) {
                 if let Some(mut m) = t.materials.get_mut(&slot.material) {
                     *m = quad_material(run, tex);
                 }
                 slot.key = Some(key);
             }
-            t.commands
-                .entity(slot.entity)
-                .insert((Transform::from_xyz(0.0, 0.0, z), Visibility::Inherited));
         }
-        for slot in self.slots.iter().skip(batch.runs.len()) {
-            t.commands.entity(slot.entity).insert(Visibility::Hidden);
+        // spare slots stay visible with empty geometry and nothing is rewritten unless it changed:
+        // no per-frame component churn (re-specialisation, re-extraction, re-upload)
+        for slot in self.slots.iter_mut().skip(batch.runs.len()) {
+            let z = slot.z;
+            slot.update(t, &[], z);
+        }
+    }
+}
+
+impl Slot {
+    /// Write the mesh and the Transform only when they change.
+    fn update(&mut self, t: &mut BatchTarget, verts: &[QVert], z: f32) {
+        if self.verts != verts {
+            if let Some(mut m) = t.meshes.get_mut(&self.mesh) {
+                fill_mesh(&mut m, verts);
+            }
+            self.verts.clear();
+            self.verts.extend_from_slice(verts);
+        }
+        if self.z != z {
+            t.commands
+                .entity(self.entity)
+                .insert(Transform::from_xyz(0.0, 0.0, z));
+            self.z = z;
         }
     }
 }

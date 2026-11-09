@@ -713,7 +713,10 @@ pub struct StoneCellSave {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub band: Option<i64>,
     pub col: i64,
-    pub deep: bool,
+    /// whole deposit below the deep line; old saves may lack it (`world_draw_stone_deposits`
+    /// then uses the cell's own row)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deep: Option<bool>,
     pub row: i64,
     pub tc: i64,
     pub tr: i64,
