@@ -35,6 +35,8 @@ fn temp_dir(tag: &str) -> PathBuf {
 /// A saved game in `slot` named `name`.
 fn write_game(dir: &Path, slot: i64, name: &str) {
     let mut sim = Sim::new_game(GameMode::Exploration, name, Some(7));
+    // past the intro (game_init starts it; save_game refuses while it runs)
+    sim.intro_active = false;
     sim.save_dir = Some(dir.to_path_buf());
     sim.save_start_new(slot, name);
     assert!(sim.save_game());
@@ -334,6 +336,7 @@ fn settings_and_pause_items() {
 
     // in game: Escape pauses, "main menu" saves and restarts
     sim.start_from_title(0, "Run", GameMode::Exploration);
+    sim.intro_active = false; // past the intro (save_game refuses while it runs)
     cx.step(
         &mut m,
         &mut sim,
@@ -384,6 +387,7 @@ fn quit_writes_slot() {
     let dir = temp_dir("quit");
     let mut sim = title(&dir);
     sim.start_from_title(1, "Leaving", GameMode::Exploration);
+    sim.intro_active = false; // past the intro (save_game refuses while it runs)
     let mut app = App::new();
     app.add_message::<AppExit>()
         .insert_resource(SimRes(sim))

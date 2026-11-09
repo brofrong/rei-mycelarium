@@ -55,14 +55,24 @@ pub struct CamBounds {
     pub y2: f64,
 }
 
-/// `camera_bounds(vw, vh)` (Task 21). Until then: unbounded.
-pub fn camera_bounds(_sim: &Sim, _vw: f64, _vh: f64) -> CamBounds {
-    CamBounds {
-        x1: f64::NEG_INFINITY,
-        x2: f64::INFINITY,
-        y1: f64::NEG_INFINITY,
-        y2: f64::INFINITY,
+/// `camera_bounds(vw, vh)`: the camera box (`state.cam_box`, grown by the mycelium's reach)
+/// less the view, clipped to the world bottom; a box narrower than the view centres it.
+/// (Task 21's row, ported here unmarked because the animals' world span needs it; Task 21
+/// marks it.)
+pub fn camera_bounds(sim: &Sim, vw: f64, vh: f64) -> CamBounds {
+    let [bx1, by1, bx2, by2] = sim.state.state.cam_box;
+    let mut x1 = bx1;
+    let mut x2 = bx2 - vw;
+    let y1 = by1;
+    let mut y2 = by2.min(sim.world.params.bottom_y) - vh;
+    if x2 < x1 {
+        x1 = (bx1 + bx2) * 0.5 - vw * 0.5;
+        x2 = x1;
     }
+    if y2 < y1 {
+        y2 = y1;
+    }
+    CamBounds { x1, x2, y1, y2 }
 }
 
 /// `boar_shake(vx, vw)` (Task 21): camera shake offset `[dx, dy]`. Until then: none.
@@ -102,3 +112,93 @@ pub fn camera_jump_edge(_sim: &mut Sim, _dir: f64) {}
 
 /// `camera_jump_origin()` (Task 21): the HUD's origin button. Until then: nothing.
 pub fn camera_jump_origin(_sim: &mut Sim) {}
+
+// ---------------------------------------------------------------------------------------------
+// The intro (scr_life `intro_*`; Task 21's rows, ported here unmarked because `game_init` starts
+// every game with `intro_active` and obj_life Step_0 runs `intro_step`; Task 21 marks them and
+// adds `intro_draw`).
+
+/// `global.intro` (`___struct___105`): the hedgehog that brings the origin mushroom.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Intro {
+    pub x: f64,
+    pub y: f64,
+    pub frame: f64,
+    pub frame_timer: f64,
+    pub dropped: bool,
+    pub shroom_y: f64,
+    pub shroom_speed: f64,
+}
+
+/// `intro_init()`: the hedgehog starts half a screen and a frame left of the start.
+pub fn intro_init(sim: &mut Sim) {
+    use crate::balance::{vis, wld};
+    sim.life.intro = Intro {
+        x: sim.state.state.start_x - vis("screen_width_px") * 0.5 - crate::life::hedgehog_frame_w(),
+        y: wld("surface_height_px"),
+        frame: 0.0,
+        frame_timer: vis("hedgehog_frame_interval"),
+        dropped: false,
+        shroom_y: 0.0,
+        shroom_speed: 0.0,
+    };
+}
+
+/// `intro_step()`: true while the intro holds the rest of obj_life's step. The hedgehog walks to
+/// the start and drops the origin mushroom; when it lands, `intro_finish`.
+pub fn intro_step(sim: &mut Sim) -> bool {
+    use crate::balance::{vis, wld};
+    if !sim.intro_active {
+        return false;
+    }
+    if sim.pause_open || sim.title_open {
+        return true;
+    }
+    let start_x = sim.state.state.start_x;
+    let floor_y = wld("surface_height_px");
+    let spd = vis("intro_hedgehog_speed");
+    let it = &mut sim.life.intro;
+    it.frame_timer -= 1.0;
+    if it.frame_timer <= 0.0 {
+        it.frame_timer = vis("hedgehog_frame_interval");
+        it.frame = crate::gml::gmod(it.frame + 1.0, 8.0);
+    }
+    it.x += spd;
+    if !it.dropped {
+        if it.x >= start_x {
+            it.dropped = true;
+            it.shroom_y = floor_y + crate::life::hedgehog::hedgehog_back_y();
+            it.shroom_speed = 0.0;
+        }
+        true
+    } else {
+        it.shroom_speed = (it.shroom_speed + vis("intro_drop_gravity")).min(16.0);
+        it.shroom_y += it.shroom_speed;
+        if it.shroom_y < floor_y {
+            return true;
+        }
+        intro_finish(sim);
+        false
+    }
+}
+
+/// `intro_finish()`: the intro ends; its hedgehog walks on as a normal one and the origin knot
+/// is placed at the mycelium controller.
+pub fn intro_finish(sim: &mut Sim) {
+    use crate::balance::vis;
+    sim.intro_active = false;
+    let it = sim.life.intro.clone();
+    let id = sim.life.new_id(crate::mycelium::source::ANIMAL);
+    sim.life.animals.push(crate::life::Hedgehog {
+        id,
+        x: it.x,
+        y: it.y,
+        dir: 1.0,
+        speed: vis("intro_hedgehog_speed"),
+        frame: it.frame,
+        frame_timer: it.frame_timer,
+        carrying: -1,
+    });
+    let (x, y) = (sim.mycelium.x, sim.mycelium.y);
+    crate::mycelium::knots::add_knot(sim, x, y);
+}

@@ -96,6 +96,8 @@ fn events_are_drained_once() {
 fn pause_command_and_save_timer() {
     let mut sim = Sim::new_game(GameMode::Exploration, "P", Some(1));
     sim.save_start_new(0, "P");
+    // past the intro (the autosave countdown waits for it)
+    sim.intro_active = false;
     assert_eq!(sim.save.timer, 120.0);
     let mut input = StepInput::default();
     input.commands.push(Command::SetPaused(true));
