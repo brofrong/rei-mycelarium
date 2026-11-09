@@ -111,3 +111,28 @@ pub fn degtorad(deg: f64) -> f64 {
 pub fn radtodeg(rad: f64) -> f64 {
     rad * RAD2DEG
 }
+
+pub fn dtan(deg: f64) -> f64 {
+    (deg * DEG2RAD).tan()
+}
+
+/// `make_colour_rgb(r, g, b)`: a BGR integer `0xBBGGRR` (components floored, like the LÖVE port).
+pub fn make_colour_rgb(r: f64, g: f64, b: f64) -> f64 {
+    b.floor() * 65536.0 + g.floor() * 256.0 + r.floor()
+}
+
+fn colour_parts(c: f64) -> [f64; 3] {
+    let c = c.floor();
+    [
+        lua_mod(c, 256.0),
+        lua_mod((c / 256.0).floor(), 256.0),
+        lua_mod((c / 65536.0).floor(), 256.0),
+    ]
+}
+
+/// `merge_colour(c1, c2, amount)`: per component `floor(a + (b - a) * amount + 0.5)`.
+pub fn merge_colour(c1: f64, c2: f64, amount: f64) -> f64 {
+    let (a, b) = (colour_parts(c1), colour_parts(c2));
+    let mix = |x: f64, y: f64| (x + (y - x) * amount + 0.5).floor();
+    make_colour_rgb(mix(a[0], b[0]), mix(a[1], b[1]), mix(a[2], b[2]))
+}

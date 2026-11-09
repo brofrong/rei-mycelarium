@@ -3,7 +3,7 @@
 //!
 //! The animals, leaves and worms come from the logic through hooks Task 10 fills
 //! (`life::animal_views`, `life::absorbing_leaves`, `life::caught_worms`) and the mushroom
-//! progress / hit boxes through Task 9's (`mushrooms::hover_progress`, `mushrooms::hit_box`).
+//! progress / hit boxes through Task 9's (`mushrooms::hover_progress`, `mushrooms::mushroom_hit_box`).
 //! The hover bars belong to obj_life's world Draw (after the crows); here they are drawn on the
 //! GUI layer at the world position (zoom applied), under the HUD.
 
@@ -418,11 +418,10 @@ pub fn hover_bar_step_draw(g: &mut Gm, sim: &Sim, hud: &HudState, cams: &Cameras
         let Some(p) = mushrooms::hover_progress(sim, i) else {
             continue;
         };
-        if let Some((x1, y1, x2, y2)) = mushrooms::mushroom_hit_box(sim, i) {
-            if gml::point_in_rectangle(mx, my, x1, y1, x2, y2) {
-                hover_bar_draw(g, &to_gui, cams.zoom, (x1 + x2) * 0.5, y1 - gap, p);
-                return;
-            }
+        let b = mushrooms::mushroom_hit_box(sim, i);
+        if gml::point_in_rectangle(mx, my, b.x1, b.y1, b.x2, b.y2) {
+            hover_bar_draw(g, &to_gui, cams.zoom, (b.x1 + b.x2) * 0.5, b.y1 - gap, p);
+            return;
         }
     }
     let lr = vis("hover_leaf_radius_px");

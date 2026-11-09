@@ -1320,10 +1320,10 @@ fn draw_build(
 ) {
     let b = &hud.build;
     if let (Some(t), Some(pa)) = (hud.place_type, hud.place_at) {
-        let spr = mushrooms::type_sprite(t);
+        let spr = mushrooms::types::mushroom_type_sprite(t);
         if let Some(def) = assets.try_sprite(spr) {
             let sw = def.size.x as f64;
-            let cw = mushrooms::cell_width(spr, sw);
+            let cw = mushrooms::types::sheet_cell_width(spr, sw);
             let col = if pa.ok {
                 0x78e678 as f64
             } else {
@@ -1334,7 +1334,7 @@ fn draw_build(
             } else {
                 0.0
             };
-            let left = mushrooms::cell_left(spr, sw, variant);
+            let left = mushrooms::types::mushroom_cell_left(spr, variant);
             let p = cams.world_to_gui(bevy::math::DVec2::new(
                 pa.x - def.origin.x as f64,
                 pa.y - def.origin.y as f64,
@@ -1421,7 +1421,7 @@ fn draw_build(
         let ialpha = if affordable { 1.0 } else { 0.45 };
         tree_draw_icon(
             g,
-            Some(mushrooms::type_sprite(t)),
+            Some(mushrooms::types::mushroom_type_sprite(t)),
             x,
             b.slot_y,
             b.icon * isc,
