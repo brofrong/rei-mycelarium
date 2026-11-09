@@ -5,5 +5,6 @@ pub mod audio;
 pub mod autopilot;
 pub mod camera;
 pub mod display;
+pub mod logo;
 pub mod render;
 pub mod sim_bridge;
