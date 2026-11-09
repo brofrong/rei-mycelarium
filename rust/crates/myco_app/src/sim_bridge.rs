@@ -38,10 +38,12 @@ pub struct PendingInput {
     pub commands: Vec<Command>,
     /// set by the UI each frame: the cursor is over the HUD / a menu
     pub ui_captured: bool,
-    pub tasks_panel_open: bool,
     pub tasks_popup_open: bool,
-    /// `global.menu_open`: the upgrade-tree screen is open (set by `ui::tree`)
+    /// HUD globals the logic reads (set by the HUD, Task 17)
     pub menu_open: bool,
+    pub debug_open: bool,
+    pub logo_open: bool,
+    pub hud_hidden: bool,
 }
 
 impl PendingInput {
@@ -95,13 +97,11 @@ impl PendingInput {
             ui_captured: self.ui_captured,
             view: cams.game_view,
             commands: std::mem::take(&mut self.commands),
-            tasks_panel_open: self.tasks_panel_open,
             tasks_popup_open: self.tasks_popup_open,
-            // HUD/menu state the HUD tasks (T17) will provide
             menu_open: self.menu_open,
-            debug_open: false,
-            logo_open: false,
-            hud_hidden: false,
+            debug_open: self.debug_open,
+            logo_open: self.logo_open,
+            hud_hidden: self.hud_hidden,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;

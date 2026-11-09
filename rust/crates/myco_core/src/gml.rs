@@ -36,6 +36,11 @@ pub fn clamp(x: f64, lo: f64, hi: f64) -> f64 {
     }
 }
 
+/// `point_in_rectangle(px, py, x1, y1, x2, y2)`: inclusive on all edges.
+pub fn point_in_rectangle(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
+    px >= x1 && px <= x2 && py >= y1 && py <= y2
+}
+
 pub fn point_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
     let dx = x2 - x1;
     let dy = y2 - y1;

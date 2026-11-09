@@ -1,7 +1,29 @@
 //! GUI screens. Task 19: the GameMaker-style GUI painter ([`gm_draw`]) and the upgrade-tree
 //! screen ([`tree`]); [`LocaleRes`] holds the language strings and the UI font.
+//!
+//! Task 17: the in-game HUD ([`hud`]: obj_hud Create/Begin Step/Draw GUI and the `hud_*`
+//! helpers), the tasks panel and popups and tutorial tips ([`tasks`]), animal markers and hover
+//! bars ([`markers`]), the language fonts ([`fonts`]) and the Rust port's floating resource
+//! numbers ([`popups`]), red right-click tip ([`cursor_tip`]) and right-click routing
+//! ([`placement`]).
+//!
+//! Schedules (Task 17):
+//! - `FixedUpdate` / `SimSet::Prepare`: [`HudStepSet`] runs obj_hud's Begin Step on the input
+//!   latched for this step, before the simulation consumes it; it sets
+//!   `PendingInput.ui_captured` and pushes `Command`s. The tree screen's step (Task 19) is in
+//!   [`HudStepSet::Screens`]; menus (Task 18) go there too.
+//! - `FixedUpdate` / `SimSet::After`: floating numbers and tips read this step's events.
+//! - `Update`: the HUD paints into [`gm_draw::GuiDraw`] under the [`draw_order`] keys (Draw_75
+//!   order); Task 18's title screens use `draw_order::TITLE`, its pause/logo `draw_order::MODAL`.
 
+pub mod cursor_tip;
+pub mod fonts;
 pub mod gm_draw;
+pub mod hud;
+pub mod markers;
+pub mod placement;
+pub mod popups;
+pub mod tasks;
 pub mod tree;
 
 use crate::assets::GameAssets;
@@ -45,7 +67,9 @@ impl LocaleRes {
     pub fn load(assets: &GameAssets, save_dir: &std::path::Path) -> LocaleRes {
         let csv = assets.read_text("localization.csv").unwrap_or_default();
         let (lang, region) = os_locale();
-        let loc = Locale::init(&csv, &locale::read_language(save_dir), &lang, &region);
+        let mut loc = Locale::init(&csv, &locale::read_language(save_dir), &lang, &region);
+        // the Rust port's strings (ruling R4)
+        loc.extend_from_csv(LOCALE_EXTRA_CSV);
         let font_small = loc
             .font_small_for()
             .and_then(|id| {
@@ -72,12 +96,130 @@ fn init_locale(mut commands: Commands, assets: Res<GameAssets>, dir: Option<Res<
     commands.insert_resource(LocaleRes::load(&assets, &dir));
 }
 
-/// The painter, the locale and the tree screen.
+/// The Rust port's extra strings (12 languages, English fallback), compiled in.
+pub const LOCALE_EXTRA_CSV: &str = include_str!("../../locale_extra.csv");
+
+/// The painter, the locale, the HUD and the tree screen.
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((gm_draw::GuiDrawPlugin, tree::TreePlugin))
+        app.add_plugins((gm_draw::GuiDrawPlugin, tree::TreePlugin, HudPlugin))
             .add_systems(Startup, init_locale);
+    }
+}
+
+/// [`gm_draw::GuiDraw`] keys, in obj_hud Draw_75 order.
+pub mod draw_order {
+    /// world-anchored overlays under the HUD: floating numbers, hover bars
+    pub const WORLD: i32 = 100;
+    /// top bar (tabs, length, food, water)
+    pub const TOP: i32 = 200;
+    /// `cave_perk_icons_draw` (Task 13)
+    pub const CAVES: i32 = 250;
+    /// tasks panel, cave popups (Task 13: 310), markers, points, wind, build bar, buttons,
+    /// cheat text, tutorial
+    pub const HUD: i32 = 300;
+    /// title vignette, slots, credits, title menu (Task 18)
+    pub const TITLE: i32 = 400;
+    /// hover tooltip, `cine_draw` (Task 21: 460), tasks popup
+    pub const TOOLTIP: i32 = 450;
+    /// the upgrade tree (Task 19), = `tree::TREE_DRAW_ORDER`
+    pub const TREE: i32 = 500;
+    /// pause, logo (Task 18)
+    pub const MODAL: i32 = 550;
+    /// the red right-click tip
+    pub const CURSOR: i32 = 900;
+}
+
+/// obj_hud Begin Step stages, in `FixedUpdate` inside `SimSet::Prepare` (after the autopilot).
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum HudStepSet {
+    /// layout, Escape chain, hovers, tasks headers, markers, mouse capture
+    Pre,
+    /// modal screens (tree: Task 19; pause, title, slots, credits, logo: Task 18)
+    Screens,
+    /// the in-game HUD: upgrade button, build bar, placement, camera buttons, right click
+    Game,
+}
+
+/// Logical screen px per GUI unit (`f64` bits), kept by [`track_gui_scale`] for the text
+/// minimum ([`min_text_scale`]).
+static PX_PER_UNIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0x3FF0_0000_0000_0000);
+
+/// The owner's minimum text size on screen (logical px).
+pub const MIN_TEXT_PX: f64 = 14.0;
+
+pub fn px_per_unit() -> f64 {
+    f64::from_bits(PX_PER_UNIT.load(std::sync::atomic::Ordering::Relaxed))
+}
+
+/// The scale to draw text of line height `line_h` (GUI units) at, so a line is at least
+/// `min_px` logical px on screen.
+pub fn min_text_scale(sc: f64, line_h: f64, min_px: f64) -> f64 {
+    let px = line_h * sc.abs() * px_per_unit();
+    if px > 0.0 && px < min_px {
+        sc * min_px / px
+    } else {
+        sc
+    }
+}
+
+fn track_gui_scale(cams: Res<crate::camera::Cameras>) {
+    let vw = cams.layout.view_w;
+    if vw > 0.0 && cams.scale_factor > 0.0 && cams.picture.w > 0.0 {
+        let k = cams.picture.w / cams.scale_factor / vw;
+        PX_PER_UNIT.store(k.to_bits(), std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// The HUD (Task 17).
+pub struct HudPlugin;
+
+impl Plugin for HudPlugin {
+    fn build(&self, app: &mut App) {
+        use crate::sim_bridge::SimSet;
+        app.configure_sets(
+            FixedUpdate,
+            (HudStepSet::Pre, HudStepSet::Screens, HudStepSet::Game)
+                .chain()
+                .in_set(SimSet::Prepare)
+                .after(crate::autopilot::run_script),
+        )
+        .init_resource::<popups::Popups>()
+        .init_resource::<cursor_tip::CursorTip>()
+        .init_resource::<markers::AnimalMarkers>()
+        .init_resource::<hud::HudState>()
+        .insert_resource(fonts::UiFonts::bitmap())
+        .add_systems(Startup, init_fonts.after(init_locale))
+        .add_systems(
+            FixedUpdate,
+            (
+                hud::hud_step_pre.in_set(HudStepSet::Pre),
+                hud::hud_step_game.in_set(HudStepSet::Game),
+                (popups::popups_collect, cursor_tip::cursor_tip_collect, hud::hud_events)
+                    .in_set(SimSet::After),
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                track_gui_scale,
+                popups::popups_tick,
+                cursor_tip::cursor_tip_tick,
+                popups::world_draw,
+                hud::hud_draw_top,
+                hud::hud_draw_main,
+                hud::hud_draw_tooltip,
+                cursor_tip::cursor_tip_draw,
+            )
+                .chain(),
+        );
+    }
+}
+
+fn init_fonts(mut commands: Commands, assets: Res<GameAssets>, locale: Option<Res<LocaleRes>>) {
+    if let Some(l) = locale {
+        commands.insert_resource(fonts::UiFonts::load(&assets, &l.locale));
     }
 }

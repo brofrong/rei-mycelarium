@@ -256,6 +256,19 @@ impl Locale {
         self.strings = strings;
     }
 
+    /// Mix in extra strings (the Rust port's `locale_extra.csv`, ruling R4): keys the main CSV
+    /// lacks are added per language; keys it already has are kept. Missing cells fall back to
+    /// English like any other key. The language list and the current language stay as they are.
+    pub fn extend_from_csv(&mut self, csv: &str) {
+        for (lang, extra) in load_csv(csv) {
+            let t = self.table.entry(lang).or_default();
+            for (k, v) in extra {
+                t.entry(k).or_insert(v);
+            }
+        }
+        self.set_language(self.id);
+    }
+
     // port: locale_cycle
     /// `locale_cycle(dir)`: the next/previous available language. The caller persists it with
     /// [`write_language`] (the original writes `[game] language` right away).

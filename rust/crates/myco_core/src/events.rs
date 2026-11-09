@@ -128,6 +128,13 @@ pub enum SimEvent {
     Sound(SoundCue),
     /// Stateful audio calls (hyphae growth sounds, loops, water touch, mushroom growth).
     Audio(AudioCall),
+    /// A mushroom was placed (Task 9 emits it from `PlaceMushroom`; the HUD closes the build
+    /// bar like `hud_build_close` after `myc_place_mushroom` returned true).
+    MushroomPlaced {
+        kind: crate::mushrooms::MushroomKind,
+        x: f64,
+        y: f64,
+    },
     Saved,
     GameOver,
     TutorialTip {

@@ -102,8 +102,6 @@ pub struct StepInput {
     pub ui_captured: bool,
     pub view: ViewRect,
     pub commands: Vec<Command>,
-    /// the tasks panel is open (`tasks_block_open`, measured by the app; ruling R11)
-    pub tasks_panel_open: bool,
     /// a tasks popup is open (`tasks_popup_open`, app state; ruling R12)
     pub tasks_popup_open: bool,
     /// the upgrade tree screen is open (`global.menu_open`, HUD state; read by `tutorial_step`)
@@ -133,6 +131,22 @@ pub enum Command {
     },
     SetPaused(bool),
     Save,
+    /// `tasks_block_toggle(block)`: a click on a tasks panel header (the app hit-tests the
+    /// text-measured header, ruling R15); flips the saved open flag in obj_hud's Begin Step
+    ToggleTaskBlock {
+        block: crate::progress::tasks::Block,
+    },
+    /// HUD camera buttons (obj_hud Begin Step): `camera_jump_edge(dir)` (left -1 / right 1)
+    CameraJumpEdge {
+        dir: f64,
+    },
+    /// HUD camera button: `camera_jump_origin()`
+    CameraJumpOrigin,
+    /// a click on an animal marker: `camera_fly_to_marker` toward the animal at (x, y)
+    CameraFlyTo {
+        x: f64,
+        y: f64,
+    },
     // Tasks 9–12 add their variants here and touch nothing else
 }
 

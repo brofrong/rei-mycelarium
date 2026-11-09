@@ -64,6 +64,22 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
     // obj_hud Step_1 runs water_counter_step before its input handling
     crate::world::water_counter_step(sim);
     upgrades::apply_commands(sim, input);
+    tasks::apply_commands(sim, input);
+    for cmd in &input.commands {
+        match *cmd {
+            crate::sim::Command::CameraJumpEdge { dir } => crate::camera::camera_jump_edge(sim, dir),
+            crate::sim::Command::CameraJumpOrigin => crate::camera::camera_jump_origin(sim),
+            crate::sim::Command::CameraFlyTo { x, y } => {
+                // camera_fly_to_marker: global.camera_fly = { marker, t = 0 }
+                sim.camera.fly = Some(crate::camera::CameraFly { t: 0.0, x, y });
+            }
+            _ => {}
+        }
+    }
+    // `if cine_blocking and not popup_open: return; if popup_open: tasks_popup_step; return`
+    if tasks::tasks_popup_open(sim) {
+        tasks::tasks_popup_step(sim, input);
+    }
 }
 
 /// `load_game`'s progress part: `upgrade_grow` from owned upgrades, the tutorial tips merged
@@ -96,7 +112,7 @@ pub fn before_save(_sim: &Sim, _out: &mut GameState) {}
 
 /// `mycelium_cm()` (Task 8 ports it; `Sim::to_save` computes it the same way): the mycelium
 /// length in cm.
-pub(crate) fn mycelium_cm(sim: &Sim) -> f64 {
+pub fn mycelium_cm(sim: &Sim) -> f64 {
     sim.state.state.length_px / sim.bal("pixels_per_cm").max(0.01)
 }
 

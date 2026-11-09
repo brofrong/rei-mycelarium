@@ -17,7 +17,7 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlocking};
+use crate::sim_bridge::{PendingInput, SimRes, UiBlocking};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -1620,9 +1620,9 @@ impl Plugin for TreePlugin {
             .add_systems(PreUpdate, collect_wheel.after(bevy::input::InputSystems))
             .add_systems(
                 FixedUpdate,
-                tree_step_system
-                    .in_set(SimSet::Prepare)
-                    .after(crate::autopilot::run_script),
+                // obj_hud Begin Step's tree branch: between the HUD's Escape/hover stage and
+                // its in-game stage (Task 17)
+                tree_step_system.in_set(crate::ui::HudStepSet::Screens),
             )
             .add_systems(Update, tree_draw_system);
     }
