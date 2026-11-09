@@ -635,6 +635,14 @@ fn setup(
     });
 }
 
+/// Keep the autopilot's `wmove` origin on the mycelium controller (`MyceliumAnchor`, Task 4).
+fn sync_anchor(sim: Res<SimRes>, mut anchor: ResMut<crate::autopilot::MyceliumAnchor>) {
+    let p = bevy::math::DVec2::new(sim.0.mycelium.x, sim.0.mycelium.y);
+    if anchor.0 != p {
+        anchor.0 = p;
+    }
+}
+
 /// `myc_tiles_step` after every fixed step (the end of the original's Step_0).
 pub fn tiles_step_system(mut sim: ResMut<SimRes>, mut bake: ResMut<MycBake>) {
     tiles_step(&mut sim.0.mycelium, &mut bake);
@@ -772,7 +780,14 @@ impl Plugin for MyceliumRenderPlugin {
         }
         app.init_resource::<MycBake>()
             .add_systems(Startup, setup)
+            .init_resource::<crate::autopilot::MyceliumAnchor>()
             .add_systems(FixedUpdate, tiles_step_system.in_set(SimSet::After))
+            .add_systems(
+                FixedUpdate,
+                sync_anchor
+                    .in_set(SimSet::Prepare)
+                    .before(crate::autopilot::run_script),
+            )
             .add_systems(
                 Update,
                 (draw_64_system, apply_mesh_ops).chain(),
