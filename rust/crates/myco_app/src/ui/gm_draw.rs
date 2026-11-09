@@ -67,25 +67,6 @@ impl TtfFont {
     pub fn height(&self) -> f64 {
         self.scaled().height().round() as f64
     }
-
-    /// `locale_font_fit(file, ref)`: the size whose line height matches the reference font's.
-    ///
-    /// TODO(T17): partial port. It skips the "HEXN" ink-height refinement loop and takes the
-    /// reference height as the max glyph height instead of `string_height("Mg")`; T17 owns
-    /// `locale_font_fit` and should complete it.
-    pub fn fit(handle: Handle<Font>, bytes: Vec<u8>, ref_h: f64, ref_size: f64) -> Option<TtfFont> {
-        let font = FontArc::try_from_vec(bytes).ok()?;
-        let mut t = TtfFont {
-            handle,
-            font,
-            size: ref_size as f32,
-        };
-        let h = t.height();
-        if h > 0.0 && (h - ref_h).abs() > ref_h * 0.05 {
-            t.size = myco_core::gml::round(ref_size * ref_h / h).max(4.0) as f32;
-        }
-        Some(t)
-    }
 }
 
 /// The font `draw_set_font` selected.

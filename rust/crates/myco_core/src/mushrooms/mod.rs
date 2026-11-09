@@ -248,3 +248,61 @@ pub fn set_consumptor(sim: &mut Sim, index: usize, _host: Option<HostId>, side: 
 pub fn squirrel_edge_x(sim: &Sim, tree_uid: u64, _side: f64, _y: f64) -> f64 {
     sim.forest.tree(tree_uid).map_or(0.0, |t| t.x)
 }
+
+// ---------------------------------------------------------------------------------------------
+// Sprite-sheet helpers the HUD build bar uses (Task 17). Faithful copies of Task 9's
+// `mushroom_type_sprite`, `shroom_sheet_cells`, `mushroom_cell_width`, `mushroom_cell_left`
+// without `// port:` markers; Task 9 marks them here or replaces them keeping these names.
+
+/// `mushroom_type_sprite(t)`: the sprite sheet name.
+pub fn type_sprite(t: MushroomKind) -> &'static str {
+    match t {
+        MushroomKind::Spore => "sporeshroom",
+        MushroomKind::Predator => "predatorshroom",
+        MushroomKind::Repeller => "explosiveshroom",
+        MushroomKind::Tree => "treeshroom",
+        MushroomKind::Digger => "diggershroom",
+        MushroomKind::Stinky => "stinkyshroom",
+        MushroomKind::Experience => "experienceshroom",
+        MushroomKind::Consumptor => "consumptorshroom",
+    }
+}
+
+/// `shroom_sheet_cells(spr)`: variants side by side in the sheet.
+pub fn sheet_cells(sprite: &str) -> f64 {
+    match sprite {
+        "sporeshroom"
+        | "explosiveshroom"
+        | "explosiveshroom_exploded"
+        | "predatorshroom"
+        | "diggershroom"
+        | "experienceshroom"
+        | "consumptorshroom" => 2.0,
+        "stinkyshroom" => 3.0,
+        _ => 1.0,
+    }
+}
+
+/// `mushroom_cell_width(spr)` for a sheet `sprite_width` px wide (`max(1, w div cells)`).
+pub fn cell_width(sprite: &str, sprite_width: f64) -> f64 {
+    (sprite_width / sheet_cells(sprite)).trunc().max(1.0)
+}
+
+/// `mushroom_cell_left(spr, v)`.
+pub fn cell_left(sprite: &str, sprite_width: f64, v: f64) -> f64 {
+    let mut l = v * cell_width(sprite, sprite_width);
+    if sprite == "stinkyshroom" && v == 2.0 {
+        l += 7.0;
+    }
+    if sprite == "experienceshroom" && v == 1.0 {
+        l -= 4.0;
+    }
+    l
+}
+
+/// The hover-bar progress of mushroom `i` (`predator_progress`, `tree_shroom_progress`,
+/// `experience_progress`, `consumptor_progress`, `repeller_regen_progress` by type; Task 9
+/// hook). Until Task 9: `None` (no bar).
+pub fn hover_progress(_sim: &Sim, _i: usize) -> Option<f64> {
+    None
+}

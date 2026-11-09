@@ -580,11 +580,14 @@ fn lmb_press(sim: &mut Sim, input: &StepInput, pressed: bool) {
 
 /// The HUD's mushroom placement (obj_hud Step_1 calls `myc_place_mushroom` on a click in
 /// placement mode): `Command::PlaceMushroom` is handled here, from `progress::hud_begin_step`.
-/// Task 17 sees success as a new entry in `sim.state.mushrooms`.
+/// Success emits `SimEvent::MushroomPlaced` (Task 17 closes the build bar).
 pub fn apply_hud_commands(sim: &mut Sim, input: &StepInput) {
     for c in &input.commands {
         if let Command::PlaceMushroom { kind, x, y } = *c {
-            place::place_mushroom(sim, kind, x, Some(y));
+            if place::place_mushroom(sim, kind, x, Some(y)) {
+                // the HUD closes its build bar (`if ok then hud_build_close()`)
+                sim.emit(crate::events::SimEvent::MushroomPlaced { kind, x, y });
+            }
         }
     }
 }

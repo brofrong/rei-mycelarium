@@ -7,7 +7,7 @@
 //! `Font1` languages, else the language TTF fitted to `Font1` (`locale_font_fit(file, Font1)`);
 //! `ui_font_small()` is [`super::LocaleRes::font_small`].
 
-use super::gm_draw::{Gm, TtfFont, UiFont};
+use super::gm_draw::{Gm, UiFont};
 use crate::assets::GameAssets;
 use crate::render::blend::Vert;
 use myco_core::locale::Locale;
@@ -134,22 +134,10 @@ pub struct MenuFonts {
 }
 
 impl MenuFonts {
-    /// `ui_font()`: `Font1`, or the language TTF fitted to `Font1`'s line height and size.
+    /// `ui_font()`: `Font1`, or the language TTF fitted like `locale_font_fit(file, Font1)`.
     pub fn new(assets: &GameAssets, locale: &Locale, small: UiFont) -> MenuFonts {
-        let main = locale
-            .font_small_for()
-            .and_then(|id| {
-                let bytes = std::fs::read(assets.root.join(id.file()?)).ok()?;
-                let f1 = assets.gm_font("Font1")?;
-                let ref_h = if f1.line_height > 0.0 {
-                    f1.line_height
-                } else {
-                    f1.glyphs.values().map(|g| g.h as f64).fold(0.0, f64::max)
-                };
-                TtfFont::fit(assets.font(id), bytes, ref_h, f1.size)
-            })
-            .map(UiFont::Ttf)
-            .unwrap_or_else(|| UiFont::Gm("Font1".into()));
+        // locale_font_fit(file, Font1) (Task 17's full port in `ui::fonts`)
+        let main = super::fonts::UiFonts::load(assets, locale).font;
         MenuFonts { main, small }
     }
 
