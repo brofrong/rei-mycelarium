@@ -8,6 +8,7 @@ use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
 use bevy::window::ExitCondition;
 use myco_app::assets::{assets_root, AssetsPlugin, GameAssets};
+use myco_app::audio::GameAudioPlugin;
 use myco_app::autopilot::{seed_from_env, AutopilotPlugin};
 use myco_app::camera::{world_to_bevy, CameraPlugin, Cameras, GUI_LAYER};
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
@@ -50,6 +51,7 @@ fn main() {
         CameraPlugin,
         SimBridgePlugin,
         AutopilotPlugin,
+        GameAudioPlugin,
     ))
     .add_systems(Startup, spawn_demo_scene)
     .add_systems(Update, follow_demo_scene);
@@ -66,7 +68,9 @@ struct DemoMushroom;
 
 fn spawn_demo_scene(mut commands: Commands, assets: Res<GameAssets>, cams: Res<Cameras>) {
     let (cx, cy) = cams.game_view_center();
-    let def = assets.try_sprite("sporeshroom").unwrap_or(&assets.sprites[0]);
+    let def = assets
+        .try_sprite("sporeshroom")
+        .unwrap_or(&assets.sprites[0]);
     let (sprite, anchor) = def.bevy_sprite(0);
     commands.spawn((
         sprite,
