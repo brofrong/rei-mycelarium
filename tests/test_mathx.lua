@@ -13,6 +13,6 @@ return {
   misc = function()
     assert(m.point_distance(0, 0, 3, 4) == 5 and m.lerp(10, 20, 0.25) == 12.5 and m.frac(-2.75) == -0.75)
     assert(m.point_in_rectangle(5, 5, 0, 0, 10, 10) and not m.point_in_rectangle(11, 5, 0, 0, 10, 10))
-    assert(m.infinity == math.huge and m.clamp(5, 0, 3) == 3 and m.sign(-2) == -1 and m.power(2, 10) == 1024)
+    assert(m.sin(0) == 0 and m.cos(0) == 1 and m.infinity == math.huge and m.clamp(5, 0, 3) == 3 and m.sign(-2) == -1 and m.power(2, 10) == 1024)
   end,
 }

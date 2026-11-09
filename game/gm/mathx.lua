@@ -26,6 +26,9 @@ function M.min(...) return math.min(...) end
 function M.max(...) return math.max(...) end
 function M.clamp(x, a, b) return math.max(a, math.min(b, x)) end
 function M.lerp(a, b, t) return a + (b - a) * t end
+function M.sin(r) return math.sin(r) end
+function M.cos(r) return math.cos(r) end
+function M.tan(r) return math.tan(r) end
 function M.dsin(d) return math.sin(math.rad(d)) end
 function M.dcos(d) return math.cos(math.rad(d)) end
 function M.dtan(d) return math.tan(math.rad(d)) end
