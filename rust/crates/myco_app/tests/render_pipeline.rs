@@ -275,3 +275,83 @@ fn additive_blending_happens_in_srgb_space() {
         );
     }
 }
+
+// --- GmQuad (render::batch) -----------------------------------------------------------------
+
+#[derive(Resource, Default)]
+struct Pool(myco_app::render::batch::BatchPool);
+
+/// A 2×1 image (red | green) drawn 32 px wide over the target's left half (nearest texels),
+/// tinted 50 % grey; then an additive 25 % grey rectangle over the right half.
+fn draw_batch(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut mats: ResMut<Assets<myco_app::render::batch::GmQuad>>,
+    mut images: ResMut<Assets<Image>>,
+    white: Res<myco_app::render::batch::WhiteTexture>,
+    mut pool: ResMut<Pool>,
+    mut img: Local<Option<Handle<Image>>>,
+) {
+    use myco_app::render::batch::{BatchTarget, QuadBatch, QuadBlend};
+    let img = img
+        .get_or_insert_with(|| {
+            images.add(Image::new(
+                Extent3d {
+                    width: 2,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+                TextureDimension::D2,
+                vec![255, 0, 0, 255, 0, 255, 0, 255],
+                TextureFormat::Rgba8UnormSrgb,
+                RenderAssetUsages::default(),
+            ))
+        })
+        .clone();
+    let grey = 128.0 + 128.0 * 256.0 + 128.0 * 65536.0;
+    let mut b = QuadBatch::new();
+    // world (y down) covering x -32..0, y -32..32
+    b.image_ext(
+        &img,
+        [0.0, 0.0, 2.0, 1.0],
+        [0.0, 0.0, 2.0, 1.0],
+        -32.0,
+        -32.0,
+        16.0,
+        64.0,
+        0.0,
+        grey,
+        1.0,
+    );
+    b.set_blend(QuadBlend::Add);
+    let q = 64.0;
+    b.rect(0.0, -32.0, 31.0, 31.0, q + q * 256.0 + q * 65536.0, 1.0);
+    let mut t = BatchTarget {
+        commands: &mut commands,
+        meshes: &mut meshes,
+        materials: &mut mats,
+        white: &white.0,
+    };
+    pool.0.sync(&mut t, &b, 1.0, 0.01, &default());
+}
+
+#[test]
+fn gm_quad_batch_draws_texels_tint_and_blend() {
+    let mut app = headless_app();
+    app.add_plugins(myco_app::render::batch::BatchPlugin)
+        .init_resource::<Pool>()
+        .add_systems(Update, draw_batch);
+    let data = run(&mut app, 30);
+    let red = pixel(&data, 8, 32);
+    let green = pixel(&data, 24, 32);
+    let add = pixel(&data, 48, 32);
+    assert!(
+        (red[0] as i32 - 128).abs() <= 2 && red[1] < 3,
+        "left texel {red:?}"
+    );
+    assert!(
+        (green[1] as i32 - 128).abs() <= 2 && green[0] < 3,
+        "right texel {green:?}"
+    );
+    assert!((add[0] as i32 - 64).abs() <= 2, "added rect {add:?}");
+}
