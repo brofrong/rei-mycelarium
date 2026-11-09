@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+"""LÖVE-vs-Rust conformance: run one scenario in both ports and compare the saved state.
+
+Usage: python3 -I tools/conformance.py <scenario> [--keep DIR] [--rust-bin PATH]
+       python3 -I tools/conformance.py --all
+
+A scenario is rust/conformance/scenarios/<name>.txt (see that folder's README). Both ports run
+with the same MYCO_SEED, the same MYCO_INPUT and MYCO_DUMP at the scenario's frame, in a
+1280x720 window (the same logical view in both), with MYCO_FOCUS=1, MYCO_SHOT_EXACT=1 and
+MYCO_RNG_SEED (game_init's clock-seeded randomise() reseeds the same way in both):
+
+- LÖVE runs with MYCO_CONFORM=1 (game/gm/conform.lua): one logic step per frame on a step
+  clock, with the music/ambience shuffle off the game's RNG; its save folder is the
+  MYCO_IDENTITY=MycelariumTest-t22 folder, wiped before each run.
+- Rust runs rust/target/release/myco_app with MYCO_SAVE_DIR set to a fresh temp folder.
+
+The dumps (what save_game would write at that frame) are compared on the deterministic fields:
+state.food, state.water_free, state.length_px, state.upgrade_levels, state.tasks,
+mycelium.growths / mycelium.knots (positions within 0.5 px), mushrooms and world.chunks.
+Every difference is printed with its field path; the exit code is 1 if there is any.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCENARIOS = ROOT / "rust" / "conformance" / "scenarios"
+LOVE = Path(os.environ.get("LOVE", ROOT / "build" / "tools" / "love.app" / "Contents" / "MacOS" / "love"))
+RUST_BIN = ROOT / "rust" / "target" / "release" / "myco_app"
+IDENTITY = "MycelariumTest-t22"
+LOVE_SAVE_DIR = Path.home() / "Library" / "Application Support" / "LOVE" / IDENTITY
+SETTINGS_INI = '[display]\nfullscreen="0.000000"\nwindow_w="1280.000000"\nwindow_h="720.000000"\n'
+
+# compared fields: (path, absolute tolerance, relative tolerance) for numbers under it
+FIELDS = [
+    ("state.food", 0.0, 1e-9),
+    ("state.water_free", 0.0, 1e-9),
+    ("state.length_px", 0.0, 1e-9),
+    ("state.upgrade_levels", 0.0, 0.0),
+    ("state.tasks", 0.0, 1e-9),
+    ("mycelium.growths", 0.5, 0.0),
+    ("mycelium.knots", 0.5, 0.0),
+    ("mushrooms", 0.5, 0.0),
+    ("world.chunks", 0.0, 1e-9),
+]
+
+
+# ---------------------------------------------------------------------------------------------
+# diff
+
+
+def get_path(doc, path: str):
+    cur = doc
+    for part in path.split("."):
+        if isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        else:
+            return _MISSING
+    return cur
+
+
+class _Missing:
+    def __repr__(self):
+        return "<missing>"
+
+
+_MISSING = _Missing()
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def diff(a, b, path: str = "", atol: float = 0.0, rtol: float = 0.0, out: list | None = None,
+         limit: int = 200) -> list:
+    """Differences between two JSON values as (field path, a, b). Numbers match within
+    `atol + rtol * max(1, |a|, |b|)`; booleans only match booleans. Lists compare element by
+    element (`path[i]`, plus `path.length`), objects key by key (`path.key`)."""
+    if out is None:
+        out = []
+    if len(out) >= limit:
+        return out
+    if _num(a) and _num(b):
+        scale = max(1.0, abs(a), abs(b))
+        if not (a == b or abs(a - b) <= atol + rtol * scale):
+            out.append((path, a, b))
+        return out
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in sorted(set(a) | set(b), key=str):
+            p = f"{path}.{k}" if path else str(k)
+            if k not in a:
+                out.append((p, _MISSING, b[k]))
+            elif k not in b:
+                out.append((p, a[k], _MISSING))
+            else:
+                diff(a[k], b[k], p, atol, rtol, out, limit)
+        return out
+    if isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            out.append((f"{path}.length", len(a), len(b)))
+        for i, (x, y) in enumerate(zip(a, b)):
+            diff(x, y, f"{path}[{i}]", atol, rtol, out, limit)
+        return out
+    if type(a) is not type(b) or a != b:
+        out.append((path, a, b))
+    return out
+
+
+def compare_dumps(love: dict, rust: dict, fields=FIELDS, limit: int = 200) -> list:
+    out: list = []
+    for path, atol, rtol in fields:
+        diff(get_path(love, path), get_path(rust, path), path, atol, rtol, out, limit)
+    return out
+
+
+def short(v, n: int = 90) -> str:
+    s = json.dumps(v) if not isinstance(v, _Missing) else repr(v)
+    return s if len(s) <= n else s[: n - 3] + "..."
+
+
+# ---------------------------------------------------------------------------------------------
+# scenarios
+
+
+@dataclass
+class Scenario:
+    name: str
+    seed: int = 31607
+    dump: int = 0
+    inputs: list = field(default_factory=list)
+    # per-port extra input (e.g. the node: Rust's right click is the owner's quick node, LÖVE
+    # places the same node with Alt+LMB, both through myc_node_quick)
+    port_inputs: dict = field(default_factory=lambda: {"love": [], "rust": []})
+    # save fixture (JSON file, relative to the scenario folder) placed in slot 1 before the run
+    fixture: str | None = None
+    # cross_save: <producer>:<frame>: the producer port's dump at that frame becomes the slot 1
+    # save that both ports then load through the menu
+    cross_from: str | None = None
+    cross_inputs: list = field(default_factory=list)
+    cross_dump: int = 0
+    timeout: int = 900
+
+    def input_for(self, port: str) -> str:
+        entries = self.inputs + self.port_inputs[port]
+        return ";".join(sorted(entries, key=lambda e: int(e.split(":", 1)[0])))
+
+
+def parse_scenario(text: str, name: str = "") -> Scenario:
+    sc = Scenario(name)
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip(), val.strip()
+        if key == "seed":
+            sc.seed = int(val)
+        elif key == "dump":
+            sc.dump = int(val)
+        elif key == "input":
+            sc.inputs += [v.strip() for v in val.split(";") if v.strip()]
+        elif key in ("input.love", "input.rust"):
+            sc.port_inputs[key.split(".")[1]] += [v.strip() for v in val.split(";") if v.strip()]
+        elif key == "fixture":
+            sc.fixture = val
+        elif key == "cross_from":
+            sc.cross_from = val
+        elif key == "cross_input":
+            sc.cross_inputs += [v.strip() for v in val.split(";") if v.strip()]
+        elif key == "cross_dump":
+            sc.cross_dump = int(val)
+        elif key == "timeout":
+            sc.timeout = int(val)
+        else:
+            raise ValueError(f"{name}: unknown key {key!r}")
+    return sc
+
+
+def load_scenario(name: str) -> Scenario:
+    return parse_scenario((SCENARIOS / f"{name}.txt").read_text(), name)
+
+
+# ---------------------------------------------------------------------------------------------
+# running the ports
+
+
+def meta_for(save: dict) -> dict:
+    st = save.get("state", {})
+    return {"length_cm": 0, "mode": st.get("mode", "exploration"), "name": save.get("name", ""), "saved": 46000.0}
+
+
+def prepare_save_dir(d: Path, save_text: str | None):
+    if d.exists():
+        shutil.rmtree(d)
+    d.mkdir(parents=True)
+    (d / "settings.ini").write_text(SETTINGS_INI)
+    if save_text is not None:
+        save = json.loads(save_text.rstrip("\0"))
+        (d / "save_1.json").write_bytes(save_text.rstrip("\0").encode() + b"\0")
+        (d / "save_1_meta.json").write_bytes(json.dumps(meta_for(save)).encode() + b"\0")
+
+
+TRACE_RNG = False
+
+
+def run_port(port: str, seed: int, script: str, dump_frame: int, out: Path, save_text: str | None,
+             timeout: int, rust_bin: Path, log: Path) -> dict:
+    env = dict(os.environ)
+    for k in list(env):
+        if k.startswith("MYCO_"):
+            del env[k]
+    env.update({
+        "MYCO_SEED": str(seed),
+        # the clock-seeded game RNG (game_init's randomise) gets the same seed in both ports
+        "MYCO_RNG_SEED": str(seed),
+        "MYCO_INPUT": script,
+        "MYCO_DUMP": f"{dump_frame}:{out}",
+        "MYCO_FOCUS": "1",
+        "MYCO_SHOT_EXACT": "1",
+    })
+    if TRACE_RNG:
+        env["MYCO_TRACE_RNG"] = "1"
+    if out.exists():
+        out.unlink()
+    if port == "love":
+        assert LOVE_SAVE_DIR.name == IDENTITY  # never the real LOVE/Mycelarium folder
+        prepare_save_dir(LOVE_SAVE_DIR, save_text)
+        env["MYCO_IDENTITY"] = IDENTITY
+        env["MYCO_CONFORM"] = "1"
+        cmd = [str(LOVE), "game"]
+    else:
+        save_dir = Path(tempfile.mkdtemp(prefix="myco-conf-"))
+        prepare_save_dir(save_dir, save_text)
+        env["MYCO_SAVE_DIR"] = str(save_dir)
+        env["MYCO_ASSETS"] = str(ROOT / "build" / "assets")
+        cmd = [str(rust_bin)]
+    with open(log, "wb") as lf:
+        try:
+            subprocess.run(cmd, cwd=ROOT, env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"{port}: timed out after {timeout}s (log {log})")
+    if not out.exists():
+        raise RuntimeError(f"{port}: no dump written (log {log})")
+    return json.loads(out.read_text().rstrip("\0"))
+
+
+def run_scenario(sc: Scenario, work: Path, rust_bin: Path, verbose: bool = True) -> list:
+    work.mkdir(parents=True, exist_ok=True)
+    save_text = None
+    if sc.fixture:
+        save_text = (SCENARIOS / sc.fixture).read_text()
+    if sc.cross_from:
+        # the producer port plays and dumps; that dump is the save both ports load
+        prod = sc.cross_from
+        if verbose:
+            print(f"[{sc.name}] {prod}: producing the save (dump at {sc.cross_dump})")
+        made = run_port(prod, sc.seed, ";".join(sc.cross_inputs), sc.cross_dump, work / f"{prod}_made.json",
+                        None, sc.timeout, rust_bin, work / f"{prod}_made.log")
+        save_text = json.dumps(made)
+        (work / "cross_save.json").write_text(save_text)
+    dumps = {}
+    for port in ("love", "rust"):
+        if verbose:
+            print(f"[{sc.name}] {port}: running to frame {sc.dump}")
+        dumps[port] = run_port(port, sc.seed, sc.input_for(port), sc.dump, work / f"{port}.json", save_text, sc.timeout,
+                               rust_bin, work / f"{port}.log")
+    diffs = compare_dumps(dumps["love"], dumps["rust"])
+    if TRACE_RNG:
+        first_rng_divergence(work / "love.log", work / "rust.log")
+    if sc.cross_from:
+        # the loading port's dump against the save itself (load → save keeps every compared field)
+        made = json.loads(save_text)
+        other = "love" if sc.cross_from == "rust" else "rust"
+        for p, a, b in compare_dumps(made, dumps[other]):
+            diffs.append((f"[{sc.cross_from} save vs {other} after load] {p}", a, b))
+    return diffs
+
+
+def rng_trace(log: Path) -> dict:
+    out = {}
+    for line in log.read_text(errors="replace").splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[0] == "RNG":
+            out[int(parts[1])] = parts[2]
+    return out
+
+
+def first_rng_divergence(love_log: Path, rust_log: Path):
+    a, b = rng_trace(love_log), rng_trace(rust_log)
+    for f in sorted(set(a) & set(b)):
+        if a[f] != b[f]:
+            print(f"  RNG first differs after step {f}: love {a[f]} rust {b[f]}")
+            return f
+    print(f"  RNG identical over {len(set(a) & set(b))} steps")
+    return None
+
+
+def report(name: str, diffs: list) -> int:
+    if not diffs:
+        print(f"[{name}] PASS: no differences in the compared fields")
+        return 0
+    print(f"[{name}] FAIL: {len(diffs)} difference(s) (love vs rust)")
+    for p, a, b in diffs:
+        print(f"  {p}: {short(a)} != {short(b)}")
+    return 1
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("scenario", nargs="?")
+    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--keep", type=Path, help="folder for dumps and logs (default: a temp folder)")
+    ap.add_argument("--rust-bin", type=Path, default=RUST_BIN)
+    ap.add_argument("--trace-rng", action="store_true", help="print where the game RNG first differs")
+    args = ap.parse_args(argv)
+    global TRACE_RNG
+    TRACE_RNG = args.trace_rng
+    names = sorted(p.stem for p in SCENARIOS.glob("*.txt")) if args.all else [args.scenario]
+    if not names or names == [None]:
+        ap.error("give a scenario or --all")
+    base = args.keep or Path(tempfile.mkdtemp(prefix="myco-conformance-"))
+    rc = 0
+    for n in names:
+        sc = load_scenario(n)
+        try:
+            diffs = run_scenario(sc, base / n, args.rust_bin)
+        except RuntimeError as e:
+            print(f"[{n}] ERROR: {e}")
+            rc = 1
+            continue
+        rc |= report(n, diffs)
+    print(f"dumps and logs: {base}")
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -369,10 +369,19 @@ fn step_sim(
     capture: Res<UiCapture>,
     history: Option<ResMut<StepHistory>>,
     mut out: MessageWriter<SimEventMsg>,
+    mut trace_rng: Local<Option<bool>>,
 ) {
     let mut input = pending.take_step(&cams);
     input.ui_captured = capture.any();
+    let trace = *trace_rng.get_or_insert_with(|| std::env::var_os("MYCO_TRACE_RNG").is_some());
+    if trace && sim.0.frame == 0 {
+        println!("RNG 0 {}", sim.0.rng.state());
+    }
     sim.0.step(&input);
+    if trace {
+        // conformance aid: the game RNG after every step (LÖVE prints the same with MYCO_CONFORM)
+        println!("RNG {} {}", sim.0.frame, sim.0.rng.state());
+    }
     if let Some(mut h) = history {
         h.0.push(input);
     }

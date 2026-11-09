@@ -61,7 +61,10 @@ function M.boot()
   M.load_code()
   -- conformance runs: music/ambience draws stay off the game's RNG (gm/conform.lua)
   local conform = require("gm.conform")
-  if conform.enabled then conform.install_audio(_G, require("gm.random")) end
+  if conform.enabled then
+    conform.install_audio(_G, require("gm.random"))
+    conform.install_draw_trace(require("gm.random"))
+  end
   trace("assets")
   local missing = {}
   gm.boot_assets()

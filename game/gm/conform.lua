@@ -8,6 +8,7 @@
 local M = {}
 
 M.enabled = os.getenv("MYCO_CONFORM") == "1"
+M.trace_rng = M.enabled and os.getenv("MYCO_TRACE_RNG") ~= nil
 
 -- current_time (ms) during logic step n (0-based count of the steps already run)
 function M.time_ms(n) return math.floor(n * 1000 / 60) end
@@ -22,11 +23,13 @@ M.AUDIO_RNG_FUNCS = { "audio_init", "audio_step", "music_next_track", "ambience_
 function M.isolate_rng(fn, random, private)
   private = private or { st = nil }
   return function(...)
+    M.in_private = true
     local game = random.get_state()
     if private.st then random.set_state(private.st) else random.random_set_seed(1) end
     local res = { pcall(fn, ...) }
     private.st = random.get_state()
     random.set_state(game)
+    M.in_private = false
     if not res[1] then error(res[2], 0) end
     return unpack(res, 2)
   end
@@ -38,6 +41,34 @@ function M.install_audio(env, random)
   for _, name in ipairs(M.AUDIO_RNG_FUNCS) do
     local fn = rawget(env, name)
     if fn then env[name] = M.isolate_rng(fn, random, private) end
+  end
+end
+
+-- MYCO_TRACE_DRAWS=<from>-<to> (with MYCO_CONFORM): print the callers of game-RNG draws number
+-- from..to (0-based, counted from the last reseed), to find where the ports' draw orders part.
+function M.install_draw_trace(random)
+  local spec = os.getenv("MYCO_TRACE_DRAWS")
+  if not (M.enabled and spec) then return end
+  local from, to = spec:match("^(%d+)%-(%d+)$")
+  from, to = tonumber(from), tonumber(to)
+  local n = 0
+  local set_seed = random.random_set_seed
+  random.random_set_seed = function(s)
+    if not M.in_private then n = 0 end
+    return set_seed(s)
+  end
+  random.on_draw = function()
+    if M.in_private then return end
+    if n >= from and n <= to then
+      local names = {}
+      for lvl = 3, 9 do
+        local info = debug.getinfo(lvl, "nSl")
+        if not info then break end
+        names[#names + 1] = (info.name or "?") .. "@" .. (info.short_src or ""):match("[^/]*$") .. ":" .. (info.currentline or 0)
+      end
+      print("DRAW " .. n .. " " .. table.concat(names, " < "))
+    end
+    n = n + 1
   end
 end
 

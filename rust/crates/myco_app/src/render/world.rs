@@ -299,9 +299,73 @@ pub fn caves_mask_init(
 // ---------------------------------------------------------------------------------------------
 // world_draw and helpers
 
-/// Lake sparkles (`lk.flares`): runtime only, keyed by chunk, lake index and lake seed.
+/// Lake sparkles (`lk.flares`): runtime only, keyed by chunk, lake index and lake seed. Like
+/// the original's `lk.flares = undefined`, they start over after every save and in a replaced
+/// game (`session`: the `Sim::session` they belong to).
 #[derive(Resource, Default)]
-pub struct LakeFlares(pub HashMap<(i64, usize, i64), Vec<LakeFlare>>);
+pub struct LakeFlares {
+    pub map: HashMap<(i64, usize, i64), Vec<LakeFlare>>,
+    pub session: u64,
+}
+
+/// The sparkle half of `world_draw_lakes` that changes state (`lake_init_flares` for a lake seen
+/// without flares, the respawns that advance the saved `flare_seq`), for the chunks and lakes the
+/// view shows. Run once after every fixed step for the render view
+/// ([`crate::render::draw_generate_system`]), as the original's draw runs once per step.
+#[allow(clippy::too_many_arguments)]
+pub fn world_lakes_step(
+    w: &mut WorldRt,
+    flares: &mut LakeFlares,
+    now: f64,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+) {
+    if !lakes_ready() || vy + vh < w.params.surface_y {
+        return;
+    }
+    let life = lake_flare_life_ms();
+    let seed = w.params.seed;
+    let cw = w.params.chunk_w as f64;
+    for cx in (vx / cw).floor() as i64..=((vx + vw) / cw).floor() as i64 {
+        let Some(ch) = w.chunk_mut(cx) else {
+            continue;
+        };
+        for (li, lk) in ch.lakes.iter_mut().enumerate() {
+            let kd = myco_core::world::lakes::lake_kind(lk.kind);
+            if lk.x + kd.width < vx || lk.x > vx + vw || lk.y + kd.height < vy || lk.y > vy + vh {
+                continue;
+            }
+            if lk.amount <= 0.0 {
+                continue;
+            }
+            let cut = lake_cut_row(lk, kd);
+            let fl = flares
+                .map
+                .entry((cx, li, lk.seed))
+                .or_insert_with(|| lake_init_flares(seed, lk, kd, cut, now));
+            for j in 0..fl.len() {
+                let f = fl[j];
+                let respawn = if f.placed {
+                    now - f.born >= life
+                } else {
+                    now - f.born >= 500.0
+                };
+                if respawn {
+                    let spot = lake_flare_spot(seed, lk, fl, kd, j, cut);
+                    let f = &mut fl[j];
+                    f.born = now;
+                    f.placed = spot.is_some();
+                    if let Some((x, y)) = spot {
+                        f.x = x;
+                        f.y = y;
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// What drawing needs besides the simulation.
 pub struct DrawCtx<'a> {
@@ -346,8 +410,34 @@ pub struct WorldFrame {
     pub chunks: Vec<i64>,
 }
 
+/// The chunk work `world_draw` does for a view, in its order: the chunks `world_draw_bones`
+/// looks at (600 px margin to the left), then the view's chunks generated, reached down to the
+/// view's bottom row and their late clusters painted. [`crate::render::draw_generate_system`]
+/// runs it after every fixed step for the render view (GameMaker draws once after each step), so
+/// the saved world only changes inside steps; the frame's drawing then finds the chunks ready.
+pub fn world_draw_generate(sim: &mut Sim, vx: f64, vy: f64, vw: f64, vh: f64) {
+    let (surface_y, t, chunk_w, rows) = {
+        let p = &sim.world.params;
+        (p.surface_y, p.tile as f64, p.chunk_w as f64, p.rows)
+    };
+    if vy + vh < surface_y {
+        return;
+    }
+    for c in ((vx - 600.0) / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
+        sim.world.get_chunk(c);
+    }
+    let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
+    for ci in (vx / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
+        sim.world.get_chunk(ci);
+        sim.world.chunk_reach(ci, r1 as i64);
+        maze::world_paint_clusters_late(&mut sim.world, ci);
+    }
+}
+
 // port: world_draw
-/// `world_draw(vx, vy, vw, vh)`. Generates and reaches the chunks it looks at, like the original.
+/// `world_draw(vx, vy, vw, vh)`. The chunk generation and reach it does in the original is
+/// [`world_draw_generate`], run after each fixed step; chunks missing here (a view that changed
+/// since) are drawn from the next frame.
 pub fn world_draw(
     sim: &mut Sim,
     ctx: &DrawCtx,
@@ -393,12 +483,7 @@ pub fn world_draw(
     world_draw_dirt(b, a, &sim.world, vx, vy, vw, vh);
     world_draw_bones(b, a, sim, ctx.now, vx, vy, vw, vh);
     world_draw_cave(&mut out.back, a, sim, ctx.now, vx, vy, vw, vh);
-    for ci in cx0..=cx1 {
-        sim.world.get_chunk(ci);
-        sim.world.chunk_reach(ci, r1 as i64);
-        maze::world_paint_clusters_late(&mut sim.world, ci);
-        out.chunks.push(ci);
-    }
+    out.chunks.extend(cx0..=cx1);
     let f = &mut out.front;
     for ci in cx0..=cx1 {
         let w = &sim.world;
@@ -562,7 +647,8 @@ pub fn world_draw_bones(
     let c0 = ((vx - 600.0) / cw).floor() as i64;
     let c1 = ((vx + vw) / cw).floor() as i64;
     for c in c0..=c1 {
-        let list = w.get_chunk(c).bones.clone();
+        let Some(ch) = w.chunk(c) else { continue };
+        let list = ch.bones.clone();
         for bn in &list {
             if bn.x + bn.w < vx || bn.x > vx + vw || bn.y + bn.h < vy || bn.y > vy + vh {
                 continue;
@@ -953,8 +1039,6 @@ pub fn world_draw_lakes(
     let fw = div(fsw, 3.0);
     let (ew, eh) = sprite_size(a, "water_edge");
     let ffps = vis("water_flare_fps").max(1.0);
-    let life = lake_flare_life_ms();
-    let seed = w.params.seed;
     let Some(ch) = w.chunk_mut(cx) else {
         return;
     };
@@ -985,29 +1069,11 @@ pub fn world_draw_lakes(
                 lk.y + cut,
             );
         }
-        let key = (cx, li, lk.seed);
-        let fl = flares
-            .0
-            .entry(key)
-            .or_insert_with(|| lake_init_flares(seed, lk, kd, cut, now));
-        for j in 0..fl.len() {
-            let f = fl[j];
-            let respawn = if f.placed {
-                now - f.born >= life
-            } else {
-                now - f.born >= 500.0
-            };
-            if respawn {
-                let spot = lake_flare_spot(seed, lk, fl, kd, j, cut);
-                let f = &mut fl[j];
-                f.born = now;
-                f.placed = spot.is_some();
-                if let Some((x, y)) = spot {
-                    f.x = x;
-                    f.y = y;
-                }
-            }
-            let f = fl[j];
+        // init and respawns: `world_lakes_step` after each step; a lake without flares yet
+        // (it came into view since) sparkles from the next step
+        let empty = Vec::new();
+        let fl = flares.map.get(&(cx, li, lk.seed)).unwrap_or(&empty);
+        for &f in fl {
             if f.placed {
                 let age = now - f.born;
                 let al = lake_flare_alpha(age);
@@ -1771,7 +1837,14 @@ impl Plugin for WorldRenderPlugin {
             .init_resource::<WorldPools>()
             .init_resource::<WorldDrawState>()
             .add_systems(Startup, (build_world_art, spawn_glow))
-            .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui));
+            .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui))
+            .add_systems(
+                FixedUpdate,
+                crate::render::draw_generate_system
+                    .in_set(crate::sim_bridge::SimSet::After)
+                    .before(crate::render::mycelium::tiles_step_system)
+                    .before(crate::autopilot::dump_state),
+            );
     }
 }
 

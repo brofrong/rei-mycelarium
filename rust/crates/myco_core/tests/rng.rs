@@ -71,3 +71,16 @@ fn randomise_reseeds() {
     let mut again = Rng::new(s);
     assert_eq!(r.random(1.0).to_bits(), again.random(1.0).to_bits());
 }
+
+/// Conformance runs fix the clock seed (`MYCO_RNG_SEED`, the LÖVE port reads the same variable):
+/// `randomise` then reseeds exactly like `random_set_seed(seed)`.
+#[test]
+fn randomise_with_a_fixed_seed_is_random_set_seed() {
+    let mut a = myco_core::rng::Rng::new(99);
+    assert_eq!(a.randomise_with(Some(12345)), 12345);
+    let mut b = myco_core::rng::Rng::new(12345);
+    assert_eq!(a.next01(), b.next01());
+    assert_eq!(myco_core::rng::fixed_seed_from(Some("777")), Some(777));
+    assert_eq!(myco_core::rng::fixed_seed_from(Some("x")), None);
+    assert_eq!(myco_core::rng::fixed_seed_from(None), None);
+}

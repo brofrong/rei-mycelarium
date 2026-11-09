@@ -262,6 +262,9 @@ pub struct Sim {
     pub fps: f64,
     /// fixed world seed (like `MYCO_SEED`), used by `world_init` (Task 5)
     pub world_seed: Option<i64>,
+    /// Unique per `Sim` created in this process: the app's render caches see a replaced game
+    /// (a load, a restart to the title) by a new session.
+    pub session: u64,
     /// When `Some`, `step` appends the name of each subsystem call (order tests).
     pub trace: Option<Vec<&'static str>>,
     /// The hooks `new_game` / `from_save` called, in order (a dozen names; order tests).
@@ -272,9 +275,11 @@ pub struct Sim {
 impl Sim {
     /// A Sim before any game code ran (`save_init` state, clock-seeded RNG).
     fn blank() -> Sim {
+        static SESSIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut rng = Rng::new(0);
         rng.randomise();
         Sim {
+            session: SESSIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             state: GameState::default(),
             rng,
             frame: 0,

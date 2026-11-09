@@ -124,11 +124,18 @@ function gm.update(dt)
     else
       gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
     end
+    if conform.trace_rng and steps_run == 0 then
+      print("RNG 0 " .. tostring(random.get_state().word):gsub("ULL$", ""))
+    end
     steps_run = steps_run + 1
     gm.delta_time = step * 1e6
     gm.fps, gm.fps_real = love.timer.getFPS(), 1 / math.max(love.timer.getAverageDelta(), 1e-6)
     window.update_mouse(gm)
     gm.step()
+    if conform.trace_rng then
+      -- MYCO_TRACE_RNG: the game RNG after every step (the Rust port prints the same)
+      print("RNG " .. steps_run .. " " .. tostring(random.get_state().word):gsub("ULL$", ""))
+    end
     input.end_step()
     audio.update(step)
     acc = acc - step

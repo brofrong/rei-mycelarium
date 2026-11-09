@@ -1,0 +1,15 @@
+# survival_basic: new game (Survival) through the title menu, slot 1, name "Alpha", the intro,
+# three aimed LMB shots from the origin knot, a quick node on the first growth (Rust:
+# right click, the owner's quick node; LÖVE: Alt+LMB, the same myc_node_quick); the
+# dump at the end is what the save would contain.
+seed: 31607
+dump: 1100
+input: 1:gmove:960,300; 60:gmove:960,668; 61:down:1; 62:up:1; 90:gmove:960,578; 91:down:1; 92:up:1; 100:text:Alpha; 110:key:return
+input: 420:wmove:2,2; 421:down:1; 422:wmove:11,24; 423:wmove:20,46; 424:wmove:29,68; 425:wmove:38,90; 426:wmove:47,112; 427:wmove:56,134
+input: 428:wmove:65,156; 429:wmove:74,178; 430:wmove:83,200; 431:wmove:92,222; 432:wmove:101,244; 433:wmove:110,266; 434:up:1; 580:wmove:2,2
+input: 581:down:1; 582:wmove:-19.2,16.8; 583:wmove:-40.4,31.6; 584:wmove:-61.6,46.4; 585:wmove:-82.8,61.2; 586:wmove:-104,76; 587:wmove:-125.2,90.8; 588:wmove:-146.4,105.6
+input: 589:wmove:-167.6,120.4; 590:wmove:-188.8,135.2; 591:wmove:-210,150; 592:up:1; 740:wmove:2,2; 741:down:1; 742:wmove:21.8333,11.8333; 743:wmove:41.6667,21.6667
+input: 744:wmove:61.5,31.5; 745:wmove:81.3333,41.3333; 746:wmove:101.167,51.1667; 747:wmove:121,61; 748:wmove:140.833,70.8333; 749:wmove:160.667,80.6667; 750:wmove:180.5,90.5; 751:wmove:200.333,100.333
+input: 752:wmove:220.167,110.167; 753:wmove:240,120; 754:up:1; 900:wmove:20,46
+input.rust: 901:down:2; 902:up:2
+input.love: 900:kdown:lalt; 901:down:1; 902:up:1; 903:kup:lalt

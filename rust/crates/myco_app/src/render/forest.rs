@@ -272,21 +272,9 @@ fn parallax_tiles(cam_x: f64, par: f64, w: f64, l: f64, r: f64) -> Vec<(i64, f64
     out
 }
 
-// port: gml_Object_obj_forest_controller_Draw_0
-/// Forest Draw_0 without the parts other tasks draw in between: the backdrop layers, then (after
-/// backdrop leaves [`backdrop_leaves_draw`], rain band 0, world_draw and worms at their own
-/// layers) roots, stumps, decor trees / bushes / plants, small trees and trees. `cam_x` is the
-/// game view's left edge (parallax phase); `rv` the visible world rectangle. Generates missing
-/// chunks around the view with `sim.rng`, as the original's draw does.
-pub fn forest_draw_list(
-    sim: &mut Sim,
-    assets: &GameAssets,
-    cam_x: f64,
-    rv: &ViewRect,
-) -> Vec<ForestDraw> {
-    let mut out = Vec::new();
-    let (l, r) = (rv.x, rv.x + rv.w);
-    let top = 0.0;
+/// Bottom of what forest Draw_0 draws (roots and backdrop layers) plus 256 px: below it the
+/// draw returns at once.
+fn forest_scene_h(sim: &Sim, assets: &GameAssets) -> f64 {
     let surface = sim.forest.surface_height;
     let scale_big = vis("roots_scale_big");
     let scale_small = vis("roots_scale_small");
@@ -297,10 +285,45 @@ pub fn forest_draw_list(
     let layers_h = (1..=4)
         .map(|i| sprite_h(assets, &format!("background_B_layer{i}")))
         .fold(roots_bottom, f64::max);
-    let scene_h = layers_h + 256.0;
-    if rv.y >= scene_h {
+    layers_h + 256.0
+}
+
+/// The chunk generation forest Draw_0 does for a view (`surface_get_chunk` one chunk past each
+/// side, drawing from `sim.rng`). [`crate::render::draw_generate_system`] runs it after every
+/// fixed step for the render view, so the game RNG is drawn inside steps, in the same order as
+/// LÖVE (draw after each step); the frame's drawing then finds the chunks ready.
+pub fn forest_draw_generate(sim: &mut Sim, assets: &GameAssets, rv: &ViewRect) {
+    if rv.y >= forest_scene_h(sim, assets) {
+        return;
+    }
+    let cw = sim.forest.chunk_width;
+    let c0 = (rv.x / cw).floor() as i64;
+    let c1 = ((rv.x + rv.w) / cw).floor() as i64;
+    for c in c0 - 1..=c1 + 1 {
+        sim.forest.surface_get_chunk(&mut sim.rng, c);
+    }
+}
+
+// port: gml_Object_obj_forest_controller_Draw_0
+/// Forest Draw_0 without the parts other tasks draw in between: the backdrop layers, then (after
+/// backdrop leaves [`backdrop_leaves_draw`], rain band 0, world_draw and worms at their own
+/// layers) roots, stumps, decor trees / bushes / plants, small trees and trees. `cam_x` is the
+/// game view's left edge (parallax phase); `rv` the visible world rectangle. The chunk
+/// generation the original's draw does here is [`forest_draw_generate`], run after each step.
+pub fn forest_draw_list(
+    sim: &mut Sim,
+    assets: &GameAssets,
+    cam_x: f64,
+    rv: &ViewRect,
+) -> Vec<ForestDraw> {
+    let mut out = Vec::new();
+    let (l, r) = (rv.x, rv.x + rv.w);
+    let top = 0.0;
+    if rv.y >= forest_scene_h(sim, assets) {
         return out;
     }
+    let scale_big = vis("roots_scale_big");
+    let scale_small = vis("roots_scale_small");
 
     let mut bg = Layer::new(layers::Z_BACKDROP);
     let w1 = sprite_w(assets, "background_B_layer1");
@@ -333,11 +356,11 @@ pub fn forest_draw_list(
     let cw = sim.forest.chunk_width;
     let c0 = (l / cw).floor() as i64;
     let c1 = (r / cw).floor() as i64;
-    for c in c0 - 1..=c1 + 1 {
-        sim.forest.surface_get_chunk(&mut sim.rng, c);
-    }
+    // the chunks were generated after the last step (`forest_draw_generate`); one missing here
+    // (a view that changed since, e.g. a zoom or a freshly loaded game) is drawn next frame
+    let empty = ForestChunk::default();
     let chunks = &sim.forest.chunks;
-    let chunk = |c: i64| -> &ForestChunk { &chunks[&c] };
+    let chunk = |c: i64| -> &ForestChunk { chunks.get(&c).unwrap_or(&empty) };
 
     let mut roots = Layer::new(layers::Z_FOREST_ROOTS);
     for c in c0 - 1..=c1 + 1 {
