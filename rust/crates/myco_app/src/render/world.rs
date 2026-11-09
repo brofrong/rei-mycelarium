@@ -1669,6 +1669,40 @@ pub fn caves_debug_draw(
     g.valign = FA_TOP;
 }
 
+/// Chunk-mesh bookkeeping of one frame. `built[cx]` says whether chunk `cx`'s mesh is current.
+/// The world's `dirty_chunks` are taken (cleared, R9a) and their meshes marked stale; chunks out
+/// of `visible` are forgotten (returned second, to despawn); visible chunks without a current
+/// mesh are returned first, to rebuild (and are then marked current).
+pub fn plan_chunk_meshes(
+    w: &mut WorldRt,
+    built: &mut HashMap<i64, bool>,
+    visible: &[i64],
+) -> (Vec<i64>, Vec<i64>) {
+    for cx in std::mem::take(&mut w.dirty_chunks) {
+        if let Some(b) = built.get_mut(&cx) {
+            *b = false;
+        }
+    }
+    let mut dropped: Vec<i64> = built
+        .keys()
+        .filter(|cx| !visible.contains(cx))
+        .copied()
+        .collect();
+    dropped.sort_unstable();
+    for cx in &dropped {
+        built.remove(cx);
+    }
+    let mut rebuild = Vec::new();
+    for &cx in visible {
+        let b = built.entry(cx).or_insert(false);
+        if !*b && w.chunk(cx).is_some() {
+            *b = true;
+            rebuild.push(cx);
+        }
+    }
+    (rebuild, dropped)
+}
+
 // ---------------------------------------------------------------------------------------------
 // Bevy side
 
@@ -1691,7 +1725,8 @@ struct WorldPools {
     front: BatchPool,
     turf: BatchPool,
     glow: [BatchPool; 3],
-    chunks: HashMap<i64, (BatchPool, bool)>,
+    chunks: HashMap<i64, BatchPool>,
+    built: HashMap<i64, bool>,
 }
 
 pub struct WorldRenderPlugin;
@@ -1838,34 +1873,23 @@ fn draw_world(
     pools.turf.sync(&mut t, &turf, Z_TURF, Z_STEP, &world_layer);
 
     // chunk tile meshes: rebuilt when dirty (R9a) or when they come into view
-    let dirty: Vec<i64> = std::mem::take(&mut sim.world.dirty_chunks)
-        .into_iter()
-        .collect();
-    for cx in dirty {
-        if let Some(e) = pools.chunks.get_mut(&cx) {
-            e.1 = false;
-        }
-    }
-    let visible: std::collections::HashSet<i64> = frame.chunks.iter().copied().collect();
-    pools.chunks.retain(|cx, (pool, _)| {
-        let keep = visible.contains(cx);
-        if !keep {
+    let (rebuild, dropped) = plan_chunk_meshes(&mut sim.world, &mut pools.built, &frame.chunks);
+    for cx in dropped {
+        if let Some(mut pool) = pools.chunks.remove(&cx) {
             pool.despawn(t.commands);
         }
-        keep
-    });
-    for &cx in &frame.chunks {
-        let entry = pools.chunks.entry(cx).or_default();
-        if entry.1 {
-            continue;
-        }
+    }
+    for cx in rebuild {
         if let Some(ch) = sim.world.chunk(cx) {
             let mut b = QuadBatch::new();
             chunk_tiles(&mut b, &assets, &sim.world, ch);
-            entry
-                .0
-                .sync(&mut t, &b, Z_WORLD_TILES, Z_STEP, &world_layer);
-            entry.1 = true;
+            pools.chunks.entry(cx).or_default().sync(
+                &mut t,
+                &b,
+                Z_WORLD_TILES,
+                Z_STEP,
+                &world_layer,
+            );
         }
     }
 
