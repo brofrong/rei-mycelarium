@@ -272,7 +272,9 @@ impl Plugin for CameraPlugin {
             .add_systems(First, track_window)
             .add_systems(
                 PostUpdate,
-                apply_cameras.before(TransformSystems::Propagate),
+                apply_cameras
+                    .before(TransformSystems::Propagate)
+                    .before(bevy::camera::CameraUpdateSystems),
             );
     }
 }
@@ -343,16 +345,36 @@ fn apply_cameras(
     mut world: Query<CamParts, (With<WorldCamera>, Without<GuiCamera>)>,
     mut gui: Query<CamParts, (With<GuiCamera>, Without<WorldCamera>)>,
 ) {
+    use bevy::camera::CameraProjection;
     let vp = cams.viewport();
+    let size = vp
+        .as_ref()
+        .map(|v| v.physical_size.as_vec2())
+        .unwrap_or(Vec2::ONE);
+    // The projection is written with its `area` already computed (`update`), and only when it
+    // changes: a fresh `OrthographicProjection` has the unit area until Bevy's `camera_system`
+    // updates it, and a frustum built from that culls every sprite (R21a, see task-13-report).
+    let fit = |mut p: OrthographicProjection| {
+        p.update(size.x, size.y);
+        Projection::Orthographic(p)
+    };
+    let apply = |cam: &mut Mut<Camera>, proj: &mut Mut<Projection>, p: Projection| {
+        let key = |v: &Option<Viewport>| v.as_ref().map(|v| (v.physical_position, v.physical_size));
+        if key(&cam.viewport) != key(&vp) {
+            cam.viewport = vp.clone();
+        }
+        // Projection has no PartialEq; its Debug form covers every field
+        if format!("{:?}", **proj) != format!("{p:?}") {
+            **proj = p;
+        }
+    };
     for (mut cam, mut proj, mut tf) in &mut world {
-        cam.viewport = vp.clone();
-        *proj = Projection::Orthographic(cams.world_projection());
-        *tf = cams.world_transform();
+        apply(&mut cam, &mut proj, fit(cams.world_projection()));
+        tf.set_if_neq(cams.world_transform());
     }
     for (mut cam, mut proj, mut tf) in &mut gui {
-        cam.viewport = vp.clone();
-        *proj = Projection::Orthographic(cams.gui_projection());
-        *tf = cams.gui_transform();
+        apply(&mut cam, &mut proj, fit(cams.gui_projection()));
+        tf.set_if_neq(cams.gui_transform());
     }
 }
 
@@ -470,5 +492,48 @@ mod tests {
         );
         assert_eq!(c.game_view_center(), (5000.0, 1234.5));
         assert_eq!((c.game_view.w, c.game_view.h), (1920.0, 1080.0));
+    }
+
+    /// Regression (R21a): `apply_cameras` used to write a fresh projection whose `area` is the
+    /// unit rect and relied on Bevy's `camera_system` running afterwards; when the (ambiguous)
+    /// schedule order put it after `camera_system`, the frustum was 2×2 world units and every
+    /// sprite was culled (all-black world, flipping with the set of registered plugins).
+    #[test]
+    fn applied_projection_area_matches_the_view_without_camera_system() {
+        use bevy::ecs::system::RunSystemOnce;
+        let cams = notch_cameras();
+        let rv = cams.render_view();
+        let mut world = World::new();
+        world.spawn((
+            Camera::default(),
+            Projection::Orthographic(OrthographicProjection::default_2d()),
+            Transform::default(),
+            WorldCamera,
+        ));
+        world.spawn((
+            Camera::default(),
+            Projection::Orthographic(OrthographicProjection::default_2d()),
+            Transform::default(),
+            GuiCamera,
+        ));
+        world.insert_resource(cams);
+        world.run_system_once(apply_cameras).unwrap();
+        let mut q = world.query_filtered::<&Projection, With<WorldCamera>>();
+        let Projection::Orthographic(p) = q.single(&world).unwrap() else {
+            panic!("not orthographic")
+        };
+        assert!(
+            (p.area.width() as f64 - rv.w).abs() < 1e-3
+                && (p.area.height() as f64 - rv.h).abs() < 1e-3,
+            "world projection area {:?}, view {}x{}",
+            p.area,
+            rv.w,
+            rv.h
+        );
+        let mut q = world.query_filtered::<&Projection, With<GuiCamera>>();
+        let Projection::Orthographic(p) = q.single(&world).unwrap() else {
+            panic!("not orthographic")
+        };
+        assert!(p.area.width() > 2.5, "gui projection area {:?}", p.area);
     }
 }
