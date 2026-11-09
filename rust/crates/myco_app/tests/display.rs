@@ -248,3 +248,46 @@ fn display_step_resizes_then_centres_a_window() {
         ]
     );
 }
+
+/// display_cycle_size goes through display_apply: a window takes the new size two steps later
+/// (display_step), not at once, and the choice is saved.
+#[test]
+fn cycling_the_window_size_uses_the_countdown() {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::prelude::*;
+    use bevy::window::PrimaryWindow;
+    use display::{
+        apply_cycle_size, display_step, CycleWindowSize, Display, DisplayPending, DisplaySizes,
+        SaveDir,
+    };
+    let dir = std::env::temp_dir().join(format!("myco-t22-cycle-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let mut world = World::new();
+    world.init_resource::<Messages<CycleWindowSize>>();
+    world.insert_resource(DisplaySizes::new(Some((3024.0, 1964.0)), Some((1280, 720))));
+    let settings = myco_core::state::DisplaySettings {
+        fullscreen: false,
+        window_w: 1280,
+        window_h: 720,
+    };
+    world.insert_resource(Display(settings));
+    world.insert_resource(DisplayPending(0));
+    world.insert_resource(SaveDir(dir.clone()));
+    let mut w = Window::default();
+    w.resolution.set(1280.0, 720.0);
+    world.spawn((w, PrimaryWindow));
+    world.write_message(CycleWindowSize(1));
+    world.run_system_once(apply_cycle_size).unwrap();
+    assert_eq!(world.resource::<DisplayPending>().0, 4);
+    let size = |world: &mut World| {
+        let mut q = world.query::<&Window>();
+        let w = q.single(world).unwrap();
+        (w.resolution.width(), w.resolution.height())
+    };
+    assert_eq!(size(&mut world), (1280.0, 720.0), "not at once");
+    world.run_system_once(display_step).unwrap();
+    world.run_system_once(display_step).unwrap();
+    assert_eq!(size(&mut world), (1366.0, 768.0), "two steps later");
+    assert!(myco_core::save::read_settings(&dir).window_w == 1366);
+    let _ = std::fs::remove_dir_all(&dir);
+}

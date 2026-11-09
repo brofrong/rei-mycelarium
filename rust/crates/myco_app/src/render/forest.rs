@@ -4,12 +4,14 @@
 //! The forest state is myco_core's (`sim.forest`, Task 5). Each frame [`forest_draw_list`] turns
 //! the visible part of it into [`SpriteCmd`]s keyed by a stable [`ForestKey`] (host uid, or chunk
 //! and index for the rest), and [`forest_draw`] keeps one Bevy entity per key (spawn, update,
-//! despawn). Like the original Draw_0, the draw pass generates missing chunks around the view
-//! with `sim.rng` (`surface_get_chunk`), between fixed steps as LÖVE does between updates.
+//! despawn). The chunk generation the original's Draw_0 does (`surface_get_chunk`, drawing from
+//! `sim.rng`) is [`forest_draw_generate`], run after every fixed step for the 1× game view
+//! (`render::draw_generate_system`, rulings R27/R28); the frame's drawing only reads, and forest
+//! chunks not generated yet (past the 1× view when zoomed out) show no trees.
 //!
 //! World coordinates throughout; the visible range is the render view (`Cameras::render_view`),
-//! so zoom (T21) just shows more. Parallax phases use the game view's x, so zooming does not
-//! move the backdrop.
+//! so zoom (T21) just shows more. Parallax phases use the game view's x (the floored, shaken
+//! `camera_view_x`), so zooming does not move the backdrop ([`forest_view`]).
 
 use crate::assets::GameAssets;
 use crate::camera::{world_to_bevy, Cameras};
@@ -584,6 +586,13 @@ fn upsert(
     ents.insert(key, e);
 }
 
+/// What forest Draw_0 draws with: the parallax phase `floor(camera_x + shake)` (the 1× game
+/// view's left edge, which `Cameras::sync_game_view` takes from the logic's `camera_view_x`) and
+/// the visible rectangle for culling (the render view; the game view at 1×).
+pub fn forest_view(cams: &Cameras) -> (f64, ViewRect) {
+    (cams.game_view.x, cams.render_view())
+}
+
 /// Update: sync the forest entities with `sim.forest` for the current view.
 pub fn forest_draw(
     mut commands: Commands,
@@ -594,8 +603,7 @@ pub fn forest_draw(
     mut ents: ResMut<ForestEntities>,
     mut q: ForestQuery,
 ) {
-    let rv = cams.render_view();
-    let cam_x = cams.game_view.x;
+    let (cam_x, rv) = forest_view(&cams);
     let mut seen = HashSet::new();
     for d in forest_draw_list(&mut sim.0, &assets, cam_x, &rv) {
         if let Some(b) = d.cmd.to_bevy(&assets) {

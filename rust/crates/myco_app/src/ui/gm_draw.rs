@@ -621,6 +621,20 @@ impl Plugin for GuiDrawPlugin {
     }
 }
 
+/// The blend material of a triangle item: `bm_add` lists get the additive one (also for a newly
+/// spawned pool slot, so an additive item's first frame is already additive).
+pub fn material_for<'h>(
+    item: &DrawItem,
+    alpha: &'h Handle<GmBlend>,
+    add: &'h Handle<GmBlend>,
+) -> &'h Handle<GmBlend> {
+    if matches!(item, DrawItem::TrisAdd(_)) {
+        add
+    } else {
+        alpha
+    }
+}
+
 fn z_of(i: usize, n: usize) -> f32 {
     let step = ((Z_GUI_TOP - Z_GUI_BASE) / n.max(1) as f32).min(0.01);
     Z_GUI_BASE + i as f32 * step
@@ -673,17 +687,13 @@ fn paint_gui(
         let z = z_of(i, n);
         match item {
             DrawItem::Tris(verts) | DrawItem::TrisAdd(verts) => {
-                let mat = if matches!(item, DrawItem::TrisAdd(_)) {
-                    &material_add
-                } else {
-                    &material
-                };
+                let mat = material_for(item, &material, &material_add);
                 if mi == pools.meshes.len() {
                     let h = meshes.add(empty_colour_mesh());
                     let e = commands
                         .spawn((
                             Mesh2d(h.clone()),
-                            MeshMaterial2d(material.clone()),
+                            MeshMaterial2d(mat.clone()),
                             Transform::from_xyz(0.0, 0.0, z),
                             Visibility::Visible,
                             layer.clone(),

@@ -13,6 +13,21 @@ def test_diff_reports_field_path():
     assert "mycelium.knots[0].y" in paths
 
 
+def test_position_tolerance_only_for_positions():
+    love = {"mushrooms": [{"x": 10.0, "born": 1000, "timer": 5}]}
+    rust = {"mushrooms": [{"x": 10.4, "born": 1000.4, "timer": 5.3}]}
+    paths = [p for p, _, _ in c.compare_dumps(love, rust, [("mushrooms", 0.5, 1e-9)])]
+    assert "mushrooms[0].x" not in paths
+    assert "mushrooms[0].born" in paths and "mushrooms[0].timer" in paths
+
+
+def test_missing_compared_field_fails():
+    d = c.compare_dumps({"state": {}}, {"state": {}}, [("state.food", 0.0, 0.0)])
+    assert [p for p, _, _ in d] == ["state.food"]
+    d = c.compare_dumps({"state": {"food": 1}}, {"state": {}}, [("state.food", 0.0, 0.0)])
+    assert [p for p, _, _ in d] == ["state.food"]
+
+
 def test_diff_missing_keys_and_types():
     d = c.diff({"a": 1, "b": {"c": True}}, {"a": 1, "b": {"c": 1}, "z": 0})
     assert ("z", c._MISSING, 0) in d

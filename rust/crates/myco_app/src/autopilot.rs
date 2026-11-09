@@ -173,8 +173,9 @@ impl Autopilot {
 /// `MYCO_CAMERA=x,y` (camera top-left when the game starts), `MYCO_CAVE_TAKE=<cave id>` (take
 /// that cave when the game starts), `MYCO_FORCE_RAIN=1` (start the rain cycle at boot, the
 /// original's `weather_force_rain` debug hook), `MYCO_BW=1` (BLACK METAL post effect on; the
-/// shipped menus cannot turn it on), `MYCO_UI_DEMO=1` (synthetic floating numbers). The LÖVE side
-/// does the same through `MYCO_PROBE`.
+/// shipped menus cannot turn it on), `MYCO_UI_DEMO=1` (synthetic floating numbers),
+/// `MYCO_PERK=<frame>:<perk>` (grant a cave perk, e.g. `purple` for the glow on F, before that
+/// frame's step). The LÖVE side does the same through `MYCO_PROBE`.
 #[derive(Resource, Default, Clone, Debug, PartialEq)]
 pub struct DevHooks {
     pub camera: Option<(f64, f64)>,
@@ -182,6 +183,17 @@ pub struct DevHooks {
     pub force_rain: bool,
     pub bw: bool,
     pub ui_demo: bool,
+    pub perk: Option<(u64, String)>,
+}
+
+/// `MYCO_PERK`'s value: `<frame>:<perk>`.
+pub fn parse_perk_hook(s: &str) -> Option<(u64, String)> {
+    let (f, id) = s.split_once(':')?;
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    Some((f.trim().parse().ok()?, id.to_string()))
 }
 
 impl DevHooks {
@@ -196,6 +208,7 @@ impl DevHooks {
             force_rain: on("MYCO_FORCE_RAIN"),
             bw: on("MYCO_BW"),
             ui_demo: on("MYCO_UI_DEMO"),
+            perk: get("MYCO_PERK").and_then(|v| parse_perk_hook(&v)),
         }
     }
 
@@ -241,6 +254,19 @@ fn dev_hooks_boot(
     hooks.apply_at_boot(&mut sim.0);
     if let Some(bw) = bw.as_mut() {
         bw.0 |= hooks.bw;
+    }
+}
+
+/// Hooks due on a given step (`MYCO_PERK`), applied before it in the fixed step.
+fn dev_hooks_step(hooks: Res<DevHooks>, ap: Res<Autopilot>, mut sim: ResMut<SimRes>) {
+    if let Some((frame, id)) = &hooks.perk {
+        if ap.frame == *frame {
+            sim.0
+                .state
+                .state
+                .cave_perks
+                .insert(id.clone(), serde_json::Value::from(1));
+        }
     }
 }
 
@@ -292,7 +318,7 @@ pub fn ui_demo(
 /// `MYCO_FPS_LOG=<steps>` (long runs): every that many fixed steps print the frame rate, the
 /// fixed step rate, the mean and worst frame time and the mean CPU time of a frame (First to
 /// Last, without waiting for the display), e.g. `FPS step 600: 60.0 frames/s, 60.0 steps/s,
-/// frame 16.67 ms, worst 20.1 ms, cpu 4.2 ms`; and the window's size once.
+/// frame 16.67 ms, worst 20.1 ms, cpu 4.2 ms` (the window size: [`window_log`]).
 #[derive(Default)]
 pub struct FpsLog {
     every: Option<u64>,
@@ -302,7 +328,37 @@ pub struct FpsLog {
     worst_ms: f64,
     last: Option<std::time::Instant>,
     busy_ms: f64,
-    window_logged: bool,
+}
+
+/// `MYCO_FPS_LOG` or `MYCO_WINDOW_LOG=1`: print the window's size, scale and mode every time it
+/// changes (`WINDOW 3024x1898 px, scale 2, BorderlessFullscreen(Primary), step 12`), so the
+/// fullscreen size below the notch can be measured.
+pub fn window_log(
+    ap: Res<Autopilot>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut last: Local<Option<(u32, u32, String)>>,
+    mut on: Local<Option<bool>>,
+) {
+    let on = *on.get_or_insert_with(|| {
+        std::env::var_os("MYCO_FPS_LOG").is_some()
+            || std::env::var("MYCO_WINDOW_LOG").is_ok_and(|v| v == "1")
+    });
+    if !on {
+        return;
+    }
+    let Ok(w) = windows.single() else { return };
+    let now = (
+        w.physical_width(),
+        w.physical_height(),
+        format!("scale {}, {:?}", w.scale_factor(), w.mode),
+    );
+    if last.as_ref() != Some(&now) {
+        println!(
+            "WINDOW {}x{} px, {}, step {}",
+            now.0, now.1, now.2, ap.frame
+        );
+        *last = Some(now);
+    }
 }
 
 /// When this frame started (`First`), for [`FpsLog`]'s CPU time.
@@ -316,7 +372,6 @@ fn frame_start(mut s: ResMut<FrameStart>) {
 fn fps_log(
     ap: Res<Autopilot>,
     start_of_frame: Res<FrameStart>,
-    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut log: Local<FpsLog>,
     mut init: Local<bool>,
 ) {
@@ -332,20 +387,7 @@ fn fps_log(
     if let Some(t0) = start_of_frame.0 {
         log.busy_ms += (now - t0).as_secs_f64() * 1000.0;
     }
-    if !log.window_logged {
-        if let Ok(w) = windows.single() {
-            if w.physical_width() > 0 && ap.frame > 10 {
-                log.window_logged = true;
-                println!(
-                    "WINDOW {}x{} px, scale {}, {:?}",
-                    w.physical_width(),
-                    w.physical_height(),
-                    w.scale_factor(),
-                    w.mode
-                );
-            }
-        }
-    }
+
     if let Some(last) = log.last {
         let ms = (now - last).as_secs_f64() * 1000.0;
         if ms > log.worst_ms {
@@ -392,6 +434,7 @@ impl Plugin for AutopilotPlugin {
                     dev_hooks_game_start
                         .in_set(SimSet::Prepare)
                         .after(run_script),
+                    dev_hooks_step.in_set(SimSet::Prepare).after(run_script),
                     ui_demo.in_set(SimSet::After),
                     dump_state.in_set(SimSet::After),
                 ),
@@ -399,7 +442,7 @@ impl Plugin for AutopilotPlugin {
             .add_systems(Update, (track_occlusion, take_screenshot).chain())
             .init_resource::<FrameStart>()
             .add_systems(First, frame_start)
-            .add_systems(Last, fps_log);
+            .add_systems(Last, (fps_log, window_log));
     }
 }
 
@@ -639,6 +682,13 @@ mod tests {
         assert_eq!(h.camera, Some((100.0, -20.5)));
         assert_eq!(h.cave_take.as_deref(), Some("purple"));
         assert!(h.force_rain && h.bw && h.ui_demo);
+        assert_eq!(
+            parse_perk_hook("1300:purple"),
+            Some((1300, "purple".into()))
+        );
+        assert_eq!(parse_perk_hook("x:purple"), None);
+        assert_eq!(parse_perk_hook("12:"), None);
+        assert_eq!(parse_perk_hook("purple"), None);
         // with no hook set, nothing in the game state changes
         let mut sim =
             myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "", Some(7));

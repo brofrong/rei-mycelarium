@@ -305,11 +305,24 @@ fn texture_filter_follows_the_original_state() {
         now: 1000.0,
         start_linear: false,
     };
-    let f = world_draw(&mut sim, &ctx, &mut flares, -960.0, sy - 540.0, 1920.0, 1080.0);
-    assert!(!f.back.filter(), "soil, seams, dirt, bones and caves draw nearest");
+    let f = world_draw(
+        &mut sim,
+        &ctx,
+        &mut flares,
+        -960.0,
+        sy - 540.0,
+        1920.0,
+        1080.0,
+    );
+    assert!(
+        !f.back.filter(),
+        "soil, seams, dirt, bones and caves draw nearest"
+    );
     // perk icons: bilinear twin pages while drawn, the painter's filter restored after
     let mut images = Assets::<Image>::default();
-    a.pages_linear = (0..a.pages.len()).map(|_| images.add(Image::default())).collect();
+    a.pages_linear = (0..a.pages.len())
+        .map(|_| images.add(Image::default()))
+        .collect();
     let linear_ids: Vec<_> = a.pages_linear.iter().map(|h| h.id()).collect();
     let mut st = sim.state.clone();
     st.state.cave_perks = serde_json::from_str(r#"{"purple": 1, "blue": 1}"#).unwrap();
@@ -360,7 +373,15 @@ fn zoom_out_leaves_game_rng_and_chunks_alone() {
         assert!(zoom == 1.0 || cams.render_view().w > cams.game_view.w * 2.0);
         world.insert_resource(SimRes(s));
         world.insert_resource(cams);
-        world.insert_resource(GameAssets::load(&assets_dir(), |_| Handle::default(), |_| Handle::default(), |_| Handle::default()).unwrap());
+        world.insert_resource(
+            GameAssets::load(
+                &assets_dir(),
+                |_| Handle::default(),
+                |_| Handle::default(),
+                |_| Handle::default(),
+            )
+            .unwrap(),
+        );
         world.insert_resource(LakeFlares::default());
         world.init_resource::<Messages<SimEventMsg>>();
         for _ in 0..30 {
@@ -373,7 +394,10 @@ fn zoom_out_leaves_game_rng_and_chunks_alone() {
                     w: c.width,
                     h: c.height,
                 };
-                sim.0.step(&StepInput { view, ..Default::default() });
+                sim.0.step(&StepInput {
+                    view,
+                    ..Default::default()
+                });
             }
             world.run_system_once(draw_generate_system).unwrap();
         }
@@ -393,8 +417,18 @@ fn zoom_out_leaves_game_rng_and_chunks_alone() {
     let dirty = s.world.dirty_chunks.clone();
     let mut cache = RenderWorldCache::default();
     let sy = s.world.params.surface_y;
-    let lent = cache.lend(s.session, &mut s.world, -9000.0, sy - 500.0, 18000.0, 4000.0);
-    assert!(!lent.keys.is_empty(), "the zoomed view needs chunks the game lacks");
+    let lent = cache.lend(
+        s.session,
+        &mut s.world,
+        -9000.0,
+        sy - 500.0,
+        18000.0,
+        4000.0,
+    );
+    assert!(
+        !lent.keys.is_empty(),
+        "the zoomed view needs chunks the game lacks"
+    );
     assert!(lent.keys.iter().all(|k| !keys.contains(k)));
     assert!(lent.keys.iter().all(|k| s.world.chunks.contains_key(k)));
     cache.give_back(&mut s.world, lent);

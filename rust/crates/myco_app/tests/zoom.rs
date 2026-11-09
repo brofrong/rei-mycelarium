@@ -227,7 +227,13 @@ fn forest_view_is_the_floored_shaken_camera() {
     let mut cams = Cameras::default();
     cams.sync_game_view(&cam);
     assert_eq!(cams.zoom, 1.0);
-    assert_eq!(cams.game_view.x, 101.0);
-    let rv = cams.render_view();
+    // what forest_draw uses
+    let (cam_x, rv) = myco_app::render::forest::forest_view(&cams);
+    assert_eq!(cam_x, 101.0);
     assert_eq!((rv.x, rv.y), (101.0, 19.0));
+    // zoomed out: the parallax phase stays the floored camera, the cull rectangle grows
+    cams.zoom = 0.5;
+    let (cam_x, rv) = myco_app::render::forest::forest_view(&cams);
+    assert_eq!(cam_x, 101.0);
+    assert!(rv.w > cams.game_view.w * 1.9);
 }

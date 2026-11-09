@@ -59,4 +59,10 @@ return {
     local sx, sy = dm.screen_to_game(f, 3024, 1964)
     assert(sx * v.view_w / v.surf_w == 1920 and sy * v.view_h / v.surf_h == 1200)
   end,
+  view_rounds_half_to_even = function()
+    -- gml_Script_display_fit rounds with GML's round (banker's): n.5 goes to the even n
+    assert(dm.view_for_window(4001, 2160).view_w == 2000)
+    assert(dm.view_for_window(3840, 2401).view_h == 1200)
+    assert(dm.view_for_window(4003, 2160).view_w == 2002)
+  end,
 }

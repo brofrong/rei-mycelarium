@@ -419,11 +419,7 @@ pub fn build_linear_pages(
     *done = n;
 }
 
-fn load_game_assets(
-    mut commands: Commands,
-    server: Res<AssetServer>,
-    images: Res<Assets<Image>>,
-) {
+fn load_game_assets(mut commands: Commands, server: Res<AssetServer>, images: Res<Assets<Image>>) {
     use bevy::image::{ImageLoaderSettings, ImageSampler};
     let root = assets_root();
     match GameAssets::load(

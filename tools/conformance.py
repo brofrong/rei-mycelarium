@@ -46,16 +46,18 @@ IDENTITY = "MycelariumTest-t22"
 LOVE_SAVE_DIR = Path.home() / "Library" / "Application Support" / "LOVE" / IDENTITY
 SETTINGS_INI = '[display]\nfullscreen="0.000000"\nwindow_w="1280.000000"\nwindow_h="720.000000"\n'
 
-# compared fields: (path, absolute tolerance, relative tolerance) for numbers under it
+# compared fields: (path, position tolerance, relative tolerance). The absolute position
+# tolerance applies only to position keys (POS_KEYS: x, y, x1..y2, bx1..by2); every other number
+# under the path (timers, amounts, born, ...) is compared with the relative tolerance alone.
 FIELDS = [
     ("state.food", 0.0, 1e-9),
     ("state.water_free", 0.0, 1e-9),
     ("state.length_px", 0.0, 1e-9),
     ("state.upgrade_levels", 0.0, 0.0),
     ("state.tasks", 0.0, 1e-9),
-    ("mycelium.growths", 0.5, 0.0),
-    ("mycelium.knots", 0.5, 0.0),
-    ("mushrooms", 0.5, 0.0),
+    ("mycelium.growths", 0.5, 1e-9),
+    ("mycelium.knots", 0.5, 1e-9),
+    ("mushrooms", 0.5, 1e-9),
     ("world.chunks", 0.0, 1e-9),
 ]
 
@@ -82,6 +84,13 @@ class _Missing:
 _MISSING = _Missing()
 
 
+POS_KEYS = {"x", "y", "x1", "y1", "x2", "y2", "bx1", "by1", "bx2", "by2"}
+
+
+def _last_key(path: str) -> str:
+    return path.rsplit(".", 1)[-1].split("[", 1)[0]
+
+
 def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
@@ -89,15 +98,17 @@ def _num(v):
 def diff(a, b, path: str = "", atol: float = 0.0, rtol: float = 0.0, out: list | None = None,
          limit: int = 200) -> list:
     """Differences between two JSON values as (field path, a, b). Numbers match within
-    `atol + rtol * max(1, |a|, |b|)`; booleans only match booleans. Lists compare element by
-    element (`path[i]`, plus `path.length`), objects key by key (`path.key`)."""
+    `rtol * max(1, |a|, |b|)`, plus `atol` when the number is a position (its key is in
+    POS_KEYS); booleans only match booleans. Lists compare element by element (`path[i]`, plus
+    `path.length`), objects key by key (`path.key`)."""
     if out is None:
         out = []
     if len(out) >= limit:
         return out
     if _num(a) and _num(b):
         scale = max(1.0, abs(a), abs(b))
-        if not (a == b or abs(a - b) <= atol + rtol * scale):
+        tol = (atol if _last_key(path) in POS_KEYS else 0.0) + rtol * scale
+        if not (a == b or abs(a - b) <= tol):
             out.append((path, a, b))
         return out
     if isinstance(a, dict) and isinstance(b, dict):
@@ -124,7 +135,12 @@ def diff(a, b, path: str = "", atol: float = 0.0, rtol: float = 0.0, out: list |
 def compare_dumps(love: dict, rust: dict, fields=FIELDS, limit: int = 200) -> list:
     out: list = []
     for path, atol, rtol in fields:
-        diff(get_path(love, path), get_path(rust, path), path, atol, rtol, out, limit)
+        a, b = get_path(love, path), get_path(rust, path)
+        if a is _MISSING or b is _MISSING:
+            # a compared field absent from a dump is a failure, even when absent from both
+            out.append((path, a, b))
+            continue
+        diff(a, b, path, atol, rtol, out, limit)
     return out
 
 

@@ -402,12 +402,14 @@ pub fn display_step(
     }
 }
 
-/// `display_cycle_size`: pick the size, resize the window when windowed, save settings.ini.
-fn apply_cycle_size(
+/// `display_cycle_size(dir)`: pick the size, `display_apply` (a window takes the size two steps
+/// later and is centred at the end of the countdown, [`display_step`]), `display_save`.
+pub fn apply_cycle_size(
     mut msgs: MessageReader<CycleWindowSize>,
     sizes: Option<ResMut<DisplaySizes>>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     mut display: ResMut<Display>,
+    mut pending: Option<ResMut<DisplayPending>>,
     dir: Res<SaveDir>,
 ) {
     let Some(mut sizes) = sizes else {
@@ -425,11 +427,10 @@ fn apply_cycle_size(
     let (w, h) = sizes.display_window_size();
     display.0.window_w = w as _;
     display.0.window_h = h as _;
-    if !display.0.fullscreen {
-        if let Ok(mut win) = windows.single_mut() {
-            // settings sizes are logical points (ruling R23)
-            win.resolution.set(w as f32, h as f32);
-            win.position = WindowPosition::Centered(MonitorSelection::Current);
+    if let Ok(mut win) = windows.single_mut() {
+        let p = display_apply(&mut win, display.0.fullscreen);
+        if let Some(pending) = pending.as_mut() {
+            pending.0 = p;
         }
     }
     if let Err(e) = write_display_settings(&dir.0, &display.0) {

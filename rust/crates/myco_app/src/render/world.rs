@@ -473,7 +473,15 @@ pub struct Lent {
 
 impl RenderWorldCache {
     /// Lend `w` the chunks a draw of (vx, vy, vw, vh) needs that it lacks.
-    pub fn lend(&mut self, session: u64, w: &mut WorldRt, vx: f64, vy: f64, vw: f64, vh: f64) -> Lent {
+    pub fn lend(
+        &mut self,
+        session: u64,
+        w: &mut WorldRt,
+        vx: f64,
+        vy: f64,
+        vw: f64,
+        vh: f64,
+    ) -> Lent {
         if self.session != session || self.scratch.is_none() {
             let mut params = w.params.clone();
             params.chunk_index.clear();
@@ -489,8 +497,15 @@ impl RenderWorldCache {
         let has: std::collections::HashSet<i64> = w.chunks.keys().copied().collect();
         scratch.dirty_chunks.clear();
         world_rt_draw_generate(scratch, vx, vy, vw, vh, |c| !has.contains(&c));
-        lent.changed = std::mem::take(&mut scratch.dirty_chunks).into_iter().collect();
-        let mut keys: Vec<i64> = scratch.chunks.keys().copied().filter(|c| !has.contains(c)).collect();
+        lent.changed = std::mem::take(&mut scratch.dirty_chunks)
+            .into_iter()
+            .collect();
+        let mut keys: Vec<i64> = scratch
+            .chunks
+            .keys()
+            .copied()
+            .filter(|c| !has.contains(c))
+            .collect();
         keys.sort_unstable();
         for cx in &keys {
             if let Some(ch) = scratch.chunks.remove(cx) {

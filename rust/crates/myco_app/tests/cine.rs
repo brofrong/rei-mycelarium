@@ -122,3 +122,15 @@ fn cine_draw_paints_the_flash_then_the_planet() {
         "bm_normal again after the glow"
     );
 }
+
+/// The additive glow's pool slot gets the additive material from the frame it is spawned.
+#[test]
+fn additive_items_get_the_add_material() {
+    use myco_app::render::blend::GmBlend;
+    use myco_app::ui::gm_draw::material_for;
+    let mut mats = Assets::<GmBlend>::default();
+    let alpha = mats.add(GmBlend::new(myco_app::render::blend::GmBlendMode::Alpha));
+    let add = mats.add(GmBlend::new(myco_app::render::blend::GmBlendMode::Add));
+    assert_eq!(material_for(&DrawItem::TrisAdd(vec![]), &alpha, &add), &add);
+    assert_eq!(material_for(&DrawItem::Tris(vec![]), &alpha, &add), &alpha);
+}

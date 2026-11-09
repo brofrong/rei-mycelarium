@@ -26,7 +26,8 @@ function M.screen_to_game(fit, px, py)
   return (px - fit.x) / fit.scale, (py - fit.y) / fit.scale
 end
 
-local function round(x) return math.floor(x + 0.5) end
+-- GML round (banker's: n.5 to the even n), as gml_Script_display_fit uses it (gm/mathx.lua)
+local round = require("gm.mathx").round
 
 -- Mirror of the original gml_Script_display_fit: the view keeps 1920x1080 as a
 -- minimum and grows along the window's aspect (clamped to 1.25..32/9); the
