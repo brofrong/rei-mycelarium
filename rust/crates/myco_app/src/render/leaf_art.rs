@@ -98,7 +98,7 @@ impl PagePixels {
 
 /// Alpha scan of one `fw × h` strip (`leaf_fg_art_read` / `leaf_art_read` loops): bounds of the
 /// pixels with alpha >= 128 (whole strip when none) and their centroid.
-fn strip_scan(px: &PagePixels, def: &SpriteDef, i: i64, fw: i64, h: i64) -> [f64; 6] {
+pub(crate) fn strip_scan(px: &PagePixels, def: &SpriteDef, i: i64, fw: i64, h: i64) -> [f64; 6] {
     let (mut x1, mut y1, mut x2, mut y2) = (fw as f64, h as f64, -1.0, -1.0);
     let (mut sx, mut sy, mut n) = (0.0, 0.0, 0.0);
     for yy in 0..h {

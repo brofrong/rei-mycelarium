@@ -5,6 +5,8 @@ pub mod blend;
 pub mod forest;
 pub mod layers;
 pub mod leaf_art;
+pub mod life;
+pub mod mushrooms;
 pub mod mycelium;
 pub mod mycelium_glow;
 pub mod sprite;
