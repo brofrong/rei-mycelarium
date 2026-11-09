@@ -328,7 +328,11 @@ pub fn can_build_type(sim: &mut Sim, t: MushroomKind, px: f64) -> bool {
     }
     if t == MushroomKind::Tree {
         return match find_tree_near(sim, px) {
-            Some(uid) => !mushrooms::squirrel_tree_has_mushroom(sim, uid),
+            Some(uid) => !sim
+                .forest
+                .tree(uid)
+                .map(crate::life::TreeRef::of)
+                .is_some_and(|t| crate::life::squirrel::squirrel_tree_has_mushroom(sim, &t)),
             None => false,
         };
     }
@@ -525,7 +529,8 @@ pub fn consumptor_spot(sim: &mut Sim, px: f64, py: f64) -> Option<ConsumptorSpot
             ok = false;
         }
     }
-    let ex = mushrooms::squirrel_edge_x(sim, uid, side, cy);
+    let t = sim.forest.tree(uid).map(crate::life::TreeRef::of)?;
+    let ex = crate::life::squirrel::squirrel_edge_x(&t, side, cy);
     Some(ConsumptorSpot {
         host,
         x: gml::round(ex),

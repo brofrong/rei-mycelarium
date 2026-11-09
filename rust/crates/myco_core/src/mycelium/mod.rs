@@ -270,6 +270,12 @@ pub mod source {
     pub const KNOT: u64 = 2 << 56;
     pub const MUSHROOM: u64 = 3 << 56;
     pub const ORIGIN: u64 = 4 << 56;
+    /// a leaf (Task 10): its food and hyphae sound
+    pub const LEAF: u64 = 5 << 56;
+    /// a worm (Task 10): its food and hyphae sound
+    pub const WORM: u64 = 6 << 56;
+    /// an animal (Task 10): hedgehog, boar, squirrel, crow (HUD marker source)
+    pub const ANIMAL: u64 = 7 << 56;
 }
 
 // port: anon__238__gml_Object_obj_mycelium_controller_Create_0

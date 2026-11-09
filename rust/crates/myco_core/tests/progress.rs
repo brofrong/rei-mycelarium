@@ -20,6 +20,8 @@ const TOL: f64 = 1e-9;
 
 fn fresh() -> Sim {
     let mut sim = Sim::new_game(GameMode::Exploration, "Progress", None);
+    // past the intro (game_init starts every game with it; the golden runs without)
+    sim.intro_active = false;
     upgrades::init(&mut sim);
     tutorial::init(&mut sim);
     tasks::init(&mut sim);
@@ -585,7 +587,6 @@ fn tutorial_stages_match_love() {
     let surface = f(&g["surface_height_px"]);
     let (node_x, node_y) = (260.0, surface + 300.0);
     let mut input = StepInput::default();
-    let mut raining = false;
     let mut tips_shown = 0;
     for snap in g["tutorial"].as_array().unwrap() {
         let label = s(&snap["label"]);
@@ -606,8 +607,9 @@ fn tutorial_stages_match_love() {
                     3201.0
                 }
             }
-            "rain_on" => raining = true,
-            "rain_off" => raining = false,
+            // weather_is_raining() is `intensity > 0` (ruling R16: tutorial_step reads it)
+            "rain_on" => sim.weather.intensity = 1.0,
+            "rain_off" => sim.weather.intensity = 0.0,
             "menu_on" => input.menu_open = true,
             "menu_off" => input.menu_open = false,
             "upg" => {
@@ -626,7 +628,7 @@ fn tutorial_stages_match_love() {
             k => panic!("action {k}"),
         }
         for _ in 0..frames {
-            tutorial::step(&mut sim, &input, raining);
+            tutorial::step(&mut sim, &input);
         }
         tips_shown += sim
             .drain_events()

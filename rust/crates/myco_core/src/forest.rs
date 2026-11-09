@@ -1035,16 +1035,6 @@ pub fn before_save(sim: &Sim, out: &mut GameState) {
 // ---------------------------------------------------------------------------------------------
 // backdrop leaves (scr_life)
 
-/// `leaf_face_for_wind(wind)` (Task 10's function, needed here; unmarked).
-pub(crate) fn leaf_face_for_wind(wind: f64) -> f64 {
-    let face = if wind >= 0.0 { 1.0 } else { 0.0 };
-    if vis("leaf_face_flip") > 0.0 {
-        1.0 - face
-    } else {
-        face
-    }
-}
-
 // port: backdrop_leaf_band_setting
 /// Band 0 is the far band.
 pub fn backdrop_leaf_band_setting(band: usize, near_key: &str, far_key: &str) -> f64 {
@@ -1099,7 +1089,7 @@ pub fn backdrop_leaf_make(
     let fall = rng.random_range(vis("backdrop_leaf_fall_min"), vis("backdrop_leaf_fall_max"));
     let drift = wind_dir * wind_speed * vis("backdrop_leaf_wind_push");
     let phase = rng.random(360.0);
-    let face = leaf_face_for_wind(wind_dir);
+    let face = crate::life::leaves::leaf_face_for_wind(wind_dir);
     let ra = rng.random_range(0.85, 1.1);
     let alpha =
         backdrop_leaf_band_setting(band, "backdrop_leaf_near_alpha", "backdrop_leaf_far_alpha")
@@ -1146,7 +1136,7 @@ pub fn backdrop_leaves_step(sim: &mut Sim, cam_x: f64, w: f64) {
     let floor_y = wld("surface_height_px");
     let [wind_dir, wind_speed, _] = sim.state.state.wind;
     let force = wind_dir * wind_speed;
-    let target_face = leaf_face_for_wind(wind_dir);
+    let target_face = crate::life::leaves::leaf_face_for_wind(wind_dir);
     let wind_ease = gml::clamp(vis("backdrop_leaf_wind_ease"), 0.0, 1.0);
     let spin_ease = gml::clamp(vis("leaf_spin_ease"), 0.0, 1.0);
     let push = vis("backdrop_leaf_wind_push");
