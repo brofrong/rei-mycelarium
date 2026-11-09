@@ -41,7 +41,15 @@ local script = {}
 for frame_s, action, args in (os.getenv("MYCO_INPUT") or ""):gmatch("(%d+):(%a+):([^;]*)") do
   script[#script + 1] = { tonumber(frame_s), action, args }
 end
+-- MYCO_PROBE="frame|lua chunk" prints debug state at a frame (development aid).
+local probe_frame, probe_code = (os.getenv("MYCO_PROBE") or ""):match("^(%d+)|(.*)$")
+probe_frame = tonumber(probe_frame)
+
 local function run_script()
+  if probe_frame == frame then
+    local fn, err = loadstring(probe_code)
+    if fn then local ok, res = pcall(fn); print("PROBE", ok, res) else print("PROBE syntax", err) end
+  end
   for _, s in ipairs(script) do
     if s[1] == frame then
       local display = require("gm.display")

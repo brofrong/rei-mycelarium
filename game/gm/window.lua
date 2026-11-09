@@ -93,7 +93,9 @@ function M.window_center()
 end
 function M.window_get_fullscreen() return display.get_fullscreen() end
 function M.window_set_fullscreen(on) display.set_fullscreen(on and on ~= 0) end
-function M.window_has_focus() return love.window.hasFocus() end
+-- MYCO_FOCUS=1 treats the window as focused (scripted runs start unfocused and the game auto-pauses).
+local force_focus = os.getenv("MYCO_FOCUS") ~= nil
+function M.window_has_focus() return force_focus or love.window.hasFocus() end
 M.cr_none, M.cr_default = -1, 0
 function M.window_set_cursor(cr) love.mouse.setVisible(cr ~= M.cr_none) end
 
