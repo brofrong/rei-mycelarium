@@ -81,5 +81,12 @@ return {
     a[2.2] = 99
     assert(a[2] == 99 and gm.array_length(a) == 3)
   end,
+  ord_decodes_utf8 = function()
+    assert(gm.ord("A") == 65 and gm.ord("Ж") == 1046 and gm.ord("\239\187\191key") == 65279)
+  end,
+  bool_follows_gml_threshold = function()
+    assert(gm.bool(1) and gm.bool(0.6) and not gm.bool(0.3) and not gm.bool(-4) and not gm.bool(0))
+    assert(gm.bool(true) and not gm.bool(false) and not gm.bool(gm.undefined) and not gm.bool(nil))
+  end,
 }
 

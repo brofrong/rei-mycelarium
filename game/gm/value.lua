@@ -318,7 +318,14 @@ function M.string_count(sub, s)
   end
 end
 function M.string_trim(s) return (s:gsub("^%s+", ""):gsub("%s+$", "")) end
-function M.ord(c) local b = c:byte(1); return b end
+function M.ord(c)
+  local b1 = c:byte(1)
+  if not b1 then return 0 end
+  if b1 < 0x80 then return b1 end
+  if b1 < 0xE0 then return (b1 - 0xC0) * 64 + c:byte(2) - 0x80 end
+  if b1 < 0xF0 then return ((b1 - 0xE0) * 64 + c:byte(2) - 0x80) * 64 + c:byte(3) - 0x80 end
+  return (((b1 - 0xF0) * 64 + c:byte(2) - 0x80) * 64 + c:byte(3) - 0x80) * 64 + c:byte(4) - 0x80
+end
 function M.chr(n)
   if n < 0x80 then return string.char(n) end
   if n < 0x800 then return string.char(0xC0 + math.floor(n / 64), 0x80 + n % 64) end
@@ -361,7 +368,11 @@ function M.real(v)
   return tonumber(v) or 0
 end
 
-function M.bool(v) return v and v ~= 0 and v ~= UNDEFINED end
+-- GML truthiness: numbers are true above 0.5; undefined is false.
+function M.bool(v)
+  if type(v) == "number" then return v > 0.5 end
+  return v ~= nil and v ~= false and v ~= UNDEFINED
+end
 
 -- Math with GML semantics -------------------------------------------------------
 local function trunc(x) return x >= 0 and math.floor(x) or math.ceil(x) end

@@ -12,10 +12,12 @@ M.INSTANCE = INSTANCE
 local objects, rooms, instances, next_id
 local current_event = {} -- stack of {object, event} for event_inherited
 local pending_room
+local pending_restart = false
 
 function M.reset()
   objects, rooms, instances, next_id = {}, {}, {}, 100000
   pending_room = nil
+  pending_restart = false
   M.global = {}
   M.room, M.room_width, M.room_height = nil, 0, 0
   M.room_def = nil
@@ -263,7 +265,6 @@ function M.room_goto(name) pending_room = name end
 
 -- game_restart: all instances (persistent too) are cleaned up and the first room starts
 -- again with Game Start; global variables survive, as in GameMaker.
-local pending_restart = false
 function M.game_restart() pending_restart = true end
 function M.room_restart() pending_room = M.room end
 
@@ -282,6 +283,8 @@ function M.apply_room(name)
   end
   compact()
   M.room, M.room_def, M.room_width, M.room_height = name, def, def.w, def.h
+  -- views/cameras are set up before instances are created, as in GameMaker
+  if M.on_room_start then M.on_room_start(name, def) end
   local layer_depth = {}
   for _, l in ipairs(def.layers or {}) do
     for _, id in ipairs(l.instances or {}) do layer_depth[id] = l.depth end
@@ -302,7 +305,6 @@ function M.apply_room(name)
   for _, inst in ipairs(instances) do
     if live(inst) then M.event_perform(inst, "Other_4") end -- Room Start
   end
-  if M.on_room_start then M.on_room_start(name, def) end
 end
 
 function M.game_end()

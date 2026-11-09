@@ -85,4 +85,23 @@ return {
     gm.game_end()
     assert(table.concat(log, ",") == "end,cleanup" and quit)
   end,
+  game_restart_recreates_room = function()
+    local log = fresh()
+    local n = 0
+    gm.object("obj_rs", { Create_0 = function() n = n + 1 end })
+    gm.define_room("RR", { w = 10, h = 10, instances = { { object = "obj_rs", x = 0, y = 0 } }, layers = {} })
+    gm.apply_room("RR")
+    gm.game_restart()
+    gm.step()
+    assert(n == 2 and gm.instance_number(gm.object_get("obj_rs")) == 1)
+  end,
+  room_views_apply_before_create = function()
+    local log = fresh()
+    gm.object("obj_v", { Create_0 = function() log[#log + 1] = "create" end })
+    gm.define_room("RV", { w = 10, h = 10, instances = { { object = "obj_v", x = 0, y = 0 } }, layers = {} })
+    gm.on_room_start = function() log[#log + 1] = "views" end
+    gm.apply_room("RV")
+    assert(table.concat(log, ",") == "views,create", table.concat(log, ","))
+  end,
 }
+

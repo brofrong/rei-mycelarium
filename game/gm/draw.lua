@@ -69,13 +69,16 @@ function M.draw_sprite(spr, sub, x, y)
 end
 
 -- Part of the (untrimmed) sprite image; origin is ignored, like in GameMaker.
+local shared_part_quad
 local function part_quad(f, left, top, w, h)
   local fx, fy, fw, fh = f.dst[1], f.dst[2], f.src[3], f.src[4]
   local x1, y1 = math.max(left, fx), math.max(top, fy)
   local x2, y2 = math.min(left + w, fx + fw), math.min(top + h, fy + fh)
   if x2 <= x1 or y2 <= y1 then return nil end
-  local q = lg.newQuad(f.src[1] + x1 - fx, f.src[2] + y1 - fy, x2 - x1, y2 - y1, f.image:getDimensions())
-  return q, x1 - left, y1 - top
+  local iw, ih = f.image:getDimensions()
+  if not shared_part_quad then shared_part_quad = lg.newQuad(0, 0, 1, 1, iw, ih) end
+  shared_part_quad:setViewport(f.src[1] + x1 - fx, f.src[2] + y1 - fy, x2 - x1, y2 - y1, iw, ih)
+  return shared_part_quad, x1 - left, y1 - top
 end
 
 function M.draw_sprite_part_ext(spr, sub, left, top, w, h, x, y, xs, ys, col, alpha)
@@ -148,7 +151,7 @@ function M.surface_set_target(id)
   local c = surfaces[id]
   if not c then return false end
   target_stack[#target_stack + 1] = { lg.getCanvas(), M.world_base }
-  lg.push("all")
+  lg.push()
   lg.setCanvas({ c, stencil = true })
   lg.origin()
   M.world_base = love.math.newTransform()
@@ -160,6 +163,7 @@ function M.surface_reset_target()
   local top = table.remove(target_stack)
   if not top then return false end
   lg.pop()
+  lg.setCanvas(top[1])
   M.world_base = top[2]
   return true
 end
@@ -333,6 +337,7 @@ M.bm_dest_alpha, M.bm_inv_dest_alpha, M.bm_dest_colour, M.bm_inv_dest_colour, M.
 M.bm_src_color, M.bm_inv_src_color, M.bm_dest_color, M.bm_inv_dest_color = 3, 4, 9, 10
 
 function M.gpu_set_blendmode(mode)
+  lg.setColorMask(true, true, true, true)
   if mode == M.bm_add then lg.setBlendMode("add", "alphamultiply")
   elseif mode == M.bm_subtract then lg.setBlendMode("subtract", "alphamultiply")
   elseif mode == M.bm_max then lg.setBlendMode("lighten", "premultiplied")
@@ -342,6 +347,7 @@ end
 local warned = {}
 -- LÖVE 11 has no arbitrary blend factors; map the combinations GameMaker games use.
 function M.gpu_set_blendmode_ext(src, dst)
+  lg.setColorMask(true, true, true, true)
   local key = src .. ":" .. dst
   if key == "5:6" then lg.setBlendMode("alpha", "alphamultiply")
   elseif key == "2:6" then lg.setBlendMode("alpha", "premultiplied")
@@ -356,7 +362,15 @@ function M.gpu_set_blendmode_ext(src, dst)
     lg.setBlendMode("alpha", "alphamultiply")
   end
 end
-function M.gpu_set_blendmode_ext_sepalpha(src, dst) M.gpu_set_blendmode_ext(src, dst) end
+function M.gpu_set_blendmode_ext_sepalpha(src, dst, srca, dsta)
+  if src == M.bm_one and dst == M.bm_zero and srca == M.bm_zero and dsta == M.bm_one then
+    -- write colour, keep destination alpha
+    lg.setBlendMode("replace", "premultiplied")
+    lg.setColorMask(true, true, true, false)
+    return
+  end
+  M.gpu_set_blendmode_ext(src, dst)
+end
 
 function M.gpu_set_tex_filter(on)
   local mode = on and "linear" or "nearest"
@@ -503,7 +517,8 @@ local function draw_line_gm(f, s, x, y)
     local g = f.glyphs[tostring(utf8_cp(ch))]
     if g then
       if g.w > 0 and g.h > 0 then
-        b:add(lg.newQuad(fx + g.x, fy + g.y, g.w, g.h, iw, ih), x + g.offset, y)
+        if not g.quad then g.quad = lg.newQuad(fx + g.x, fy + g.y, g.w, g.h, iw, ih) end
+        b:add(g.quad, x + g.offset, y)
       end
       x = x + g.shift
     end
