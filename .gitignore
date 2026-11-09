@@ -1,0 +1,8 @@
+build/
+dist/
+re/ghidra/
+.venv/
+game/assets
+.superpowers/
+__pycache__/
+.pytest_cache/
