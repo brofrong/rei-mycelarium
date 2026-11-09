@@ -13,13 +13,16 @@ local file = require("gm.file")
 local steam = require("gm.steam")
 local mathx = require("gm.mathx")
 local json = require("gm.json")
+local random = require("gm.random")
+local vertex = require("gm.vertex")
 
-for _, mod in ipairs({ mathx, draw, window, input, audio, file, steam }) do
+for _, mod in ipairs({ mathx, draw, window, input, audio, file, steam, random, vertex }) do
   for k, v in pairs(mod) do
     if gm[k] == nil then gm[k] = v end
   end
 end
 gm.assets, gm.json, gm.display = assets, json, display
+window.share(gm)
 gm.draw_self = draw.draw_self
 gm.mouse_x, gm.mouse_y = 0, 0
 
@@ -61,6 +64,8 @@ end
 -- Host ---------------------------------------------------------------------------
 local lg = love.graphics
 local acc = 0
+local t_start = love.timer.getTime()
+gm.current_time = 0
 
 local function refresh_display()
   local app = draw.surface_get_canvas(gm.application_surface)
@@ -68,6 +73,11 @@ local function refresh_display()
 end
 
 function gm.boot(start_room)
+  gm.boot_assets()
+  gm.boot_room(start_room)
+end
+
+function gm.boot_assets()
   assets.load(_G)
   game_speed = assets.game.speed or 60
   for _, room in pairs(assets.rooms) do gm.define_room(room.name, room) end
@@ -81,6 +91,9 @@ function gm.boot(start_room)
     gm.__ended = true
     love.event.quit()
   end
+end
+
+function gm.boot_room(start_room)
   gm.apply_room(start_room or assets.game.room_order[1])
 end
 
@@ -89,6 +102,7 @@ function gm.update(dt)
   acc = math.min(acc + dt, step * 5)
   while acc >= step do
     refresh_display()
+    gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
     window.update_mouse(gm)
     gm.step()
     input.end_step()
@@ -131,7 +145,7 @@ function gm.render()
       lg.setCanvas()
       lg.origin()
       draw.world_base = identity
-      if window.surface_draw_enabled then display.present(app) end
+      if gm.surface_draw_enabled then display.present(app) end
     elseif phase == "gui" then
       lg.setCanvas()
       local f = display.fit
@@ -146,7 +160,16 @@ function gm.render()
 end
 
 -- love callbacks the host forwards
-function gm.keypressed(key) input.key_event(key, true) end
+gm.keyboard_string = ""
+function gm.keypressed(key)
+  input.key_event(key, true)
+  if key == "backspace" then
+    local chars = value.utf8_chars(gm.keyboard_string)
+    chars[#chars] = nil
+    gm.keyboard_string = table.concat(chars)
+  end
+end
+function gm.textinput(t) gm.keyboard_string = string.sub(gm.keyboard_string .. t, -1024) end
 function gm.keyreleased(key) input.key_event(key, false) end
 function gm.mousepressed(_, _, button) input.mouse_event(button, true) end
 function gm.mousereleased(_, _, button) input.mouse_event(button, false) end

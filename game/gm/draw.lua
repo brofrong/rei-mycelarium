@@ -336,6 +336,13 @@ function M.gpu_set_blendmode_ext(src, dst)
 end
 function M.gpu_set_blendmode_ext_sepalpha(src, dst) M.gpu_set_blendmode_ext(src, dst) end
 
+function M.gpu_set_tex_filter(on)
+  local mode = on and "linear" or "nearest"
+  for _, page in ipairs(assets.pages) do page:setFilter(mode, mode) end
+  love.graphics.setDefaultFilter(mode, mode)
+end
+function M.gpu_get_tex_filter() return true end
+
 -- Shaders ------------------------------------------------------------------------
 local compiled = {}
 local function shader_obj(id)

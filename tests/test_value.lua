@@ -69,5 +69,11 @@ return {
     local p = gm.new(Point, 2, 3)
     assert(gm.is_struct(p) and p.x == 2 and p.y == 3 and gm.instanceof(p) == Point)
   end,
+  method_call_matches_function_call_convention = function()
+    local s, caller = gm.struct({ k = 10 }), gm.struct({})
+    local m = gm.method(s, function(self, other, a, b) return self.k + a * b, other end)
+    local r, o = m(caller, nil, 2, 3) -- called like f(self, other, a, b)
+    assert(r == 16 and o == caller)
+  end,
 }
 

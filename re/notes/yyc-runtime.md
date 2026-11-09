@@ -22,6 +22,12 @@
 | `YYGML_CallBuiltin` (0x1406db110) | вызов встроенной функции GML: `(self, other, result, argc, id, args)`, где id — `vid_<имя функции>` |
 | `YYCompareVal` (0x14070edc0) | сравнение двух RValue `(a, b, epsilon, ...)` → 0, если равны |
 | `YYError` (0x1406dacd0) | ошибка рантайма (строка-сообщение) |
+| `FUN_14072b4d0` | `abs` |
+| `thunk_FUN_140b31e60` | `sin` |
+| `FUN_14004ba30`, `FUN_1400a93b0` | целочисленное `div` |
+| `FUN_140024e60` | сравнение «меньше» |
+| `FUN_14004b9c0`, `FUN_14002f610` | сравнение «больше или равно» |
+| `FUN_14002f5a0(x, 0)` | `x > 0` |
 | `g_pGlobal` (0x141020570) | глобальный экземпляр: `(*g_pGlobal->vtbl[1])(g_pGlobal, vid_x)` → ссылка на `global.x` |
 | `g_pCurrentStackTrace` | кадр стек-трейса; строки `local_xx = N` рядом — номера строк GML |
 

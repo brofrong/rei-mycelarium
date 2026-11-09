@@ -3,6 +3,10 @@ local display = require("gm.display")
 local value = require("gm.value")
 
 local M = {}
+-- Flags the game writes as builtin variables (gm.view_enabled = true) live in a
+-- shared table; init.lua points it at the gm table.
+local S = M
+function M.share(t) S = t end
 
 -- Cameras and views -----------------------------------------------------------
 local cameras, next_camera = {}, 0
@@ -43,7 +47,7 @@ function M.view_get_hport(i) return M.ports[i].h end
 
 -- Set up views from a room definition (rooms.json).
 function M.room_views(def)
-  M.view_enabled = def.views_enabled
+  S.view_enabled = def.views_enabled
   for i, v in ipairs(def.views or {}) do
     local idx = i - 1
     if v.enabled then
@@ -63,7 +67,7 @@ end
 function M.world_transform()
   local t = love.math.newTransform()
   local cam = cameras[M.view_camera[0]]
-  if not (M.view_enabled and cam) then return t end
+  if not (S.view_enabled and cam) then return t end
   local p = M.ports[0]
   t:translate(p.x, p.y)
   t:scale(p.w / cam.w, p.h / cam.h)
@@ -95,7 +99,7 @@ function M.window_set_cursor(cr) love.mouse.setVisible(cr ~= M.cr_none) end
 
 function M.application_get_position() return value.array(display.application_position()) end
 M.surface_draw_enabled = true
-function M.application_surface_draw_enable(on) M.surface_draw_enabled = on and on ~= 0 end
+function M.application_surface_draw_enable(on) S.surface_draw_enabled = on and on ~= 0 end
 
 -- Mouse coordinates -------------------------------------------------------------
 function M.device_mouse_x_to_gui() local x = display.mouse_gui(); return x end
@@ -105,7 +109,7 @@ function M.device_mouse_y_to_gui() local _, y = display.mouse_gui(); return y en
 function M.update_mouse(gm)
   local sx, sy = display.mouse_surface()
   local cam = cameras[M.view_camera[0]]
-  if M.view_enabled and cam then
+  if S.view_enabled and cam then
     local p = M.ports[0]
     gm.mouse_x = cam.x + (sx - p.x) * cam.w / p.w
     gm.mouse_y = cam.y + (sy - p.y) * cam.h / p.h

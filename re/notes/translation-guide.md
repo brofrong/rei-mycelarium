@@ -41,7 +41,7 @@
 |---|---|
 | `gml_Script_hedgehog_frame_h` | `hedgehog_frame_h` (префикс `gml_Script_` убирается) |
 | `gml_Script_anon__799__gml_Object_obj_forest_controller_Create_0` | `anon__799__gml_Object_obj_forest_controller_Create_0` |
-| `gml_Script____struct___367__gml_Object_obj_hud_Create_0` | `____struct___367__gml_Object_obj_hud_Create_0` |
+| `gml_Script____struct___367__gml_Object_obj_hud_Create_0` | `___struct___367__gml_Object_obj_hud_Create_0` (после префикса — три подчёркивания) |
 | `gml_Object_obj_hud_Create_0` | `gml_Object_obj_hud_Create_0` (имя целиком) |
 | `gml_GlobalScript_scr_world` | `gml_GlobalScript_scr_world` (верхнеуровневый код файла, вызывается при старте) |
 
@@ -58,7 +58,7 @@ end
 `gm.method(self, anon__799__gml_Object_obj_forest_controller_Create_0)` (привязка к текущему self; если метод
 создаётся внутри литерала структуры — привязка к этой структуре).
 **Где функция создаёт литерал структуры** (вызов конструктора `gml_Script____struct___N__…` с захваченными значениями) →
-`gm.new(____struct___N__…, args...)`. Сам конструктор переводится как обычная функция, которая заполняет поля `self`
+`gm.new(___struct___N__…, args...)`. Сам конструктор переводится как обычная функция, которая заполняет поля `self`
 (и привязывает свои методы к `self` через `gm.method(self, …)`).
 Именованные конструкторы (`function Foo() constructor`) — так же: `gm.new(Foo, ...)`.
 Вызов метода или переменной-функции: `m(self, other, args)` — одинаково для функций и методов.

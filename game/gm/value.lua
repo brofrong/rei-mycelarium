@@ -157,7 +157,9 @@ end
 -- Structs and methods -----------------------------------------------------------
 local STRUCT = { __name = "struct" }
 local METHOD = {}
-METHOD.__call = function(m, caller, ...)
+-- Called like any translated function: m(self, other, ...). The bound struct
+-- becomes self and the caller's self becomes other.
+METHOD.__call = function(m, caller, _, ...)
   return m.fn(m.self, caller, ...)
 end
 

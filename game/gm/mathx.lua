@@ -1,5 +1,5 @@
 -- GML math builtins (no love dependency).
-local M = {}
+local M = { infinity = math.huge, NaN = 0 / 0, pi = math.pi }
 
 -- GameMaker's round() rounds halves to the nearest even integer.
 function M.round(x)
