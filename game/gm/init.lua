@@ -80,6 +80,7 @@ local lg = love.graphics
 local acc = 0
 local t_start = love.timer.getTime()
 gm.current_time = 0
+gm.delta_time = 1e6 / 60
 
 local function refresh_display()
   local app = draw.surface_get_canvas(gm.application_surface)
@@ -117,6 +118,7 @@ function gm.update(dt)
   while acc >= step do
     refresh_display()
     gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
+    gm.delta_time = step * 1e6
     gm.fps, gm.fps_real = love.timer.getFPS(), 1 / math.max(love.timer.getAverageDelta(), 1e-6)
     window.update_mouse(gm)
     gm.step()
