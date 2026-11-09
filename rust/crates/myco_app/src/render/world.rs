@@ -418,21 +418,99 @@ pub struct WorldFrame {
 /// runs it after every fixed step for the render view (GameMaker draws once after each step), so
 /// the saved world only changes inside steps; the frame's drawing then finds the chunks ready.
 pub fn world_draw_generate(sim: &mut Sim, vx: f64, vy: f64, vw: f64, vh: f64) {
+    world_rt_draw_generate(&mut sim.world, vx, vy, vw, vh, |_| true);
+}
+
+/// [`world_draw_generate`] on a bare world, for the chunks `want` accepts.
+fn world_rt_draw_generate(
+    w: &mut WorldRt,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+    want: impl Fn(i64) -> bool,
+) {
     let (surface_y, t, chunk_w, rows) = {
-        let p = &sim.world.params;
+        let p = &w.params;
         (p.surface_y, p.tile as f64, p.chunk_w as f64, p.rows)
     };
     if vy + vh < surface_y {
         return;
     }
     for c in ((vx - 600.0) / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
-        sim.world.get_chunk(c);
+        if want(c) {
+            w.get_chunk(c);
+        }
     }
     let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     for ci in (vx / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
-        sim.world.get_chunk(ci);
-        sim.world.chunk_reach(ci, r1 as i64);
-        maze::world_paint_clusters_late(&mut sim.world, ci);
+        if want(ci) {
+            w.get_chunk(ci);
+            w.chunk_reach(ci, r1 as i64);
+            maze::world_paint_clusters_late(w, ci);
+        }
+    }
+}
+
+/// Ruling R28: zooming out must not touch the game. The world past the 1× view is drawn from
+/// chunks generated here, from the world's seed, in a scratch world of the renderer's own
+/// (never in `sim.world`, no game RNG: world generation is hash-based). For one frame's draw
+/// they are lent to `sim.world` where it has no chunk ([`RenderWorldCache::lend`]) and taken
+/// back right after ([`RenderWorldCache::give_back`]), so the game state is the same after the
+/// frame as before it.
+#[derive(Resource, Default)]
+pub struct RenderWorldCache {
+    scratch: Option<WorldRt>,
+    session: u64,
+}
+
+/// Chunks lent for one frame, and those whose content changed since last lent (to rebuild).
+#[derive(Debug, Default)]
+pub struct Lent {
+    pub keys: Vec<i64>,
+    pub changed: Vec<i64>,
+}
+
+impl RenderWorldCache {
+    /// Lend `w` the chunks a draw of (vx, vy, vw, vh) needs that it lacks.
+    pub fn lend(&mut self, session: u64, w: &mut WorldRt, vx: f64, vy: f64, vw: f64, vh: f64) -> Lent {
+        if self.session != session || self.scratch.is_none() {
+            let mut params = w.params.clone();
+            params.chunk_index.clear();
+            self.scratch = Some(WorldRt {
+                params,
+                mode: w.mode,
+                ..Default::default()
+            });
+            self.session = session;
+        }
+        let scratch = self.scratch.as_mut().unwrap();
+        let mut lent = Lent::default();
+        let has: std::collections::HashSet<i64> = w.chunks.keys().copied().collect();
+        scratch.dirty_chunks.clear();
+        world_rt_draw_generate(scratch, vx, vy, vw, vh, |c| !has.contains(&c));
+        lent.changed = std::mem::take(&mut scratch.dirty_chunks).into_iter().collect();
+        let mut keys: Vec<i64> = scratch.chunks.keys().copied().filter(|c| !has.contains(c)).collect();
+        keys.sort_unstable();
+        for cx in &keys {
+            if let Some(ch) = scratch.chunks.remove(cx) {
+                w.chunks.insert(*cx, ch);
+            }
+        }
+        lent.keys = keys;
+        lent
+    }
+
+    /// Take the lent chunks back (the draw only read them).
+    pub fn give_back(&mut self, w: &mut WorldRt, lent: Lent) {
+        let Some(scratch) = self.scratch.as_mut() else {
+            return;
+        };
+        for cx in lent.keys {
+            if let Some(ch) = w.chunks.remove(&cx) {
+                scratch.chunks.insert(cx, ch);
+            }
+        }
     }
 }
 
@@ -1848,6 +1926,7 @@ impl Plugin for WorldRenderPlugin {
             app.add_plugins(BatchPlugin);
         }
         app.init_resource::<LakeFlares>()
+            .init_resource::<RenderWorldCache>()
             .init_resource::<WorldPools>()
             .init_resource::<WorldDrawState>()
             .add_systems(
@@ -1959,7 +2038,7 @@ fn draw_world(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GmQuad>>,
     mut images: ResMut<Assets<Image>>,
-    white: Res<WhiteTexture>,
+    (white, mut cache): (Res<WhiteTexture>, ResMut<RenderWorldCache>),
     mut glow_cams: Query<(
         Entity,
         &mut Camera,
@@ -1970,6 +2049,11 @@ fn draw_world(
 ) {
     let rv = cams.render_view();
     let sim = &mut sim.0;
+    // R28: the part of the zoomed view past the 1× view draws from render-only chunks
+    let lent = cache.lend(sim.session, &mut sim.world, rv.x, rv.y, rv.w, rv.h);
+    for cx in &lent.changed {
+        pools.built.remove(cx);
+    }
     let now = sim.now_ms();
     let glow_out = glow.out.clone();
     let ctx = DrawCtx {
@@ -2031,6 +2115,7 @@ fn draw_world(
             );
         }
     }
+    cache.give_back(&mut sim.world, lent);
 
     // food glow passes
     let active = frame.glow.is_some();

@@ -20,10 +20,11 @@ use crate::sim_bridge::SimRes;
 use bevy::prelude::*;
 
 /// After every fixed step: the world/forest chunk generation the original's draw does for the
-/// view ([`world::world_draw_generate`], [`forest::forest_draw_generate`]: forest chunks draw
+/// 1× game view (zoom never reaches the game: ruling R28; the zoomed-out rest of the world is
+/// drawn from `world::RenderWorldCache`, forest chunks not generated yet show no trees) ([`world::world_draw_generate`], [`forest::forest_draw_generate`]: forest chunks draw
 /// from the game RNG). GameMaker (and LÖVE) draw once after each step; doing this here, for the
 /// render view, keeps the game RNG and the saved chunks changing only inside steps, in LÖVE's
-/// order, whatever the frame rate. The frame's draws then find their chunks ready.
+/// order, whatever the frame rate and zoom. The frame's draws then find their chunks ready.
 ///
 /// Also the lake sparkles' state ([`world::world_lakes_step`]: their respawns advance the saved
 /// `flare_seq`); they start over after a save (`save_game` sets `lk.flares = undefined`) and in a
@@ -39,7 +40,8 @@ pub fn draw_generate_system(
         .read()
         .any(|e| matches!(e.0, myco_core::events::SimEvent::Saved));
     let Some(assets) = assets else { return };
-    let rv = cams.render_view();
+    // the original's view: the 1× game view, whatever the render zoom (ruling R28)
+    let rv = cams.game_view;
     let sim = &mut sim.0;
     world::world_draw_generate(sim, rv.x, rv.y, rv.w, rv.h);
     if let Some(mut flares) = flares {
