@@ -207,7 +207,11 @@ impl Plugin for SimBridgePlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    focus_step.in_set(SimSet::Prepare),
+                    // obj_game Step_0 runs after every Begin Step (obj_hud's: menus, HUD,
+                    // tree), so `ui_blocking()` is this step's
+                    focus_step
+                        .in_set(SimSet::Prepare)
+                        .after(crate::ui::HudStepSet::Game),
                     step_sim.in_set(SimSet::Step),
                     trace_rng_system.in_set(SimSet::Step).after(step_sim),
                 ),
@@ -353,7 +357,7 @@ pub fn collect_input(
 /// `focus_step` (obj_game Step): without window focus, and `pause_on_focus_loss` on, the pause
 /// menu opens unless a screen blocks (`ui_blocking`). `MYCO_FOCUS` (ForceFocus) treats the window
 /// as focused for automated runs.
-fn focus_step(
+pub fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
     blockers: Res<UiBlockers>,

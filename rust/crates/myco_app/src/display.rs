@@ -468,7 +468,11 @@ impl Plugin for DisplayPlugin {
         app.add_message::<SetFullscreen>()
             .add_message::<CycleWindowSize>()
             .add_systems(Startup, (init_display_sizes, install_quit_hook))
-            .add_systems(FixedUpdate, display_step)
+            // display_step sets the window's size/mode, focus_step reads only its focus flag
+            .add_systems(
+                FixedUpdate,
+                display_step.ambiguous_with(crate::sim_bridge::focus_step),
+            )
             .add_systems(
                 Update,
                 (

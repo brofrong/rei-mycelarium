@@ -431,11 +431,23 @@ impl Plugin for AutopilotPlugin {
                 FixedUpdate,
                 (
                     run_script.in_set(SimSet::Prepare),
+                    // the dev hooks act before the step's game code (the menus' and the
+                    // HUD's Begin Step onward)
                     dev_hooks_game_start
                         .in_set(SimSet::Prepare)
-                        .after(run_script),
-                    dev_hooks_step.in_set(SimSet::Prepare).after(run_script),
-                    ui_demo.in_set(SimSet::After),
+                        .after(run_script)
+                        .before(crate::ui::menu_step),
+                    dev_hooks_step
+                        .in_set(SimSet::Prepare)
+                        .after(dev_hooks_game_start)
+                        .before(crate::ui::menu_step),
+                    // after the draw-side steps that change the sim (draw generation, tiles,
+                    // build options), before the HUD reads this step's events
+                    ui_demo
+                        .in_set(SimSet::After)
+                        .after(crate::render::draw_generate_system)
+                        .after(crate::render::mycelium::tiles_step_system)
+                        .after(crate::ui::myc_prompts::build_affordable_system),
                     dump_state.in_set(SimSet::After),
                 ),
             )

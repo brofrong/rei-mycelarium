@@ -95,3 +95,58 @@ fn catch_up_is_capped_at_five_steps() {
     app.update();
     assert_eq!(app.world().resource::<StepHistory>().0.len(), 5);
 }
+
+/// obj_game Step_0's `focus_step` runs after every Begin Step (obj_hud's, where the menus, the
+/// HUD and the tree decide what blocks), so it sees this step's `ui_blocking()`: a screen that
+/// opened in this step's Begin Step keeps the unfocused game from pausing, and one that closed
+/// lets it pause in the same step.
+#[test]
+fn focus_step_sees_this_steps_blockers() {
+    use bevy::window::PrimaryWindow;
+    use myco_app::sim_bridge::{SimSet, UiBlockers};
+    use myco_app::ui::HudStepSet;
+    use myco_core::sim::Command;
+    #[derive(Resource)]
+    struct OpenNow(bool);
+    fn begin_step(open: Res<OpenNow>, mut b: ResMut<UiBlockers>) {
+        b.hud = open.0;
+    }
+    let mut app = app();
+    app.configure_sets(
+        FixedUpdate,
+        (HudStepSet::Pre, HudStepSet::Screens, HudStepSet::Game)
+            .chain()
+            .in_set(SimSet::Prepare),
+    )
+    .insert_resource(OpenNow(true))
+    .add_systems(FixedUpdate, begin_step.in_set(HudStepSet::Pre));
+    app.world_mut().spawn((
+        Window {
+            focused: false,
+            ..default()
+        },
+        PrimaryWindow,
+    ));
+    let step = app.world().resource::<Time<Fixed>>().timestep();
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(step));
+    let paused = |app: &App| {
+        app.world()
+            .resource::<StepHistory>()
+            .0
+            .last()
+            .unwrap()
+            .commands
+            .contains(&Command::SetPaused(true))
+    };
+    app.update();
+    assert!(
+        !paused(&app),
+        "the screen opened this Begin Step blocks the focus pause"
+    );
+    app.world_mut().resource_mut::<OpenNow>().0 = false;
+    app.update();
+    assert!(
+        paused(&app),
+        "the screen closed this Begin Step: the focus pause comes now"
+    );
+}
