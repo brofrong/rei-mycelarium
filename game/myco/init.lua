@@ -45,7 +45,17 @@ local TRACE = os.getenv("MYCO_TRACE")
 local function trace(msg) if TRACE then print(string.format("[%.3f] %s", love.timer.getTime(), msg)) end end
 M.trace = trace
 
+-- GMEXT-Steamworks GML wrappers the game calls as scripts (the port runs without Steam).
+local function define_steam_scripts()
+  steam_step = function() end
+  steam_userstats_get_achievement = function() return false end
+  steam_userstats_set_achievement = function() return false end
+  steam_userstats_store_stats = function() return false end
+  steam_api_is_initialized = function() return false end
+end
+
 function M.boot()
+  define_steam_scripts()
   _G.global = gm.global
   trace("load code")
   M.load_code()
