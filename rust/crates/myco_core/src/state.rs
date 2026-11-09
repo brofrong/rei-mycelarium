@@ -62,6 +62,12 @@ impl GameState {
         for (k, v) in TasksSave::default().stats {
             self.state.tasks.stats.entry(k).or_insert(v);
         }
+        // `boar_timer = bal("boar_spawn_interval") * fps` after game_mode_apply(st.mode)
+        if self.state.timers.boar.is_none() {
+            let fps = 60.0;
+            let mode = self.state.mode;
+            self.state.timers.boar = Some(crate::balance::bal(mode, "boar_spawn_interval") * fps);
+        }
     }
 }
 
@@ -399,7 +405,10 @@ impl Default for RunState {
 #[serde(default)]
 pub struct TimersSave {
     pub hedgehog: f64,
-    pub boar: f64,
+    /// `None` when the save lacks it: load_game falls back to `boar_spawn_interval * fps`
+    /// under the save's mode ([`GameState::apply_load_defaults`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boar: Option<f64>,
     pub squirrel: f64,
     pub crow: f64,
     pub experience_crows: Vec<f64>,
@@ -411,12 +420,12 @@ pub struct TimersSave {
 
 impl Default for TimersSave {
     /// life_animal_timers_init without the RNG jitter (60 fps): hedgehog = (spawn interval +
-    /// mid first delay), squirrel/crow = spawn interval; boar as load_game's fallback
-    /// (boar_spawn_interval); leaf = leaf_spawn_interval, worm = 60.
+    /// mid first delay), squirrel/crow = spawn interval; boar unset (load_game's mode-aware
+    /// fallback fills it); leaf = leaf_spawn_interval, worm = 60.
     fn default() -> Self {
         TimersSave {
             hedgehog: 32130.0,
-            boar: 30600.0,
+            boar: None,
             squirrel: 18360.0,
             crow: 24480.0,
             experience_crows: vec![15300.0, 19380.0],

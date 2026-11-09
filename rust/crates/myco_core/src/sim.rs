@@ -7,6 +7,15 @@
 //!   instances (only obj_hud has one), then Step (obj_game, obj_forest_controller,
 //!   obj_mycelium_controller, obj_life); no instance has an End Step. Subsystem tasks fill the
 //!   hooks it calls and add their own `Command` variants, nothing else here.
+//! - Construction runs the room's Create events through the same hooks for a new game and for
+//!   a loaded one, as GameMaker does (load_game runs on a live Room1): `game::init`
+//!   (obj_game Create, `game_init`), then `forest::create`, `mycelium::create`,
+//!   `life::create` in instance order. A new game then runs `save_start_new` +
+//!   `game_mode_start`; a load replaces `sim.state` with the save, applies load_game's data
+//!   fixups and calls the `on_load` hooks (world, progress, forest, mycelium, mushrooms, life,
+//!   then `weather::init`). Hook contract: on a load, `create` has always run before `on_load`,
+//!   so `on_load` may rely on create-built runtime state (stump parts, growth duration, fresh
+//!   tutorial/tasks) and must only overwrite what the save restores.
 //! - The app passes UI state in (`StepInput`), turns clicks on in-world buttons into
 //!   `Command`s and drains `SimEvent`s; logic never draws or measures text.
 
@@ -193,6 +202,8 @@ pub struct Sim {
     pub world_seed: Option<i64>,
     /// When `Some`, `step` appends the name of each subsystem call (order tests).
     pub trace: Option<Vec<&'static str>>,
+    /// The hooks `new_game` / `from_save` called, in order (a dozen names; order tests).
+    pub build_log: Vec<&'static str>,
     events: Vec<SimEvent>,
 }
 
@@ -221,8 +232,29 @@ impl Sim {
             fps: 60.0,
             world_seed: None,
             trace: None,
+            build_log: Vec::new(),
             events: Vec::new(),
         }
+    }
+
+    fn built(&mut self, name: &'static str) {
+        self.build_log.push(name);
+    }
+
+    /// The room's Create events in instance order (obj_hud's is the app's). Shared by
+    /// `new_game` and `from_save`.
+    fn create_room(world_seed: Option<i64>) -> Sim {
+        let mut sim = Sim::blank();
+        sim.world_seed = world_seed;
+        sim.built("game.init");
+        sim.obj_game_create();
+        sim.built("forest.create");
+        forest::create(&mut sim);
+        sim.built("mycelium.create");
+        mycelium::create(&mut sim);
+        sim.built("life.create");
+        life::create(&mut sim);
+        sim
     }
 
     fn mark(&mut self, name: &'static str) {
@@ -241,13 +273,10 @@ impl Sim {
     /// does for "new game": `save_start_new` (no slot yet: bind one with
     /// [`Sim::save_start_new`]) and `game_mode_start`.
     pub fn new_game(mode: GameMode, name: &str, world_seed: Option<i64>) -> Sim {
-        let mut sim = Sim::blank();
-        sim.world_seed = world_seed;
-        sim.obj_game_create();
-        forest::create(&mut sim);
-        mycelium::create(&mut sim);
-        life::create(&mut sim);
+        let mut sim = Sim::create_room(world_seed);
+        sim.built("save_start_new");
         sim.save_start_new(-1, name);
+        sim.built("game_mode_start");
         sim.game_mode_start(mode);
         sim.title_open = false;
         sim
@@ -442,12 +471,15 @@ impl Sim {
 
     // port: load_game
     /// A Sim continuing a save (no slot bound: see [`Sim::load_game`]). Applies load_game's
-    /// fixups to the data, then lets each subsystem rebuild its runtime state.
-    pub fn from_save(state: GameState) -> Result<Sim, LoadError> {
+    /// fixups to the data, then lets each subsystem rebuild its runtime state. Like the
+    /// original, it runs on a live room: the Create sequence first (see the module docs).
+    pub fn from_save(mut state: GameState) -> Result<Sim, LoadError> {
         if state.version != 1 {
             return Err(LoadError::Version(state.version));
         }
-        let mut sim = Sim::blank();
+        // tips/stats merges and the mode-aware boar timer fallback (idempotent after read_slot)
+        state.apply_load_defaults();
+        let mut sim = Sim::create_room(None);
         sim.state = state;
         let st = &mut sim.state;
         // game_mode_apply(st.mode): `bal` follows state.mode (missing mode reads as exploration)
@@ -481,12 +513,19 @@ impl Sim {
             m.crow_target = false;
             m.born = None;
         }
+        sim.built("world.on_load");
         world::on_load(&mut sim);
+        sim.built("progress.on_load");
         progress::on_load(&mut sim);
+        sim.built("forest.on_load");
         forest::on_load(&mut sim);
+        sim.built("mycelium.on_load");
         mycelium::on_load(&mut sim);
+        sim.built("mushrooms.on_load");
         mushrooms::on_load(&mut sim);
+        sim.built("life.on_load");
         life::on_load(&mut sim);
+        sim.built("weather.init");
         weather::init(&mut sim);
         sim.intro_active = false;
         sim.title_open = false;

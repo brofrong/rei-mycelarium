@@ -226,3 +226,72 @@ fn from_save_applies_load_game_fixups() {
     gs.version = 2;
     assert!(matches!(Sim::from_save(gs), Err(LoadError::Version(2))));
 }
+
+const CREATE: [&str; 4] = [
+    "game.init",
+    "forest.create",
+    "mycelium.create",
+    "life.create",
+];
+
+#[test]
+fn new_game_runs_the_create_sequence_first() {
+    let sim = Sim::new_game(GameMode::Exploration, "C", Some(1));
+    let mut want = CREATE.to_vec();
+    want.extend(["save_start_new", "game_mode_start"]);
+    assert_eq!(sim.build_log, want);
+}
+
+#[test]
+fn from_save_runs_create_hooks_before_on_load() {
+    let sim = Sim::from_save(GameState::default()).unwrap();
+    // load_game runs on a live room: the same Create sequence as a new game, then the loads
+    let mut want = CREATE.to_vec();
+    want.extend([
+        "world.on_load",
+        "progress.on_load",
+        "forest.on_load",
+        "mycelium.on_load",
+        "mushrooms.on_load",
+        "life.on_load",
+        "weather.init",
+    ]);
+    assert_eq!(sim.build_log, want);
+}
+
+#[test]
+fn missing_boar_timer_falls_back_per_mode() {
+    let parse = |mode: &str, timers: &str| -> GameState {
+        let text = format!(
+            r#"{{"version":1,"world":{{}},"state":{{"mode":"{mode}","timers":{timers}}}}}"#
+        );
+        serde_json::from_str(&text).unwrap()
+    };
+    let t = r#"{"hedgehog":1,"squirrel":2,"crow":3,"experience_crows":[4,5],"leaf":6,"worm":7}"#;
+    let ex = Sim::from_save(parse("exploration", t)).unwrap();
+    assert_eq!(ex.state.state.timers.boar, Some(30600.0));
+    let su = Sim::from_save(parse("survival", t)).unwrap();
+    assert_eq!(su.state.state.timers.boar, Some(18000.0));
+    assert_eq!(
+        su.state.state.timers.boar,
+        Some(bal(GameMode::Survival, "boar_spawn_interval") * 60.0)
+    );
+    // a saved value is kept and round-trips; an unset one is not written
+    let kept = parse("survival", r#"{"boar":123.5}"#);
+    assert_eq!(
+        Sim::from_save(kept.clone())
+            .unwrap()
+            .state
+            .state
+            .timers
+            .boar,
+        Some(123.5)
+    );
+    assert!(serde_json::to_string(&kept.state.timers)
+        .unwrap()
+        .contains("\"boar\":123.5"));
+    let unset = parse("survival", t);
+    assert!(!serde_json::to_string(&unset.state.timers)
+        .unwrap()
+        .contains("boar"));
+}

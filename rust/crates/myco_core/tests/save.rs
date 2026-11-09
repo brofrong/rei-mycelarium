@@ -304,7 +304,9 @@ fn defaults_match_fresh_save() {
     ] {
         v["state"].as_object_mut().unwrap().remove(k);
     }
-    let state: GameState = serde_json::from_value(v).unwrap();
+    let mut state: GameState = serde_json::from_value(v).unwrap();
+    // the boar timer has no plain default: load_game's mode-aware fallback fills it
+    state.apply_load_defaults();
     let st = serde_json::to_value(&state.state).unwrap();
     for k in [
         "tasks",
