@@ -418,7 +418,7 @@ pub fn hover_bar_step_draw(g: &mut Gm, sim: &Sim, hud: &HudState, cams: &Cameras
         let Some(p) = mushrooms::hover_progress(sim, i) else {
             continue;
         };
-        if let Some([x1, y1, x2, y2]) = mushrooms::hit_box(sim, i) {
+        if let Some((x1, y1, x2, y2)) = mushrooms::mushroom_hit_box(sim, i) {
             if gml::point_in_rectangle(mx, my, x1, y1, x2, y2) {
                 hover_bar_draw(g, &to_gui, cams.zoom, (x1 + x2) * 0.5, y1 - gap, p);
                 return;

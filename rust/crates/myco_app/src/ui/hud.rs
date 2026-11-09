@@ -15,24 +15,25 @@
 pub use super::fonts::UiFonts;
 use super::gm_draw::{Gm, GuiDraw};
 use super::markers::{self, AnimalMarkers};
+use super::menu::{Menus, UiFlags};
 use super::placement::{self, RmbAction};
 use super::tasks as ui_tasks;
 use super::tree::{tree_draw_glow, tree_draw_icon, TreeScreen};
 use super::{draw_order, min_text_scale, LocaleRes, MIN_TEXT_PX};
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimEventMsg, SimRes, UiBlocking, UiCapture};
+use crate::sim_bridge::{PendingInput, SimEventMsg, SimRes, UiBlockers, UiCapture};
 use bevy::prelude::*;
 use myco_core::balance::{bal, vis};
 use myco_core::camera::cine_blocking;
 use myco_core::events::SimEvent;
 use myco_core::gml;
 use myco_core::locale::Locale;
-use myco_core::mushrooms::{self, MushroomKind, PlaceCheck};
-use myco_core::progress::{mycelium_cm, tasks};
-use myco_core::save;
+use myco_core::mushrooms::{self, MushroomKind};
+use myco_core::mycelium::soil::mycelium_cm;
+use myco_core::progress::tasks;
 use myco_core::sim::{Command, Key, Sim};
-use myco_core::state::{GameMode, SlotMeta};
+use myco_core::state::GameMode;
 
 /// obj_hud colours (BGR).
 pub const COLOR_INK: f64 = 14873582.0;
@@ -187,6 +188,15 @@ pub struct HudCamnav {
     pub hover_scale: f64,
 }
 
+/// `myc_place_check` result as the HUD draws it (`hud_place_at`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlaceAt {
+    pub ok: bool,
+    pub x: f64,
+    pub y: f64,
+    pub face: Option<f64>,
+}
+
 /// obj_hud state plus the HUD globals.
 #[derive(Resource, Clone, Debug)]
 pub struct HudState {
@@ -208,36 +218,19 @@ pub struct HudState {
     pub build_hover: i32,
     /// `hud_place_type` (-1 = None)
     pub place_type: Option<MushroomKind>,
-    /// `hud_place_at`
-    pub place_at: Option<PlaceCheck>,
-    pub pause_items: &'static [&'static str],
-    pub pause_hover: i32,
-    pub volume_drag: i32,
-    pub title_hover: i32,
-    pub new_mode: GameMode,
-    pub credits_open: bool,
-    pub credits_back_hover: bool,
-    /// "", "new" or "load"
-    pub slot_mode: String,
-    pub slot_hover: i32,
-    pub slot_naming: i32,
-    pub slot_metas: Vec<Option<SlotMeta>>,
-    pub saves_exist: bool,
-    pub hover_id: String,
+    /// `hud_place_at` (the core's placement check, ruling R22)
+    pub place_at: Option<PlaceAt>,
     /// `global.ui_capture_mouse`
     pub ui_capture_mouse: bool,
-    /// this step's Escape reached `menu_open = false` in the chain (the tree screen closes)
-    pub escape_closes_tree: bool,
     /// `global.right_click_used`
     pub right_click_used: bool,
+    /// Read-only mirrors of state the menus (Task 18: `UiFlags`, `Menus.logo`) and the tree
+    /// (Task 19: `TreeScreen.open`) own, copied at the start of every Begin Step.
     pub menu_open: bool,
     pub debug_open: bool,
     pub logo_open: bool,
     pub hud_hidden: bool,
     pub units_imperial: bool,
-    /// `global.display_fullscreen` (pause menu label)
-    pub display_fullscreen: bool,
-    pub title_alpha: f64,
     /// `global.animal_marker_hover` (marker source id)
     pub animal_marker_hover: Option<u64>,
     /// the cursor (GUI) of the last Begin Step
@@ -246,70 +239,17 @@ pub struct HudState {
     pub mouse_world: (f64, f64),
 }
 
-/// `hud_pause_items_game`.
-pub const PAUSE_ITEMS_GAME: [&str; 7] = [
-    "resume",
-    "display_mode",
-    "window_size",
-    "units",
-    "language",
-    "main_menu",
-    "quit",
-];
-/// `hud_pause_items_title`.
-pub const PAUSE_ITEMS_TITLE: [&str; 6] = [
-    "resume",
-    "display_mode",
-    "window_size",
-    "units",
-    "language",
-    "quit",
-];
-/// `hud_title_items`.
-pub const TITLE_ITEMS: [&str; 6] = [
-    "exploration",
-    "survival",
-    "load_game",
-    "settings",
-    "credits",
-    "exit",
-];
-/// `hud_volume_channels` / `hud_volume_labels`.
-pub const VOLUME_CHANNELS: [&str; 2] = ["sfx", "music"];
-pub const VOLUME_LABELS: [&str; 2] = ["volume_sfx", "volume_music"];
-/// `hud_credits_columns`: per column, groups of (title key, names).
-pub const CREDITS_COLUMNS: [&[(&str, &[&str])]; 2] = [
-    &[
-        (
-            "credits_plan_kapkan",
-            &["Andrey Tyulenev", "Philipp Zybkovets"],
-        ),
-        ("credits_smm_qa", &["Daria Konakhova"]),
-    ],
-    &[
-        (
-            "credits_art_ui",
-            &[
-                "LaNa_FeeD",
-                "Wothy (@wothella)",
-                "Olga Zaporozhskaia",
-                "Oniks",
-            ],
-        ),
-        ("credits_forest_assets", &["Eder Muniz"]),
-    ],
-];
-
 impl Default for HudState {
     fn default() -> Self {
-        HudState::new(false)
+        HudState::new()
     }
 }
 
 impl HudState {
     // port: gml_Object_obj_hud_Create_0
-    /// obj_hud Create_0. `saves_exist` is `save_any_exists()`.
-    pub fn new(saves_exist: bool) -> HudState {
+    /// obj_hud Create_0, in-game part (the menu fields are Task 18's `Menus`, the tree's
+    /// Task 19's `TreeScreen`).
+    pub fn new() -> HudState {
         let mut h = HudState {
             ui: HudUi::new(-32.0, -32.0, -192.0),
             build: HudBuild::new(-10.0),
@@ -337,29 +277,13 @@ impl HudState {
             build_hover: -1,
             place_type: None,
             place_at: None,
-            pause_items: &PAUSE_ITEMS_GAME,
-            pause_hover: -1,
-            volume_drag: -1,
-            title_hover: -1,
-            new_mode: GameMode::Exploration,
-            credits_open: false,
-            credits_back_hover: false,
-            slot_mode: String::new(),
-            slot_hover: -1,
-            slot_naming: -1,
-            slot_metas: Vec::new(),
-            saves_exist,
-            hover_id: String::new(),
             ui_capture_mouse: false,
-            escape_closes_tree: false,
             right_click_used: false,
             menu_open: false,
             debug_open: false,
             logo_open: false,
             hud_hidden: false,
             units_imperial: false,
-            display_fullscreen: false,
-            title_alpha: 0.0,
             animal_marker_hover: None,
             mouse_gui: (-1.0, -1.0),
             mouse_world: (0.0, 0.0),
@@ -551,7 +475,7 @@ impl HudState {
     pub fn build_types(sim: &Sim) -> Vec<MushroomKind> {
         Self::build_all_types()
             .into_iter()
-            .filter(|t| mushrooms::type_unlocked(&sim.state, *t))
+            .filter(|t| mushrooms::mushroom_type_unlocked(&sim.state, *t))
             .collect()
     }
 
@@ -611,136 +535,6 @@ impl HudState {
     pub fn upgrades_button_over(&self, assets: &GameAssets, mx: f64, my: f64) -> bool {
         let r = self.upgrades_button_rect(assets);
         gml::point_distance(mx, my, (r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5) <= (r.x2 - r.x1) * 0.5
-    }
-
-    // port: hud_pause_cy
-    pub fn pause_cy(gh: f64) -> f64 {
-        gh * 0.5 - 200.0
-    }
-
-    // port: hud_pause_item_disabled
-    /// The window size item is disabled in fullscreen.
-    pub fn pause_item_disabled(&self, i: usize) -> bool {
-        self.pause_items.get(i) == Some(&"window_size") && self.display_fullscreen
-    }
-
-    // port: hud_credits_top
-    /// Top of the credits: just under the surface line (`cam_y` = `camera_view_y`).
-    pub fn credits_top(cam_y: f64) -> f64 {
-        myco_core::balance::wld("surface_height_px") - cam_y + 40.0
-    }
-
-    // port: hud_credits_back_rect
-    pub fn credits_back_rect(gw: f64, cam_y: f64) -> R {
-        let (w, h) = (420.0, 64.0);
-        let y = Self::credits_top(cam_y) + 380.0;
-        R::new((gw - w) * 0.5, y, (gw + w) * 0.5, y + h)
-    }
-
-    // port: hud_slot_open
-    /// Open the slot list for "new" or "load" with the slots' metas (`save_slot_meta`).
-    pub fn slot_open(&mut self, mode: &str, dir: &std::path::Path) {
-        self.slot_mode = mode.to_string();
-        self.slot_naming = -1;
-        self.slot_metas = (0..3).map(|i| save::read_meta(dir, i).ok()).collect();
-    }
-
-    // port: hud_slot_close
-    pub fn slot_close(&mut self) {
-        self.slot_mode.clear();
-        self.slot_naming = -1;
-    }
-
-    // port: hud_slot_button_rect
-    /// Slot row `i` (3 = back) under the surface line.
-    pub fn slot_button_rect(i: usize, gw: f64, cam_y: f64) -> R {
-        let top = myco_core::balance::wld("surface_height_px") - cam_y + 60.0;
-        let (w, h) = (760.0, 76.0);
-        let x = (gw - w) * 0.5;
-        let y = top + i as f64 * (h + 12.0);
-        R::new(x, y, x + w, y + h)
-    }
-
-    // port: hud_slot_label
-    /// "SLOT n  -  name  -  length" or "SLOT n  -  EMPTY".
-    pub fn slot_label(&self, i: usize, loc: &Locale) -> String {
-        let head = format!("{} {}  -  ", loc.loc("slot_label"), i + 1);
-        match self.slot_metas.get(i).and_then(Option::as_ref) {
-            None => head + loc.loc("slot_empty"),
-            Some(m) => format!(
-                "{head}{}  -  {}",
-                m.name,
-                length_text(m.length_cm, self.units_imperial, loc)
-            ),
-        }
-    }
-
-    // port: hud_slot_mode_label
-    pub fn slot_mode_label(&self, i: usize, loc: &Locale) -> String {
-        match self.slot_metas.get(i).and_then(Option::as_ref) {
-            None => String::new(),
-            Some(m) => loc.loc(&format!("mode_{}", mode_str(m.mode))).to_string(),
-        }
-    }
-
-    // port: hud_title_item_disabled
-    /// "Load game" is disabled without saves.
-    pub fn title_item_disabled(&self, i: usize) -> bool {
-        TITLE_ITEMS.get(i) == Some(&"load_game") && !self.saves_exist
-    }
-
-    // port: hud_title_button_rect
-    pub fn title_button_rect(i: usize, gw: f64, cam_y: f64) -> R {
-        let top = myco_core::balance::wld("surface_height_px") - cam_y + 90.0;
-        let (w, h) = (420.0, 60.0);
-        let x = (gw - w) * 0.5;
-        let y = top + i as f64 * (h + 8.0);
-        R::new(x, y, x + w, y + h)
-    }
-
-    // port: hud_volume_slider_rect
-    pub fn volume_slider_rect(i: usize, gw: f64, gh: f64) -> R {
-        let w = 420.0;
-        let x = (gw - w) * 0.5;
-        let y = Self::pause_cy(gh) - 112.0 + i as f64 * 62.0;
-        R::new(x, y, x + w, y + 26.0)
-    }
-
-    // port: hud_pause_button_rect
-    pub fn pause_button_rect(i: usize, gw: f64, gh: f64) -> R {
-        let (w, h) = (420.0, 64.0);
-        let x = (gw - w) * 0.5;
-        let y = Self::pause_cy(gh) + 48.0 + i as f64 * (h + 12.0);
-        R::new(x, y, x + w, y + h)
-    }
-
-    /// `hud_close_button_rect` (Task 19's `tree::TreeView` carries the port marker).
-    pub fn close_button_rect(gw: f64) -> R {
-        R::new(gw - 152.0, 30.0, gw - 32.0, 76.0)
-    }
-
-    /// `hud_recentre_button_rect` (marker in Task 19's `tree::TreeView`).
-    pub fn recentre_button_rect(gw: f64) -> R {
-        let c = Self::close_button_rect(gw);
-        R::new(c.x1 - 208.0, c.y1, c.x1 - 20.0, c.y2)
-    }
-
-    /// `hud_logo_button_rect` (marker in Task 19's `tree::TreeView`).
-    pub fn logo_button_rect(gw: f64) -> R {
-        let c = Self::recentre_button_rect(gw);
-        R::new(c.x1 - 580.0, c.y1, c.x1 - 20.0, c.y2)
-    }
-
-    // port: hud_logo_reroll_rect
-    pub fn logo_reroll_rect(gw: f64) -> R {
-        let c = Self::close_button_rect(gw);
-        R::new(c.x1 - 208.0, c.y1, c.x1 - 20.0, c.y2)
-    }
-
-    // port: hud_logo_clear_rect
-    pub fn logo_clear_rect(gw: f64) -> R {
-        let c = Self::logo_reroll_rect(gw);
-        R::new(c.x1 - 188.0, c.y1, c.x1 - 20.0, c.y2)
     }
 
     /// `ui_blocking()`.
@@ -838,7 +632,7 @@ impl StepIn {
     }
 }
 
-/// Step_1 up to the screen branches: layout, Escape, hovers, tasks headers, animal markers,
+/// Step_1 up to the screen branches: layout, the build-close request of the Escape chain, hovers, tasks headers, animal markers,
 /// mouse capture. Returns the commands to send.
 #[allow(clippy::too_many_arguments)]
 pub fn step_pre(
@@ -850,41 +644,15 @@ pub fn step_pre(
     markers: &AnimalMarkers,
     ui_ox: f64,
     ui_by: f64,
+    build_close_requested: bool,
     inp: &StepIn,
 ) -> Vec<Command> {
     let mut cmds = Vec::new();
     hud.layout_apply(ui_ox, ui_by);
-    hud.pause_items = if sim.title_open {
-        &PAUSE_ITEMS_TITLE
-    } else {
-        &PAUSE_ITEMS_GAME
-    };
-    // water_counter_step: the logic's hud_begin_step
-    hud.escape_closes_tree = false;
-    if inp.pressed(Key::Escape) && !tasks::tasks_popup_open(sim) && !cine_blocking(sim) {
-        if !hud.slot_mode.is_empty() {
-            if hud.slot_naming >= 0 {
-                hud.slot_naming = -1;
-            } else {
-                hud.slot_close();
-            }
-        } else if hud.credits_open {
-            hud.credits_open = false;
-        } else if hud.debug_open {
-            hud.debug_open = false;
-        } else if hud.logo_open {
-            hud.logo_open = false;
-        } else if hud.menu_open {
-            // `global.menu_open = false`: the tree screen (Task 19) closes on this flag
-            hud.escape_closes_tree = true;
-        } else if hud.place_type.is_some() || hud.build_open {
-            hud.build_close();
-        } else if sim.pause_open || !sim.title_open {
-            cmds.push(Command::SetPaused(!sim.pause_open));
-        }
-    }
-    if !sim.title_open && hud.title_alpha > 0.0 {
-        hud.title_alpha = (hud.title_alpha - 1.0 / 30.0).max(0.0);
+    // water_counter_step: the logic's hud_begin_step. The Escape chain is Task 18's
+    // (`Menus::step`, run just before): its build-menu step arrives here as a request.
+    if build_close_requested {
+        hud.build_close();
     }
     let (mx, my) = (inp.mx, inp.my);
     hud.mouse_gui = (mx, my);
@@ -892,9 +660,6 @@ pub fn step_pre(
         hud.mouse_world = w;
     }
     hud.right_click_used = false;
-    hud.hover_id.clear();
-    hud.pause_hover = -1;
-    hud.title_hover = -1;
     let hb = &hud.build;
     hud.build_btn_hover = gml::point_distance(mx, my, hb.cx, hb.cy) <= hb.r;
     hud.upgrade_btn_hover = hud.upgrades_button_over(assets, mx, my);
@@ -1017,9 +782,9 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
     });
     if let Some(k) = key {
         let t = all[k];
-        if mushrooms::type_unlocked(&sim.state, t) {
+        if mushrooms::mushroom_type_unlocked(&sim.state, t) {
             hud.build_open = true;
-            if mushrooms::type_affordable(sim, t) {
+            if mushrooms::mushroom_type_affordable(sim, t) {
                 hud.place_type = Some(t);
                 hud.place_at = None;
             }
@@ -1035,7 +800,9 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
     }
     if let Some(t) = hud.place_type {
         let (wx, wy) = hud.mouse_world;
-        hud.place_at = mushrooms::place_check(sim, t, wx, wy);
+        // hud_place_at = myc_place_check(...): ruling R22, Task 9 runs it in core from
+        // `StepInput.placement` and stores the result; until then no preview
+        hud.place_at = None;
         if click && !on_circle && !hud.build_mouse_over(mx, my) {
             // myc_place_mushroom: Task 9 answers with SimEvent::MushroomPlaced, which closes
             // the bar (`hud_events`)
@@ -1055,11 +822,33 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
         hud.build_open = !hud.build_open;
     } else if click && hud.build_hover >= 0 {
         let t = types[hud.build_hover as usize];
-        if mushrooms::type_affordable(sim, t) {
+        if mushrooms::mushroom_type_affordable(sim, t) {
             hud.place_type = Some(t);
         }
     }
     out
+}
+
+/// Copy the state the menus (Task 18) and the tree (Task 19) own into the HUD's mirrors.
+pub fn sync_mirrors(
+    hud: &mut HudState,
+    flags: Option<&UiFlags>,
+    menus: Option<&Menus>,
+    tree: Option<&TreeScreen>,
+) {
+    hud.menu_open = tree.is_some_and(|t| t.open);
+    if let Some(f) = flags {
+        hud.debug_open = f.debug_open;
+        hud.hud_hidden = f.hud_hidden;
+        hud.units_imperial = f.units_imperial;
+    }
+    hud.logo_open = menus.is_some_and(|m| m.logo.open);
+}
+
+/// The HUD's part of `ui_blocking()` that the menus' blocker lacks: a tasks popup or a blocking
+/// cut-scene (no pause on focus loss then).
+pub fn hud_blocks(sim: &Sim) -> bool {
+    tasks::tasks_popup_open(sim) || cine_blocking(sim)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1071,12 +860,25 @@ pub fn hud_step_pre(
     loc: Res<LocaleRes>,
     markers: Res<AnimalMarkers>,
     cams: Res<Cameras>,
-    tree: Option<Res<TreeScreen>>,
+    ui: (
+        Option<Res<TreeScreen>>,
+        Option<ResMut<UiFlags>>,
+        Option<Res<Menus>>,
+    ),
     mut pending: ResMut<PendingInput>,
-    mut blocking: ResMut<UiBlocking>,
-    mut capture: ResMut<UiCapture>,
+    mut out: (ResMut<UiBlockers>, ResMut<UiCapture>),
 ) {
-    hud.menu_open = tree.is_some_and(|t| t.open);
+    let (tree, mut flags, menus) = ui;
+    sync_mirrors(
+        &mut hud,
+        flags.as_deref(),
+        menus.as_deref(),
+        tree.as_deref(),
+    );
+    // the Escape chain's build step (Task 18's `Menus::step`, run just before)
+    let close = flags
+        .as_mut()
+        .is_some_and(|f| std::mem::take(&mut f.build_close_requested));
     let inp = StepIn::from_pending(&pending, &cams);
     let cmds = step_pre(
         &mut hud,
@@ -1087,34 +889,36 @@ pub fn hud_step_pre(
         &markers,
         cams.layout.ui_ox,
         cams.layout.ui_by,
+        close,
         &inp,
     );
     pending.commands.extend(cmds);
-    capture.hud = hud.ui_capture_mouse;
     pending.tasks_popup_open = tasks::tasks_popup_open(&sim.0);
-    blocking.0 = ui_blocking(&sim.0, &hud);
-    sync_flags(&hud, &mut pending);
+    out.0.hud = hud_blocks(&sim.0);
+    out.1.hud = hud.ui_capture_mouse;
+    if let Some(f) = flags.as_mut() {
+        f.build_open = hud.build_open || hud.place_type.is_some();
+    }
 }
 
-/// The HUD globals the logic reads (`StepInput.debug_open`, `logo_open`, `hud_hidden`;
-/// `menu_open` is the tree screen's, Task 19).
-pub fn sync_flags(hud: &HudState, pending: &mut PendingInput) {
-    pending.debug_open = hud.debug_open;
-    pending.logo_open = hud.logo_open;
-    pending.hud_hidden = hud.hud_hidden;
-}
-
+#[allow(clippy::too_many_arguments)]
 pub fn hud_step_game(
     mut hud: ResMut<HudState>,
     sim: Res<SimRes>,
     cams: Res<Cameras>,
     tree: Option<ResMut<TreeScreen>>,
+    flags: Option<ResMut<UiFlags>>,
+    menus: Option<Res<Menus>>,
     mut pending: ResMut<PendingInput>,
-    mut blocking: ResMut<UiBlocking>,
     mut capture: ResMut<UiCapture>,
 ) {
-    let mut tree = tree;
-    hud.menu_open = tree.as_ref().is_some_and(|t| t.open);
+    let (mut tree, mut flags) = (tree, flags);
+    sync_mirrors(
+        &mut hud,
+        flags.as_deref(),
+        menus.as_deref(),
+        tree.as_deref(),
+    );
     let inp = StepIn::from_pending(&pending, &cams);
     let out = step_game(&mut hud, &sim.0, &inp);
     pending.commands.extend(out.commands);
@@ -1123,10 +927,14 @@ pub fn hud_step_game(
         if let Some(t) = tree.as_mut() {
             t.open();
         }
+        if let Some(f) = flags.as_mut() {
+            f.menu_open = true;
+        }
     }
-    blocking.0 = ui_blocking(&sim.0, &hud) || hud.menu_open;
     capture.hud = hud.ui_capture_mouse;
-    sync_flags(&hud, &mut pending);
+    if let Some(f) = flags.as_mut() {
+        f.build_open = hud.build_open || hud.place_type.is_some();
+    }
 }
 
 /// Events after a step: a placed mushroom closes the bar (`if ok then hud_build_close()`).
@@ -1204,31 +1012,9 @@ pub fn hud_text(g: &mut Gm, x: f64, y: f64, s: &str, sc: f64) {
     text(g, x, y, s, sc, sc);
 }
 
-// port: hud_fit
-/// Scale `sc`, reduced so `s` fits `maxw` (and `maxh` when > 0).
+/// `hud_fit` on the painter's current font (Task 18's `draw::hud_fit_size` is the marked port).
 pub fn hud_fit(g: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
-    let mut k = sc;
-    let w = g.string_width(s);
-    let h = g.string_height(s);
-    if w * k > maxw {
-        k = maxw.max(0.05) / w.max(1.0);
-    }
-    if maxh > 0.0 && h * k > maxh {
-        k = maxh.max(0.05) / h.max(1.0);
-    }
-    k
-}
-
-// port: hud_text_box
-/// Text left-aligned in a box with padding, vertically centred, fitted.
-pub fn hud_text_box(g: &mut Gm, r: R, s: &str, sc: f64, pad: f64) {
-    let (ha, va) = (g.halign, g.valign);
-    let k = hud_fit(g, s, sc, r.x2 - r.x1 - pad * 2.0, r.y2 - r.y1 - 6.0);
-    g.halign = 0;
-    g.valign = 1;
-    text(g, r.x1 + pad, (r.y1 + r.y2) * 0.5, s, k, k);
-    g.halign = ha;
-    g.valign = va;
+    super::draw::hud_fit_size(g.string_width(s), g.string_height(s), sc, maxw, maxh)
 }
 
 // port: hud_icon_number
@@ -1514,7 +1300,7 @@ fn draw_build(
                 0x505aeb as f64
             };
             let variant = if t == MushroomKind::Consumptor {
-                mushrooms::consumptor_variant(pa.face.unwrap_or(1.0))
+                mushrooms::consumptor_variant(pa.face.unwrap_or(1.0)) as f64
             } else {
                 0.0
             };
@@ -1584,9 +1370,9 @@ fn draw_build(
     let step = hud.build_slot_step(types.len());
     for (i, &t) in types.iter().enumerate() {
         let x = b.slot_x0 + i as f64 * step + off;
-        let cost = mushrooms::type_cost(sim, t);
-        let wcost = mushrooms::type_water_cost(sim, t);
-        let affordable = mushrooms::type_affordable(sim, t);
+        let cost = mushrooms::mushroom_type_cost(&sim.state, t);
+        let wcost = mushrooms::mushroom_type_water_cost(&sim.state, t);
+        let affordable = mushrooms::mushroom_type_affordable(sim, t);
         let can_food = sim.state.state.food >= cost;
         let price_y = if wcost > 0.0 {
             b.slot_y - b.price_line * 0.5

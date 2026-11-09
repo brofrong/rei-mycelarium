@@ -28,7 +28,7 @@ impl UiFonts {
         }
     }
 
-    // port: locale_font_load
+    /// (The font choice is T3's `locale_font_load` in core; this is its loading half.)
     /// `locale_font_load(lang)`: `Font1` / font `-1`, or the language's TTF fitted to each.
     /// Call again after a language change (the settings, Task 18).
     pub fn load(assets: &GameAssets, loc: &Locale) -> UiFonts {

@@ -195,7 +195,7 @@ fn input(mx: f64, my: f64) -> StepIn {
 #[test]
 fn rmb_in_placement_cancels_not_places() {
     let s = sim();
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
     hud.place_type = Some(MushroomKind::Spore);
     hud.build_open = true;
     hud.ui_capture_mouse = true; // placement mode captures the mouse (Begin Step)
@@ -229,9 +229,9 @@ fn rmb_over_hud_does_nothing() {
     let loc = Locale::load("key,en\n");
     let uf = UiFonts::bitmap();
     let markers = AnimalMarkers::default();
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
     let step = |hud: &mut HudState, inp: StepIn| {
-        let mut cmds = step_pre(hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
+        let mut cmds = step_pre(hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &inp);
         cmds.extend(step_game(hud, &s, &inp).commands);
         cmds
     };
@@ -300,32 +300,69 @@ fn rmb_over_hud_does_nothing() {
         ..input(900.0, 500.0)
     };
     let mut cmds = step_pre(
-        &mut hud, &paused, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp,
+        &mut hud, &paused, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &inp,
     );
     cmds.extend(step_game(&mut hud, &paused, &inp).commands);
     assert!(cmds.is_empty(), "{cmds:?}");
 }
 
+/// One Escape chain (Task 18's `Menus::step`): with the build bar or placement up, an Escape
+/// only closes it (through `UiFlags.build_close_requested`); the next one pauses.
 #[test]
 fn escape_closes_placement_before_pausing() {
+    use myco_app::ui::menu::{MenuEnv, MenuInput, Menus, UiFlags};
     let Some(assets) = assets() else {
         return;
     };
-    let s = sim();
+    let mut s = sim();
     let loc = Locale::load("key,en\n");
     let uf = UiFonts::bitmap();
     let markers = AnimalMarkers::default();
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
+    let mut menus = Menus::new(None);
+    let mut flags = UiFlags::default();
     hud.place_type = Some(MushroomKind::Spore);
-    let esc = StepIn {
-        keys: vec![Key::Escape],
-        ..input(900.0, 500.0)
+    let mut escape_step = |s: &mut Sim, hud: &mut HudState, flags: &mut UiFlags| {
+        // the HUD reports its state each step, the menus run first, then the HUD
+        flags.build_open = hud.build_open || hud.place_type.is_some();
+        let inp = MenuInput {
+            mx: 900.0,
+            my: 500.0,
+            click: false,
+            rclick: false,
+            lmb_down: false,
+            escape: true,
+            enter: false,
+            backspace: 0,
+            text: String::new(),
+            gw: 1920.0,
+            gh: 1080.0,
+        };
+        let mut env = MenuEnv {
+            locale: &loc,
+            volumes: [1.0, 1.0],
+            fullscreen: false,
+            window_size: (1280, 720),
+            flags,
+        };
+        menus.step(s, &inp, &mut env);
+        let close = std::mem::take(&mut flags.build_close_requested);
+        let esc = StepIn {
+            keys: vec![Key::Escape],
+            ..input(900.0, 500.0)
+        };
+        step_pre(hud, s, &assets, &uf, &loc, &markers, 0.0, 0.0, close, &esc)
     };
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &esc);
+    let cmds = escape_step(&mut s, &mut hud, &mut flags);
     assert!(cmds.is_empty());
     assert_eq!(hud.place_type, None);
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &esc);
-    assert_eq!(cmds, vec![Command::SetPaused(true)]);
+    assert!(!s.pause_open, "the same Escape must not also pause");
+    let cmds = escape_step(&mut s, &mut hud, &mut flags);
+    assert!(
+        cmds.is_empty(),
+        "the HUD sends no pause of its own: {cmds:?}"
+    );
+    assert!(s.pause_open, "the second Escape pauses (menus)");
 }
 
 #[test]
@@ -338,14 +375,16 @@ fn tasks_header_click_toggles_block() {
     let loc = Locale::load("key,en\ntasks_title,TASKS\n");
     let uf = UiFonts::bitmap();
     let markers = AnimalMarkers::default();
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
     let x = myco_core::balance::vis("tasks_x") + 4.0;
     let y = myco_core::balance::vis("tasks_y");
     let inp = StepIn {
         click: true,
         ..input(x, y)
     };
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &inp,
+    );
     assert_eq!(
         cmds,
         vec![Command::ToggleTaskBlock {
@@ -374,14 +413,16 @@ fn upgrade_button_opens_the_tree() {
     let loc = Locale::load("key,en\n");
     let uf = UiFonts::bitmap();
     let markers = AnimalMarkers::default();
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
     hud.build_open = true;
     let r = hud.upgrades_button_rect(&assets);
     let inp = StepIn {
         click: true,
         ..input((r.x1 + r.x2) / 2.0, (r.y1 + r.y2) / 2.0)
     };
-    step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
+    step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &inp,
+    );
     let out = step_game(&mut hud, &s, &inp);
     assert!(out.opened_tree);
     assert!(!hud.build_open);
@@ -390,7 +431,7 @@ fn upgrade_button_opens_the_tree() {
 
 #[test]
 fn layout_follows_ui_offset() {
-    let mut hud = HudState::new(false);
+    let mut hud = HudState::new();
     let (lx, cx, by) = (hud.ui.length_x, hud.camnav.left_x, hud.build.cy);
     hud.layout_apply(100.0, 40.0);
     assert_eq!(hud.ui.length_x, lx + 100.0);

@@ -17,7 +17,7 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, UiBlocking, UiCapture};
+use crate::sim_bridge::{PendingInput, SimRes, UiBlockers, UiCapture};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -1007,13 +1007,14 @@ impl TreeView {
         String::new()
     }
 
-    // port: hud_close_button_rect
+    /// `hud_close_button_rect()` ([`crate::ui::menu::hud_close_button_rect`]).
     pub fn close_button_rect(&self) -> Rect4 {
+        let r = crate::ui::menu::hud_close_button_rect(self.gui_w);
         Rect4 {
-            x1: self.gui_w - 152.0,
-            y1: 30.0,
-            x2: self.gui_w - 32.0,
-            y2: 76.0,
+            x1: r.x1,
+            y1: r.y1,
+            x2: r.x2,
+            y2: r.y2,
         }
     }
 
@@ -1139,29 +1140,24 @@ impl TreeView {
     }
 }
 
-/// Same as `ui::hud::hud_fit` (the marked port, Task 17).
-/// `hud_fit`: the scale that keeps `s` within `maxw` × `maxh` (maxh 0: no height limit).
+/// `hud_fit` ([`crate::ui::draw::hud_fit_size`]) in the painter's current font.
 pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
-    let mut k = sc;
-    let w = gm.string_width(s);
-    let h = gm.string_height(s);
-    if w * k > maxw {
-        k = maxw.max(0.05) / w.max(1.0);
-    }
-    if maxh > 0.0 && h * k > maxh {
-        k = maxh.max(0.05) / h.max(1.0);
-    }
-    k
+    crate::ui::draw::hud_fit_size(gm.string_width(s), gm.string_height(s), sc, maxw, maxh)
 }
 
-/// Same as `ui::hud::hud_text_box` (the marked port, Task 17) without the HUD's text minimum.
-/// `hud_text_box`: text fitted into a button rectangle, left-padded, vertically centred.
+/// `hud_text_box` ([`crate::ui::draw::hud_text_box_place`]) on the painter.
 fn hud_text_box(gm: &mut Gm, r: Rect4, s: &str, sc: f64, pad: f64) {
     let (ha, va) = (gm.halign, gm.valign);
-    let k = hud_fit(gm, s, sc, r.x2 - r.x1 - pad * 2.0, r.y2 - r.y1 - 6.0);
+    let (x, y, k) = crate::ui::draw::hud_text_box_place(
+        gm.string_width(s),
+        gm.string_height(s),
+        (r.x1, r.y1, r.x2, r.y2),
+        sc,
+        pad,
+    );
     gm.halign = FA_LEFT;
     gm.valign = FA_MIDDLE;
-    gm.text_transformed(r.x1 + pad, (r.y1 + r.y2) * 0.5, s, k, k);
+    gm.text_transformed(x, y, s, k, k);
     gm.halign = ha;
     gm.valign = va;
 }
@@ -1624,8 +1620,8 @@ impl Plugin for TreePlugin {
             .add_systems(PreUpdate, collect_wheel.after(bevy::input::InputSystems))
             .add_systems(
                 FixedUpdate,
-                // obj_hud Begin Step's tree branch: between the HUD's Escape/hover stage and
-                // its in-game stage (Task 17)
+                // obj_hud Begin Step's tree branch: after the menus and the HUD's first stage,
+                // before its in-game stage (Task 17)
                 tree_step_system.in_set(crate::ui::HudStepSet::Screens),
             )
             .add_systems(Update, tree_draw_system);
@@ -1659,43 +1655,44 @@ fn collect_wheel(mut screen: ResMut<TreeScreen>, mut wheel: MessageReader<MouseW
 pub fn tree_step_system(
     mut screen: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut blocking: ResMut<UiBlocking>,
+    mut blockers: ResMut<UiBlockers>,
     mut capture: ResMut<UiCapture>,
     cams: Res<Cameras>,
     sim: Res<SimRes>,
-    hud: Option<Res<crate::ui::hud::HudState>>,
+    menus: Option<Res<crate::ui::menu::Menus>>,
 ) {
     let screen = &mut *screen;
+    // obj_hud Step_1 runs the pause and logo branches before the tree's and returns (Task 18);
+    // the tree stays open under them, and an Escape they used is not the tree's
+    let held = sim.0.pause_open || menus.as_ref().is_some_and(|m| m.logo.open);
+    if screen.open && held {
+        pending.menu_open = true;
+        capture.tree = true;
+        blockers.tree = true;
+        return;
+    }
     screen
         .view
         .set_gui_size(cams.layout.view_w, cams.layout.view_h);
     screen.cache.mode = myco_core::balance::game_mode(&sim.0.state);
     let wheel = std::mem::take(&mut screen.wheel);
-    // obj_hud Step_1's Escape chain (Task 17's `hud::step_pre`) reaches `menu_open = false`
-    // only when no slot list, credits, debug or logo screen took the Escape first, and not while
-    // a tasks popup or a blocking cut-scene is up
-    let escape = match &hud {
-        Some(h) => h.escape_closes_tree,
-        None => pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open,
-    };
-    if screen.open && escape {
-        screen.open = false;
-    }
-    // the original returns before the tree branch while a cut-scene blocks or the tasks popup
-    // is open (ui_4.lua:1053-1056): the screen stays open but takes no input
+    // Escape: the single chain in `Menus::step` (Task 18) closes the tree through
+    // `UiFlags.menu_open` before this system runs. The original returns before the tree branch
+    // while a cut-scene blocks or the tasks popup is up (ui_4.lua:1053-1056): the screen stays
+    // open but takes no input.
     if screen.open
         && (myco_core::camera::cine_blocking(&sim.0)
             || myco_core::progress::tasks::tasks_popup_open(&sim.0))
     {
         pending.menu_open = true;
         capture.tree = true;
-        blocking.0 = true;
+        blockers.tree = true;
         return;
     }
     if !screen.open {
         screen.view.closed_step();
         pending.menu_open = false;
-        blocking.0 = false;
+        blockers.tree = false;
         // `global.ui_capture_mouse` is recomputed every step (ui_4.lua:1051)
         capture.tree = false;
         return;
@@ -1726,7 +1723,7 @@ pub fn tree_step_system(
     }
     pending.menu_open = screen.open;
     capture.tree = screen.open;
-    blocking.0 = screen.open;
+    blockers.tree = screen.open;
 }
 
 /// Every frame: the tree screen into [`GuiDraw`], and built hypha lengths into the simulation.

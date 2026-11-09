@@ -5,12 +5,12 @@
 //! The popup (`tasks_popup_*`) has no text in its geometry, so its input runs here.
 
 use super::goals::{self, Goal};
-use super::mycelium_cm;
 use super::tutorial::{self, Tip, TipState};
 use super::upgrades::upg_is_owned;
 use crate::balance::{gml_truthy, vis};
 use crate::camera;
 use crate::gml;
+use crate::mycelium::soil::mycelium_cm;
 use crate::sim::{Command, Key, Sim, StepInput};
 use crate::state::{GameMode, GameState, TasksSave};
 use serde_json::Value;
