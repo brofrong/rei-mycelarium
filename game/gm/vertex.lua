@@ -1,6 +1,8 @@
 -- GameMaker vertex buffers on LÖVE meshes. A vertex starts at vertex_position;
--- colour/texcoord calls modify the current vertex.
+-- colour/texcoord calls modify the current vertex. Buffers created from vertex
+-- buffers hold real bytes in the format's layout, so games can merge them.
 local dmath = require("gm.draw_math")
+local ffi = require("ffi")
 
 local M = {}
 local buffers, next_buf = {}, 0
@@ -8,12 +10,13 @@ local formats, next_fmt = {}, 0
 local fmt_building
 
 function M.vertex_format_begin() fmt_building = {} end
-function M.vertex_format_add_position() end
-function M.vertex_format_add_position_3d() end
-function M.vertex_format_add_colour() end
+local function add_attr(kind) fmt_building = fmt_building or {}; fmt_building[#fmt_building + 1] = kind end
+function M.vertex_format_add_position() add_attr("pos") end
+function M.vertex_format_add_position_3d() add_attr("pos3") end
+function M.vertex_format_add_colour() add_attr("col") end
 M.vertex_format_add_color = M.vertex_format_add_colour
-function M.vertex_format_add_texcoord() end
-function M.vertex_format_add_normal() end
+function M.vertex_format_add_texcoord() add_attr("uv") end
+function M.vertex_format_add_normal() add_attr("normal") end
 function M.vertex_format_end()
   local id = next_fmt
   next_fmt = next_fmt + 1
@@ -35,8 +38,9 @@ function M.vertex_delete_buffer(id)
   buffers[id] = nil
 end
 
-function M.vertex_begin(id)
+function M.vertex_begin(id, fmt)
   local b = buffers[id]
+  b.format = fmt
   b.verts, b.frozen = {}, false
   if b.mesh then b.mesh:release(); b.mesh = nil end
 end
@@ -77,16 +81,64 @@ function M.vertex_submit(id, prim, tex)
   love.graphics.draw(b.mesh)
 end
 
-function M.snapshot(id)
-  local out = {}
-  for i, v in ipairs(buffers[id].verts) do out[i] = { unpack(v) } end
-  return out
+local SIZES = { pos = 8, pos3 = 12, col = 4, uv = 8, normal = 12 }
+local function layout(fmt)
+  local attrs = formats[fmt] or { "pos", "col" }
+  local size = 0
+  for _, a in ipairs(attrs) do size = size + SIZES[a] end
+  return attrs, size
 end
-function M.restore(id, verts)
+
+function M.serialize(id)
   local b = buffers[id]
+  local attrs, size = layout(b.format)
+  local n = #b.verts
+  local out = ffi.new("uint8_t[?]", math.max(1, n * size))
+  for i, v in ipairs(b.verts) do
+    local p = out + (i - 1) * size
+    for _, a in ipairs(attrs) do
+      if a == "pos" or a == "pos3" then
+        local f = ffi.cast("float*", p)
+        f[0], f[1] = v[1], v[2]
+        if a == "pos3" then f[2] = 0 end
+      elseif a == "col" then
+        for k = 0, 3 do p[k] = math.floor(math.max(0, math.min(1, v[5 + k])) * 255 + 0.5) end
+      elseif a == "uv" then
+        local f = ffi.cast("float*", p)
+        f[0], f[1] = v[3], v[4]
+      end
+      p = p + SIZES[a]
+    end
+  end
+  return ffi.string(out, n * size)
+end
+
+function M.restore_bytes(id, bytes, fmt)
+  local b = buffers[id]
+  b.format = fmt
+  local attrs, size = layout(fmt)
+  local data = ffi.cast("const uint8_t*", bytes)
   b.verts = {}
-  for i, v in ipairs(verts or {}) do b.verts[i] = { unpack(v) } end
+  for i = 0, math.floor(#bytes / size) - 1 do
+    local p = data + i * size
+    local v = { 0, 0, 0, 0, 1, 1, 1, 1 }
+    for _, a in ipairs(attrs) do
+      if a == "pos" or a == "pos3" then
+        local f = ffi.cast("const float*", p)
+        v[1], v[2] = f[0], f[1]
+      elseif a == "col" then
+        for k = 0, 3 do v[5 + k] = p[k] / 255 end
+      elseif a == "uv" then
+        local f = ffi.cast("const float*", p)
+        v[3], v[4] = f[0], f[1]
+      end
+      p = p + SIZES[a]
+    end
+    b.verts[i + 1] = v
+  end
   b.frozen = true
 end
+
+function M.vertex_at(id, i) return buffers[id].verts[i + 1] end
 
 return M

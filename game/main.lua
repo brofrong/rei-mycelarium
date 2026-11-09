@@ -57,6 +57,16 @@ local function run_script()
         local fx, fy = s[3]:match("([%d.]+),([%d.]+)")
         local f = display.fit
         display.mouse_override = { f.x + f.w * tonumber(fx), f.y + f.h * tonumber(fy) }
+      elseif s[2] == "wmove" then
+        -- world offset from the mycelium controller, through view 0 to window pixels
+        local w = require("gm.window")
+        local dx, dy = s[3]:match("([-%d.]+),([-%d.]+)")
+        local m = gm.instance_find(obj_mycelium_controller, 0)
+        local cam, port = w.cameras[gm.view_camera[0]], w.ports[0]
+        local sx = port.x + (m.x + tonumber(dx) - cam.x) * port.w / cam.w
+        local sy = port.y + (m.y + tonumber(dy) - cam.y) * port.h / cam.h
+        local f, d = display.fit, display
+        display.mouse_override = { f.x + sx * f.w / d.surf_w, f.y + sy * f.h / d.surf_h }
       elseif s[2] == "down" then gm.mousepressed(0, 0, tonumber(s[3]))
       elseif s[2] == "up" then gm.mousereleased(0, 0, tonumber(s[3]))
       elseif s[2] == "key" then gm.keypressed(s[3]); gm.keyreleased(s[3])
