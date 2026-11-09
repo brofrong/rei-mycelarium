@@ -1,7 +1,7 @@
 //! Stones, mazes, rock clusters and surface obstacles (Task 7) against the LÖVE port.
 //! Golden topics: stones_art (pixel-derived stone data), stones_maze (maze_rng, obstacle bands,
 //! rock clusters, built mazes/clusters, blob/cut/maze primitives), stones_s31607 / stones_s7
-//! (worlds with stones live and caves neutral, R19; shoving and rolling stones).
+//! (worlds with everything live, R19; shoving and rolling stones, a redress at a maze border).
 mod common;
 
 use common::{f, golden, i};
@@ -668,11 +668,21 @@ fn maze_data_survives_a_save_round_trip() {
         .unwrap()
         .key;
     let built = maze::world_maze_build(&mut sim.world, key);
-    let (st, _) = sim.to_save();
-    let text = serde_json::to_string(&st).unwrap();
-    let back: myco_core::state::GameState = serde_json::from_str(&text).unwrap();
-    let mut sim2 = Sim::from_save(back).unwrap();
+    // through the save file encoder (save_N.json with its trailing NUL) and back
+    let dir = std::env::temp_dir().join(format!("myco_t7_maze_{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (st, meta) = sim.to_save();
+    myco_core::save::write_slot(&dir, 0, &st, &meta).unwrap();
+    let path = myco_core::save::save_path(&dir, 0);
+    let text1 = std::fs::read(&path).unwrap();
+    let back = myco_core::save::read_slot(&dir, 0).unwrap();
+    let mut sim2 = Sim::from_save(back.clone()).unwrap();
     assert_eq!(maze::world_maze_build(&mut sim2.world, key), built);
+    // the world section (built maze data included) re-encodes byte for byte
+    let enc = |w: &myco_core::state::WorldSave| myco_core::save::to_love_json(w).unwrap();
+    assert_eq!(enc(&back.world), enc(&st.world));
+    assert!(String::from_utf8_lossy(&text1).contains("\"entries\""));
+    std::fs::remove_dir_all(&dir).unwrap();
     // an unbuilt maze is saved as null and a wall has no data key
     let o = sim2.world.params.obstacles.as_ref().unwrap();
     let v = to_json(o);
@@ -683,6 +693,19 @@ fn maze_data_survives_a_save_round_trip() {
     assert!(list
         .iter()
         .any(|o| o["kind"] == "maze" && o["data"].is_null()));
+}
+
+#[test]
+fn stone_cell_band_is_optional() {
+    // an old cell without "band" stays without it, and the redress hashes one
+    let c: myco_core::state::StoneCellSave =
+        serde_json::from_str(r#"{"col":3,"row":20,"tc":3,"tr":3,"deep":false}"#).unwrap();
+    assert_eq!(c.band, None);
+    assert!(!serde_json::to_string(&c).unwrap().contains("band"));
+    let c: myco_core::state::StoneCellSave =
+        serde_json::from_str(r#"{"band":1,"col":3,"row":20,"tc":3,"tr":3,"deep":false}"#).unwrap();
+    assert_eq!(c.band, Some(1));
+    assert!(serde_json::to_string(&c).unwrap().contains("\"band\":1"));
 }
 
 #[test]
@@ -700,4 +723,18 @@ fn loading_stops_moving_stones() {
             assert_ne!(t.uid, 0, "loaded stones get runtime ids");
         }
     }
+}
+
+#[test]
+fn point_distance_squares_through_pow_like_luajit() {
+    // two stones touching at frame 15 of stones_s31607: macOS pow(dy, 2) is one ulp above
+    // dy * dy, and LuaJIT's `^` (gm.point_distance) uses pow
+    let dy = 8400.647101910525 - 8381.575123296032;
+    assert_eq!(myco_core::gml::power(dy, 2.0), 363.7403682716693);
+    assert_ne!(dy * dy, 363.7403682716693);
+    let d = myco_core::gml::point_distance(0.0, 0.0, 4.192331650958589, dy);
+    assert_eq!(
+        d,
+        (4.192331650958589f64.powf(std::hint::black_box(2.0)) + 363.7403682716693).sqrt()
+    );
 }

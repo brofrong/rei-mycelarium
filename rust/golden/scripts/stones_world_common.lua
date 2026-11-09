@@ -1,5 +1,5 @@
 -- Body of stones_s31607.lua / stones_s7.lua (run with the matching MYCO_SEED): a fresh world
--- with stones, deposits, surface walls, mazes and rock clusters live (caves neutral, R19):
+-- with stones, deposits, surface walls, mazes and rock clusters live (caves live):
 -- chunks -3..3 through layers 0..40, the first wall and maze on each side, late clusters, tile
 -- and stone-cell queries, stones shoved and stepped, and the obstacle state, for tests/stones.rs.
 local gm = require("gm")

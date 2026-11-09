@@ -388,7 +388,7 @@ pub fn maze_cave_hollows(w: &mut WorldRt, m: &mut Maze, x1: f64, y1: f64, x2: f6
                 let dy = (yy + 0.5 - cy) / ry;
                 let a = dy.atan2(dx);
                 let k = 1.05 + 0.08 * (4.0 * a + phase).sin();
-                if dx.abs().powf(4.0) + dy.abs().powf(4.0) <= k.powf(4.0) {
+                if gml::power(dx.abs(), 4.0) + gml::power(dy.abs(), 4.0) <= gml::power(k, 4.0) {
                     let lx = (xx - m.c1) as i64;
                     let ly = (yy - m.top) as i64;
                     if lx >= 0 && ly >= 0 && lx < mw && ly < mh {

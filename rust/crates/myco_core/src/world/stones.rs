@@ -747,7 +747,7 @@ pub fn stone_dress_blob(
             tc: t.0,
             tr: t.1,
             deep,
-            band,
+            band: Some(band),
             ..Default::default()
         };
         cells.push(cell.clone());
@@ -831,7 +831,10 @@ pub fn stone_redress_after_cut(w: &mut WorldRt, b: &mut WorldChunkSave, cut: &mu
             let Some(cell) = b.stone_map.get(&key) else {
                 continue;
             };
-            let band = cell.band;
+            // cell[$ "band"] ?? floor(world_hash01(x, y, 43) * 2)
+            let band = cell
+                .band
+                .unwrap_or_else(|| (w.hash01(x as f64, y as f64, 43.0) * 2.0).floor() as i64);
             let t = stone_tile_for(w, |c, r| redress_has(w, b, cut, c, r), x, y, band as f64);
             let old = cell.clone();
             let cell = b.stone_map.get_mut(&key).unwrap();
@@ -1025,8 +1028,10 @@ pub fn world_paint_stone_deposits(w: &mut WorldRt, ch: &mut WorldChunkSave, laye
         };
         if w.hash01(key, i, 51.0) < ch_now {
             let bias = 0.1f64.max(wld("stone_deposit_size_bias"));
-            let rx = min_r + (w.hash01(key, i, 52.0).powf(bias) * (rmax - min_r + 1.0)).floor();
-            let ry = min_r + (w.hash01(key, i, 53.0).powf(bias) * (rmax - min_r + 1.0)).floor();
+            let rx =
+                min_r + (gml::power(w.hash01(key, i, 52.0), bias) * (rmax - min_r + 1.0)).floor();
+            let ry =
+                min_r + (gml::power(w.hash01(key, i, 53.0), bias) * (rmax - min_r + 1.0)).floor();
             let lo_c = c0 + rx;
             let hi_c = c1 - rx;
             let lo_r = r0 + ry;

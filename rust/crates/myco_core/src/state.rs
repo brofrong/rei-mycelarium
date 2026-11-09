@@ -686,7 +686,9 @@ impl PartialEq for StoneSave {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct StoneCellSave {
-    pub band: i64,
+    /// tile depth row (0/1); old saves may lack it (`stone_redress_after_cut` then hashes one)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub band: Option<i64>,
     pub col: i64,
     pub deep: bool,
     pub row: i64,

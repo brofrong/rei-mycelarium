@@ -15,19 +15,19 @@
 //! * **Rewards.** Touching a cave grants its perk (`state.cave_perks`, `state.cave_taken`) and
 //!   leaves the runtime flash/wrap/popup/burst globals in [`CaveRt`]; popups hold the text key
 //!   (`perk_<id>`), the app localizes. Caves give perks, not resources, so no
-//!   `SimEvent::Resource` is emitted; the touch sound is `SimEvent::Sound("water_touch")`.
+//!   `SimEvent::Resource` is emitted; the touch sound is `AudioCall::WaterTouch` (cooldown in the
+//!   audio port).
 //! * **Time.** `current_time` (ms) is the sim clock `frame * 1000 / 60`.
 
 // `!(a >= b)` and friends are kept as the original writes them (same result for NaN).
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 
 use super::bones;
-use super::obstacles;
 use super::maze;
+use super::obstacles;
 use super::stones::{self, CellSet};
 use super::WorldRt;
 use crate::balance::{gml_truthy, vis, wld, wld_arr};
-use crate::events::{SimEvent, SoundCue};
 use crate::gml;
 use crate::sim::Sim;
 use crate::state::{
@@ -1244,7 +1244,10 @@ pub fn cave_yellow_pick(sim: &mut Sim) -> Option<YellowSpot> {
         crate::mycelium::mycelium_extreme_tip(sim, -1.0),
         crate::mycelium::mycelium_extreme_tip(sim, 1.0),
     ];
-    cave_yellow_pick_with(&mut sim.world, |dir| if dir < 0.0 { tips[0] } else { tips[1] })
+    cave_yellow_pick_with(
+        &mut sim.world,
+        |dir| if dir < 0.0 { tips[0] } else { tips[1] },
+    )
 }
 
 // port: cave_yellow_step
@@ -1289,11 +1292,11 @@ pub fn on_load(sim: &mut Sim) {
 // ---------------------------------------------------------------------------------------------
 // rewards
 
-/// `water_touch_sound(x, y)` (Task 20 owns the cooldown): the touch sound at the point.
+/// `water_touch_sound(x, y)`: the touch sound at the point, as `AudioCall::WaterTouch` so the
+/// audio port applies `water_touch_cooldown_frames` (a cave and a relic touched in one frame
+/// sound once, as in the original).
 pub(crate) fn water_touch_sound(sim: &mut Sim, x: f64, y: f64) {
-    let mut cue = SoundCue::new("water_touch").at(x, y);
-    cue.gain = vis("water_touch_volume");
-    sim.emit(SimEvent::Sound(cue));
+    sim.emit(crate::audio::water_touch(Some((x, y))));
 }
 
 // port: cave_taken
@@ -1527,4 +1530,3 @@ pub fn perk_debug_next(sim: &mut Sim) -> String {
     }
     "all caves taken".to_string()
 }
-

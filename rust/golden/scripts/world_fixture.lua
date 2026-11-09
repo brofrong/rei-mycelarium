@@ -1,10 +1,8 @@
 -- The Task 2 Exploration fixture loaded through load_game: world chunks and tiles (saved rows
--- and newly reached ones), forest chunks and host queries, and what save_game writes back. Task
--- 6/7 features neutralized (world_lib.lua). For tests/world.rs and tests/forest.rs.
+-- and newly reached ones), forest chunks and host queries, and what save_game writes back. Caves,
+-- stones and mazes live. For tests/world.rs and tests/forest.rs.
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
-L.neutralize_caves()
-L.neutralize_stones()
 L.preload()
 
 local function rle(t)

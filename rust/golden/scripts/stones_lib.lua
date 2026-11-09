@@ -1,20 +1,11 @@
--- Shared setup for the Task 7 golden scripts (not a topic itself): a world with the Task 6
--- caves neutralized (R19) and the stone/maze/obstacle code live.
---
--- neutralize_caves() leaves world_cave_rects running (it is not one of the generation hooks the
--- Task 5 scripts replace); mazes and rock clusters read it for their cave hollows, so it is made
--- neutral here too, matching myco_core's `caves::world_cave_rects` hook until Task 6 fills it.
+-- Shared setup for the Task 7 golden scripts (not a topic itself): a fresh world with
+-- everything live (caves included, ruling R19 re-capture).
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
 local S = { L = L }
 
 function S.setup()
-  L.neutralize_caves()
-  world_cave_rects = function() return gm.array() end
   L.preload()
-  -- the pixel-derived stone data the Rust port always has (world_draw builds it in LÖVE)
-  stones_init(global, global)
-  stone_tiles_init(global, global)
   L.new_world()
 end
 

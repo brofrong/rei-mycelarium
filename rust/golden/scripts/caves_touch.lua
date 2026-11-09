@@ -1,5 +1,5 @@
--- Cave and relic rewards on the Task 2 Exploration fixture (loaded through load_game, stones
--- neutralized per R19): touches across every cave and relic, the perks, popups, wraps, burst
+-- Cave and relic rewards on the Task 2 Exploration fixture (loaded through load_game, everything
+-- live): touches across every cave and relic, the perks, popups, wraps, burst
 -- and yellow timer cut they leave, wrap hits, hover tips, perk_debug_next and the perk
 -- multipliers. loc() is replaced by the identity so texts come out as their keys (myco_core
 -- keeps keys; the app localizes). For tests/caves.rs. Run: tools/golden.sh caves_touch
