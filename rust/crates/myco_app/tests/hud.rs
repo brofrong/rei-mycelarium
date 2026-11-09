@@ -634,3 +634,58 @@ fn camera_fly_follows_the_clicked_marker() {
         .any(|c| matches!(c, Command::CameraFlyTrack { .. })));
     assert_eq!(hud.fly_marker, None);
 }
+
+/// obj_hud Begin Step sets `global.menu_open` when the upgrade button is clicked, so the same
+/// frame's Step (the forest step's `ui_blocking`) already sees the tree open: the step input of
+/// the click's step carries `menu_open` (found by the T22 conformance run: two extra boar-shake
+/// draws in Rust on that step).
+#[test]
+fn upgrade_click_marks_the_menu_open_in_the_same_step() {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::math::DVec2;
+    use myco_app::camera::Cameras;
+    use myco_app::sim_bridge::{PendingInput, SimRes, UiCapture};
+    use myco_app::ui::tree::TreeScreen;
+    let Some(assets) = assets() else {
+        return;
+    };
+    let hud = HudState::new();
+    let r = hud.upgrades_button_rect(&assets);
+    let cams = Cameras::default();
+    let p = cams.gui_to_screen(DVec2::new((r.x1 + r.x2) / 2.0, (r.y1 + r.y2) / 2.0));
+    let mut pending = PendingInput {
+        cursor_override: Some(p),
+        ..Default::default()
+    };
+    pending.mouse_event(MouseButton::Left, true);
+    let mut world = World::new();
+    world.insert_resource(hud);
+    world.insert_resource(SimRes(sim()));
+    world.insert_resource(cams);
+    world.insert_resource(pending);
+    world.insert_resource(UiCapture::default());
+    world.insert_resource(myco_app::sim_bridge::UiBlockers::default());
+    world.insert_resource(TreeScreen::default());
+    world.insert_resource(assets);
+    world.insert_resource(UiFonts::bitmap());
+    world.insert_resource(AnimalMarkers::default());
+    world.insert_resource(myco_app::ui::LocaleRes {
+        locale: Locale::load("key,en\n"),
+        font_small: myco_app::ui::gm_draw::UiFont::Gm("Font1".into()),
+    });
+    // obj_hud Begin Step: the hover (pre stage), then the game branch with the click
+    world
+        .run_system_once(myco_app::ui::hud::hud_step_pre)
+        .unwrap();
+    world
+        .run_system_once(myco_app::ui::hud::hud_step_game)
+        .unwrap();
+    assert!(
+        world.resource::<TreeScreen>().open,
+        "the click opened the tree"
+    );
+    assert!(
+        world.resource::<PendingInput>().menu_open,
+        "this step's input already has menu_open"
+    );
+}

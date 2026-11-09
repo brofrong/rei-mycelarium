@@ -164,6 +164,13 @@ pub enum Command {
         x: f64,
         y: f64,
     },
+    /// the app's render zoom moved the logic camera so the point under the cursor stays put:
+    /// its new top-left, applied at the start of the step ([`crate::camera::camera_pan_to`]),
+    /// so the logic camera only changes inside steps and replays the same
+    CameraPan {
+        x: f64,
+        y: f64,
+    },
     /// Task 8: a click on the in-world build menu's option `index` (the app hit-tests
     /// `myc_build_button_rect`; ruling R9b)
     MycBuildOption {
@@ -255,6 +262,9 @@ pub struct Sim {
     pub fps: f64,
     /// fixed world seed (like `MYCO_SEED`), used by `world_init` (Task 5)
     pub world_seed: Option<i64>,
+    /// Unique per `Sim` created in this process: the app's render caches see a replaced game
+    /// (a load, a restart to the title) by a new session.
+    pub session: u64,
     /// When `Some`, `step` appends the name of each subsystem call (order tests).
     pub trace: Option<Vec<&'static str>>,
     /// The hooks `new_game` / `from_save` called, in order (a dozen names; order tests).
@@ -265,9 +275,11 @@ pub struct Sim {
 impl Sim {
     /// A Sim before any game code ran (`save_init` state, clock-seeded RNG).
     fn blank() -> Sim {
+        static SESSIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut rng = Rng::new(0);
         rng.randomise();
         Sim {
+            session: SESSIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             state: GameState::default(),
             rng,
             frame: 0,
@@ -426,6 +438,7 @@ impl Sim {
         for cmd in &input.commands {
             match cmd {
                 Command::SetPaused(p) => self.pause_open = *p,
+                Command::CameraPan { x, y } => crate::camera::camera_pan_to(self, *x, *y),
                 Command::Save => {
                     self.save_game();
                 }
@@ -550,17 +563,49 @@ impl Sim {
         Ok(sim)
     }
 
+    /// `load_game(slot)` from the title menu: the original loads into the live room, so the
+    /// loaded game keeps this sim's clock (`current_time` counts from boot) and game RNG (load
+    /// never reseeds it); everything load_game resets is rebuilt from the save.
+    pub fn load_game_live(&self, dir: &Path, slot: usize) -> Result<Sim, LoadError> {
+        let state = save::read_slot(dir, slot)?;
+        let mut sim = Sim::from_save_on(state, Some((self.rng.clone(), self.frame)))?;
+        sim.save.slot = slot as i64;
+        sim.save_dir = Some(dir.to_path_buf());
+        Ok(sim)
+    }
+
+    /// `game_restart` back to the title: a fresh room (game_init reseeds the RNG), the clock
+    /// keeps counting from boot (`current_time`). GameMaker keeps global variables across a
+    /// restart; those no Create event or game_init sets again survive: `global.backdrop_leaves`
+    /// (backdrop_leaves_init only fills it when undefined).
+    pub fn restart_title(&self, world_seed: Option<i64>) -> Sim {
+        let mut sim = Sim::title_screen(world_seed);
+        sim.frame = self.frame;
+        sim.forest.backdrop_leaves = self.forest.backdrop_leaves.clone();
+        sim
+    }
+
     // port: load_game
     /// A Sim continuing a save (no slot bound: see [`Sim::load_game`]). Applies load_game's
     /// fixups to the data, then lets each subsystem rebuild its runtime state. Like the
     /// original, it runs on a live room: the Create sequence first (see the module docs).
-    pub fn from_save(mut state: GameState) -> Result<Sim, LoadError> {
+    pub fn from_save(state: GameState) -> Result<Sim, LoadError> {
+        Sim::from_save_on(state, None)
+    }
+
+    /// [`Sim::from_save`]; `live`: the running game's RNG and clock, which the loaded game
+    /// continues (the original's load_game runs in the live room).
+    fn from_save_on(mut state: GameState, live: Option<(Rng, u64)>) -> Result<Sim, LoadError> {
         if state.version != 1 {
             return Err(LoadError::Version(state.version));
         }
         // tips/stats merges and the mode-aware boar timer fallback (idempotent after read_slot)
         state.apply_load_defaults();
         let mut sim = Sim::create_room(None);
+        if let Some((rng, frame)) = live {
+            sim.rng = rng;
+            sim.frame = frame;
+        }
         sim.state = state;
         let mode = sim.state.state.mode;
         sim.game_mode_apply(mode);

@@ -1133,7 +1133,13 @@ impl Plugin for LifeRenderPlugin {
         }
         app.init_resource::<LifePools>()
             .init_resource::<WormPool>()
-            .add_systems(Startup, (build_life_art, spawn_tendrils))
+            .add_systems(
+                Startup,
+                (
+                    build_life_art.in_set(crate::render::ArtPreloadSet),
+                    spawn_tendrils,
+                ),
+            )
             .add_systems(
                 Update,
                 (

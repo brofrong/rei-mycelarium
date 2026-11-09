@@ -127,6 +127,21 @@ fn save_dir_honours_env_override() {
     assert_eq!(display::save_dir_from(None), myco_core::save::save_dir());
 }
 
+/// Automated runs (MYCO_INPUT / MYCO_DUMP / MYCO_SHOT) without MYCO_SAVE_DIR write into a
+/// temp folder, never into the LÖVE port's real save folder.
+#[test]
+fn automated_runs_default_to_a_temp_save_dir() {
+    let real = myco_core::save::save_dir();
+    let auto = display::save_dir_for(None, true);
+    assert_ne!(auto, real);
+    assert!(auto.starts_with(std::env::temp_dir()), "{auto:?}");
+    assert_eq!(display::save_dir_for(None, false), real);
+    assert_eq!(
+        display::save_dir_for(Some("/tmp/myco-y".into()), true),
+        std::path::PathBuf::from("/tmp/myco-y")
+    );
+}
+
 /// Ruling R23: a settings.ini window size is logical points (LÖVE highdpi without DPI scaling),
 /// so 1366×768 opens a 1366×768-point window on any scale factor.
 #[test]
@@ -157,4 +172,122 @@ fn settings_window_size_is_logical_points() {
             "scale {scale}"
         );
     }
+}
+
+/// The original has no fullscreen hotkeys: Cmd+F and Alt+Enter do nothing (Alt+Enter reaches the
+/// game only as Enter); Cmd+Esc still quits, as in the LÖVE port.
+#[test]
+fn no_fullscreen_hotkeys() {
+    use bevy::prelude::*;
+    use bevy::window::PrimaryWindow;
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .add_message::<display::SetFullscreen>()
+        .add_message::<AppExit>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_systems(Update, display::display_keys);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    let count = |app: &mut App| {
+        app.world()
+            .resource::<Messages<display::SetFullscreen>>()
+            .iter_current_update_messages()
+            .count()
+    };
+    for combo in [
+        [KeyCode::SuperLeft, KeyCode::KeyF],
+        [KeyCode::AltLeft, KeyCode::Enter],
+    ] {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.reset_all();
+        keys.press(combo[0]);
+        keys.press(combo[1]);
+        app.update();
+        assert_eq!(count(&mut app), 0, "{combo:?} must not toggle fullscreen");
+    }
+}
+
+/// The game's `display_fit` (core_3.lua:370, the decompiled original) rounds with `gm.round`,
+/// GML's banker's rounding: a view width or height of exactly n.5 goes to the even n.
+#[test]
+fn display_fit_rounds_half_to_even() {
+    // 1080 * 4001 / 2160 = 2000.5 -> 2000
+    assert_eq!(
+        display::view_for_window(4001.0, 2160.0).unwrap().view_w,
+        2000.0
+    );
+    // 1920 * 2401 / 3840 = 1200.5 -> 1200
+    assert_eq!(
+        display::view_for_window(3840.0, 2401.0).unwrap().view_h,
+        1200.0
+    );
+    // 1080 * 4003 / 2160 = 2001.5 -> 2002
+    assert_eq!(
+        display::view_for_window(4003.0, 2160.0).unwrap().view_w,
+        2002.0
+    );
+}
+
+/// display_apply / display_step (core_3.lua:413, 460): switching to a window waits 4 steps;
+/// at 2 left the window takes the chosen size, at 0 it is centred. Fullscreen needs no wait.
+#[test]
+fn display_step_resizes_then_centres_a_window() {
+    use display::{display_apply_pending, display_step_tick, DisplayAction};
+    assert_eq!(display_apply_pending(true), 0);
+    let mut pending = display_apply_pending(false);
+    assert_eq!(pending, 4);
+    let ticks: Vec<_> = (0..6).map(|_| display_step_tick(&mut pending)).collect();
+    assert_eq!(
+        ticks,
+        vec![
+            None,
+            Some(DisplayAction::SetSize),
+            None,
+            Some(DisplayAction::Centre),
+            None,
+            None
+        ]
+    );
+}
+
+/// display_cycle_size goes through display_apply: a window takes the new size two steps later
+/// (display_step), not at once, and the choice is saved.
+#[test]
+fn cycling_the_window_size_uses_the_countdown() {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::prelude::*;
+    use bevy::window::PrimaryWindow;
+    use display::{
+        apply_cycle_size, display_step, CycleWindowSize, Display, DisplayPending, DisplaySizes,
+        SaveDir,
+    };
+    let dir = std::env::temp_dir().join(format!("myco-t22-cycle-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let mut world = World::new();
+    world.init_resource::<Messages<CycleWindowSize>>();
+    world.insert_resource(DisplaySizes::new(Some((3024.0, 1964.0)), Some((1280, 720))));
+    let settings = myco_core::state::DisplaySettings {
+        fullscreen: false,
+        window_w: 1280,
+        window_h: 720,
+    };
+    world.insert_resource(Display(settings));
+    world.insert_resource(DisplayPending(0));
+    world.insert_resource(SaveDir(dir.clone()));
+    let mut w = Window::default();
+    w.resolution.set(1280.0, 720.0);
+    world.spawn((w, PrimaryWindow));
+    world.write_message(CycleWindowSize(1));
+    world.run_system_once(apply_cycle_size).unwrap();
+    assert_eq!(world.resource::<DisplayPending>().0, 4);
+    let size = |world: &mut World| {
+        let mut q = world.query::<&Window>();
+        let w = q.single(world).unwrap();
+        (w.resolution.width(), w.resolution.height())
+    };
+    assert_eq!(size(&mut world), (1280.0, 720.0), "not at once");
+    world.run_system_once(display_step).unwrap();
+    world.run_system_once(display_step).unwrap();
+    assert_eq!(size(&mut world), (1366.0, 768.0), "two steps later");
+    assert!(myco_core::save::read_settings(&dir).window_w == 1366);
+    let _ = std::fs::remove_dir_all(&dir);
 }

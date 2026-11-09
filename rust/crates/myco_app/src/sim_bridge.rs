@@ -28,8 +28,8 @@ pub struct SimEventMsg(pub SimEvent);
 pub struct PendingInput {
     /// cursor in screen coordinates (logical window px); `None` outside the window
     pub cursor: Option<Vec2>,
-    /// autopilot cursor (screen px) used instead of the real mouse
-    pub cursor_override: Option<Vec2>,
+    /// autopilot cursor (screen px, f64 like LÖVE's) used instead of the real mouse
+    pub cursor_override: Option<bevy::math::DVec2>,
     pub lmb: ButtonState,
     pub rmb: ButtonState,
     pub keys_pressed: Vec<Key>,
@@ -50,9 +50,17 @@ pub struct PendingInput {
     pub placement: Option<myco_core::mushrooms::MushroomKind>,
     /// zoom requested by the autopilot (`zoom:<factor>`), as ln(factor); the zoom system takes it
     pub zoom_log: f64,
+    /// the logic camera's top-left the render zoom asks for (`camera::zoom_advance`); sent as
+    /// `Command::CameraPan` with the next step
+    pub camera_pan: Option<(f64, f64)>,
 }
 
 impl PendingInput {
+    /// The cursor the step sees (screen px): the autopilot's, else the real mouse.
+    pub fn screen_cursor(&self) -> Option<bevy::math::DVec2> {
+        self.cursor_override.or(self.cursor.map(|p| p.as_dvec2()))
+    }
+
     pub fn button(&mut self, b: MouseButton) -> Option<&mut ButtonState> {
         match b {
             MouseButton::Left => Some(&mut self.lmb),
@@ -91,7 +99,11 @@ impl PendingInput {
 
     /// Build the step input and clear the latched edges.
     pub fn take_step(&mut self, cams: &Cameras) -> StepInput {
-        let screen = self.cursor_override.or(self.cursor);
+        if let Some((x, y)) = self.camera_pan.take() {
+            // first, so the logic camera has moved before anything in the step reads it
+            self.commands.insert(0, Command::CameraPan { x, y });
+        }
+        let screen = self.screen_cursor();
         let input = StepInput {
             cursor: screen.map(|p| cams.screen_to_world(p).into()),
             cursor_gui: screen.map(|p| cams.screen_to_gui(p).into()),
@@ -190,15 +202,26 @@ impl Plugin for SimBridgePlugin {
                 FixedUpdate,
                 (SimSet::Prepare, SimSet::Step, SimSet::After).chain(),
             )
+            .add_systems(Startup, cap_catch_up)
             .add_systems(PreUpdate, collect_input.after(bevy::input::InputSystems))
             .add_systems(
                 FixedUpdate,
                 (
                     focus_step.in_set(SimSet::Prepare),
                     step_sim.in_set(SimSet::Step),
+                    trace_rng_system.in_set(SimSet::Step).after(step_sim),
                 ),
             );
     }
+}
+
+/// Most steps one frame may run after a hitch (game/gm/init.lua caps its accumulator at 5).
+pub const MAX_CATCH_UP_STEPS: f64 = 5.0;
+
+/// `Time<Virtual>` advances at most 5 steps' worth per frame, as LÖVE's accumulator cap.
+/// (Five whole fixed timesteps: `from_hz(60)` rounds the step up to whole nanoseconds.)
+fn cap_catch_up(mut time: ResMut<Time<Virtual>>, fixed: Res<Time<Fixed>>) {
+    time.set_max_delta(fixed.timestep() * MAX_CATCH_UP_STEPS as u32);
 }
 
 /// `KeyCode` → the game's key (`gm/input.lua KEYS`, physical layout).
@@ -326,7 +349,10 @@ pub fn collect_input(
     pending.cursor = windows.single().ok().and_then(Window::cursor_position);
 }
 
-/// `focus_step` (the app's half of obj_game Step): losing focus opens the pause menu.
+// port: focus_step
+/// `focus_step` (obj_game Step): without window focus, and `pause_on_focus_loss` on, the pause
+/// menu opens unless a screen blocks (`ui_blocking`). `MYCO_FOCUS` (ForceFocus) treats the window
+/// as focused for automated runs.
 fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
@@ -344,17 +370,30 @@ fn focus_step(
     }
 }
 
+/// `MYCO_TRACE_RNG` (conformance aid): the game RNG after every step, once the step is complete
+/// (a restart included), as LÖVE prints it after `gm.step` with MYCO_CONFORM.
+pub fn trace_rng_system(sim: Res<SimRes>, mut on: Local<Option<bool>>) {
+    if *on.get_or_insert_with(|| std::env::var_os("MYCO_TRACE_RNG").is_some()) {
+        println!("RNG {} {}", sim.0.frame, sim.0.rng.state());
+    }
+}
+
 /// One simulation step per fixed tick.
-fn step_sim(
+pub fn step_sim(
     mut sim: ResMut<SimRes>,
     mut pending: ResMut<PendingInput>,
     mut cams: ResMut<Cameras>,
     capture: Res<UiCapture>,
     history: Option<ResMut<StepHistory>>,
     mut out: MessageWriter<SimEventMsg>,
+    mut trace_rng: Local<Option<bool>>,
 ) {
     let mut input = pending.take_step(&cams);
     input.ui_captured = capture.any();
+    let trace = *trace_rng.get_or_insert_with(|| std::env::var_os("MYCO_TRACE_RNG").is_some());
+    if trace && sim.0.frame == 0 {
+        println!("RNG 0 {}", sim.0.rng.state());
+    }
     sim.0.step(&input);
     if let Some(mut h) = history {
         h.0.push(input);
@@ -376,6 +415,22 @@ mod tests {
         assert_eq!(key_from_love_name("kp3"), Some(Key::Numpad(3)));
         assert_eq!(key_from_love_name("return"), Some(Key::Enter));
         assert_eq!(key_from_love_name("tab"), None);
+    }
+
+    #[test]
+    fn zoom_pan_goes_to_the_step_as_a_command() {
+        let mut p = PendingInput {
+            commands: vec![Command::Save],
+            camera_pan: Some((10.5, -3.0)),
+            ..Default::default()
+        };
+        let s = p.take_step(&Cameras::default());
+        assert_eq!(
+            s.commands,
+            vec![Command::CameraPan { x: 10.5, y: -3.0 }, Command::Save]
+        );
+        assert_eq!(p.camera_pan, None);
+        assert!(p.take_step(&Cameras::default()).commands.is_empty());
     }
 
     #[test]

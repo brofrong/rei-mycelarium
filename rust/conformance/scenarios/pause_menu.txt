@@ -1,0 +1,9 @@
+# pause_menu: the whole loop: title -> Exploration -> slot 1 -> name -> intro -> game (one shot)
+# -> Escape (pause) -> "Main menu" (saves the slot, game_restart to a fresh title) -> Load Game
+# -> slot 1 -> the game continues; dumped after the load.
+seed: 31607
+dump: 820
+input: 1:gmove:960,300; 60:gmove:960,600; 61:down:1; 62:up:1; 90:gmove:960,578; 91:down:1; 92:up:1; 100:text:Alpha; 110:key:return
+input: 420:wmove:2,2; 421:down:1; 422:wmove:30,60; 423:wmove:60,120; 424:wmove:90,180; 425:wmove:110,266; 426:up:1
+input: 600:gmove:960,300; 601:key:escape; 620:gmove:960,800; 621:down:1; 622:up:1
+input: 700:gmove:960,736; 701:down:1; 702:up:1; 730:gmove:960,578; 731:down:1; 732:up:1; 733:gmove:960,300

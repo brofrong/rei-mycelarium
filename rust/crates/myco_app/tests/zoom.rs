@@ -54,9 +54,17 @@ fn retina() -> Cameras {
     )
 }
 
+/// One zoom frame followed by its step's `Command::CameraPan` (only the pan, not a whole step).
+fn advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, anchor: Vec2) {
+    let base = (sim.camera.x, sim.camera.y);
+    if let Some((x, y)) = zoom_advance(cams, sim, zs, 1.0 / 60.0, anchor, base) {
+        myco_core::camera::camera_pan_to(sim, x, y);
+    }
+}
+
 fn settle(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, anchor: Vec2, frames: usize) {
     for _ in 0..frames {
-        zoom_advance(cams, sim, zs, 1.0 / 60.0, anchor);
+        advance(cams, sim, zs, anchor);
     }
 }
 
@@ -105,7 +113,7 @@ fn zoom_keeps_point_under_cursor() {
         let w0: DVec2 = cams.screen_to_world(cursor);
         zoom_wheel(&mut zs, factor);
         for frame in 0..90 {
-            zoom_advance(&mut cams, &mut sim, &mut zs, 1.0 / 60.0, cursor);
+            advance(&mut cams, &mut sim, &mut zs, cursor);
             let w = cams.screen_to_world(cursor);
             assert!(
                 (w - w0).length() <= 0.5,
@@ -187,7 +195,7 @@ fn zoom_locked_during_cine() {
     assert!(!zoom_locked(&sim));
     cine::cine_show_start(&mut sim);
     assert!(zoom_locked(&sim));
-    zoom_advance(&mut cams, &mut sim, &mut zs, 1.0 / 60.0, Vec2::ZERO);
+    advance(&mut cams, &mut sim, &mut zs, Vec2::ZERO);
     assert_eq!(cams.zoom, 1.0);
     zoom_wheel(&mut zs, 0.3);
     settle(&mut cams, &mut sim, &mut zs, Vec2::ZERO, 30);
@@ -204,4 +212,28 @@ fn zoom_locked_during_cine() {
     zoom_wheel(&mut zs, 1.7);
     settle(&mut cams, &mut sim, &mut zs, Vec2::ZERO, 120);
     assert!((cams.zoom - 1.7).abs() < 1e-3, "{}", cams.zoom);
+}
+
+/// Forest parallax and culling (forest_draw: `cams.game_view.x`, `cams.render_view()`) use the
+/// floored, shaken view `floor(camera_x + shake)` at 1x, as the Lua forest Draw_0 does.
+#[test]
+fn forest_view_is_the_floored_shaken_camera() {
+    let mut cam = myco_core::camera::CameraRt::default();
+    cam.x = 100.7;
+    cam.y = 20.2;
+    cam.shake = [0.6, -0.5];
+    cam.view_x = (cam.x + cam.shake[0]).floor();
+    cam.view_y = (cam.y + cam.shake[1]).floor();
+    let mut cams = Cameras::default();
+    cams.sync_game_view(&cam);
+    assert_eq!(cams.zoom, 1.0);
+    // what forest_draw uses
+    let (cam_x, rv) = myco_app::render::forest::forest_view(&cams);
+    assert_eq!(cam_x, 101.0);
+    assert_eq!((rv.x, rv.y), (101.0, 19.0));
+    // zoomed out: the parallax phase stays the floored camera, the cull rectangle grows
+    cams.zoom = 0.5;
+    let (cam_x, rv) = myco_app::render::forest::forest_view(&cams);
+    assert_eq!(cam_x, 101.0);
+    assert!(rv.w > cams.game_view.w * 1.9);
 }

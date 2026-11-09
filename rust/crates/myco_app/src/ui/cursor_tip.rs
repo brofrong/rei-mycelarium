@@ -129,8 +129,7 @@ pub fn cursor_tip_draw(
 ) {
     let mut g = Gm::new(&assets);
     let mouse = pending
-        .cursor_override
-        .or(pending.cursor)
+        .screen_cursor()
         .map(|p| cams.screen_to_gui(p).into())
         .unwrap_or(hud.mouse_gui);
     draw_tip(

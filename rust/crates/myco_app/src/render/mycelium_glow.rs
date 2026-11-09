@@ -580,40 +580,6 @@ fn glow_composite_system(
     }
 }
 
-/// `MYCO_PERK=<frame>:<perk>` (development aid for render comparisons, like `MYCO_FORCE_RAIN`):
-/// grant a cave perk (e.g. `purple`, which unlocks the glow on F) before that autopilot frame;
-/// the LÖVE side does the same with `MYCO_PROBE="<frame>|global.cave_perks.<perk>=1"`.
-pub fn parse_perk_hook(s: &str) -> Option<(u64, String)> {
-    let (f, id) = s.split_once(':')?;
-    let id = id.trim();
-    if id.is_empty() {
-        return None;
-    }
-    Some((f.trim().parse().ok()?, id.to_string()))
-}
-
-fn perk_hook(
-    mut sim: ResMut<SimRes>,
-    autopilot: Option<Res<crate::autopilot::Autopilot>>,
-    mut hook: Local<Option<Option<(u64, String)>>>,
-) {
-    let hook = hook.get_or_insert_with(|| {
-        std::env::var("MYCO_PERK")
-            .ok()
-            .and_then(|s| parse_perk_hook(&s))
-    });
-    let (Some((frame, id)), Some(ap)) = (hook.as_ref(), autopilot) else {
-        return;
-    };
-    if ap.frame == *frame {
-        sim.0
-            .state
-            .state
-            .cave_perks
-            .insert(id.clone(), serde_json::Value::from(1));
-    }
-}
-
 pub struct MyceliumGlowPlugin;
 
 impl Plugin for MyceliumGlowPlugin {
@@ -623,12 +589,6 @@ impl Plugin for MyceliumGlowPlugin {
             app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
         }
 
-        app.add_systems(
-            FixedUpdate,
-            perk_hook
-                .in_set(crate::sim_bridge::SimSet::Prepare)
-                .after(crate::autopilot::run_script),
-        );
         app.add_systems(Startup, setup).add_systems(
             PostUpdate,
             (draw_glow_system, glow_composite_system)
@@ -659,17 +619,6 @@ mod tests {
         assert!((pulse_add(1.0, 1.0, 0.5, 1.0) - 0.25).abs() < 1e-12);
         // saturating
         assert_eq!(pulse_add(1.0, 1.0, 1.0, 3.0), 1.0);
-    }
-
-    #[test]
-    fn perk_hook_parses_frame_and_perk() {
-        assert_eq!(
-            parse_perk_hook("1300:purple"),
-            Some((1300, "purple".into()))
-        );
-        assert_eq!(parse_perk_hook("x:purple"), None);
-        assert_eq!(parse_perk_hook("12:"), None);
-        assert_eq!(parse_perk_hook("purple"), None);
     }
 
     #[test]

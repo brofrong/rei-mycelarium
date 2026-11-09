@@ -299,9 +299,73 @@ pub fn caves_mask_init(
 // ---------------------------------------------------------------------------------------------
 // world_draw and helpers
 
-/// Lake sparkles (`lk.flares`): runtime only, keyed by chunk, lake index and lake seed.
+/// Lake sparkles (`lk.flares`): runtime only, keyed by chunk, lake index and lake seed. Like
+/// the original's `lk.flares = undefined`, they start over after every save and in a replaced
+/// game (`session`: the `Sim::session` they belong to).
 #[derive(Resource, Default)]
-pub struct LakeFlares(pub HashMap<(i64, usize, i64), Vec<LakeFlare>>);
+pub struct LakeFlares {
+    pub map: HashMap<(i64, usize, i64), Vec<LakeFlare>>,
+    pub session: u64,
+}
+
+/// The sparkle half of `world_draw_lakes` that changes state (`lake_init_flares` for a lake seen
+/// without flares, the respawns that advance the saved `flare_seq`), for the chunks and lakes the
+/// view shows. Run once after every fixed step for the render view
+/// ([`crate::render::draw_generate_system`]), as the original's draw runs once per step.
+#[allow(clippy::too_many_arguments)]
+pub fn world_lakes_step(
+    w: &mut WorldRt,
+    flares: &mut LakeFlares,
+    now: f64,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+) {
+    if !lakes_ready() || vy + vh < w.params.surface_y {
+        return;
+    }
+    let life = lake_flare_life_ms();
+    let seed = w.params.seed;
+    let cw = w.params.chunk_w as f64;
+    for cx in (vx / cw).floor() as i64..=((vx + vw) / cw).floor() as i64 {
+        let Some(ch) = w.chunk_mut(cx) else {
+            continue;
+        };
+        for (li, lk) in ch.lakes.iter_mut().enumerate() {
+            let kd = myco_core::world::lakes::lake_kind(lk.kind);
+            if lk.x + kd.width < vx || lk.x > vx + vw || lk.y + kd.height < vy || lk.y > vy + vh {
+                continue;
+            }
+            if lk.amount <= 0.0 {
+                continue;
+            }
+            let cut = lake_cut_row(lk, kd);
+            let fl = flares
+                .map
+                .entry((cx, li, lk.seed))
+                .or_insert_with(|| lake_init_flares(seed, lk, kd, cut, now));
+            for j in 0..fl.len() {
+                let f = fl[j];
+                let respawn = if f.placed {
+                    now - f.born >= life
+                } else {
+                    now - f.born >= 500.0
+                };
+                if respawn {
+                    let spot = lake_flare_spot(seed, lk, fl, kd, j, cut);
+                    let f = &mut fl[j];
+                    f.born = now;
+                    f.placed = spot.is_some();
+                    if let Some((x, y)) = spot {
+                        f.x = x;
+                        f.y = y;
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// What drawing needs besides the simulation.
 pub struct DrawCtx<'a> {
@@ -310,6 +374,8 @@ pub struct DrawCtx<'a> {
     /// the blurred glow image (`global.food_glow_seed` after the passes)
     pub glow_image: Option<&'a Handle<Image>>,
     pub now: f64,
+    /// the texture filter the frame starts with (ruling R27; [`WorldDrawState::start_linear`])
+    pub start_linear: bool,
 }
 
 /// The food glow request of one frame (`world_draw_food_glow`'s surface work).
@@ -346,8 +412,127 @@ pub struct WorldFrame {
     pub chunks: Vec<i64>,
 }
 
+/// The chunk work `world_draw` does for a view, in its order: the chunks `world_draw_bones`
+/// looks at (600 px margin to the left), then the view's chunks generated, reached down to the
+/// view's bottom row and their late clusters painted. [`crate::render::draw_generate_system`]
+/// runs it after every fixed step for the render view (GameMaker draws once after each step), so
+/// the saved world only changes inside steps; the frame's drawing then finds the chunks ready.
+pub fn world_draw_generate(sim: &mut Sim, vx: f64, vy: f64, vw: f64, vh: f64) {
+    world_rt_draw_generate(&mut sim.world, vx, vy, vw, vh, |_| true);
+}
+
+/// [`world_draw_generate`] on a bare world, for the chunks `want` accepts.
+fn world_rt_draw_generate(
+    w: &mut WorldRt,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+    want: impl Fn(i64) -> bool,
+) {
+    let (surface_y, t, chunk_w, rows) = {
+        let p = &w.params;
+        (p.surface_y, p.tile as f64, p.chunk_w as f64, p.rows)
+    };
+    if vy + vh < surface_y {
+        return;
+    }
+    for c in ((vx - 600.0) / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
+        if want(c) {
+            w.get_chunk(c);
+        }
+    }
+    let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
+    for ci in (vx / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
+        if want(ci) {
+            w.get_chunk(ci);
+            w.chunk_reach(ci, r1 as i64);
+            maze::world_paint_clusters_late(w, ci);
+        }
+    }
+}
+
+/// Ruling R28: zooming out must not touch the game. The world past the 1× view is drawn from
+/// chunks generated here, from the world's seed, in a scratch world of the renderer's own
+/// (never in `sim.world`, no game RNG: world generation is hash-based). For one frame's draw
+/// they are lent to `sim.world` where it has no chunk ([`RenderWorldCache::lend`]) and taken
+/// back right after ([`RenderWorldCache::give_back`]), so the game state is the same after the
+/// frame as before it.
+#[derive(Resource, Default)]
+pub struct RenderWorldCache {
+    scratch: Option<WorldRt>,
+    session: u64,
+}
+
+/// Chunks lent for one frame, and those whose content changed since last lent (to rebuild).
+#[derive(Debug, Default)]
+pub struct Lent {
+    pub keys: Vec<i64>,
+    pub changed: Vec<i64>,
+}
+
+impl RenderWorldCache {
+    /// Lend `w` the chunks a draw of (vx, vy, vw, vh) needs that it lacks.
+    pub fn lend(
+        &mut self,
+        session: u64,
+        w: &mut WorldRt,
+        vx: f64,
+        vy: f64,
+        vw: f64,
+        vh: f64,
+    ) -> Lent {
+        if self.session != session || self.scratch.is_none() {
+            let mut params = w.params.clone();
+            params.chunk_index.clear();
+            self.scratch = Some(WorldRt {
+                params,
+                mode: w.mode,
+                ..Default::default()
+            });
+            self.session = session;
+        }
+        let scratch = self.scratch.as_mut().unwrap();
+        let mut lent = Lent::default();
+        let has: std::collections::HashSet<i64> = w.chunks.keys().copied().collect();
+        scratch.dirty_chunks.clear();
+        world_rt_draw_generate(scratch, vx, vy, vw, vh, |c| !has.contains(&c));
+        lent.changed = std::mem::take(&mut scratch.dirty_chunks)
+            .into_iter()
+            .collect();
+        let mut keys: Vec<i64> = scratch
+            .chunks
+            .keys()
+            .copied()
+            .filter(|c| !has.contains(c))
+            .collect();
+        keys.sort_unstable();
+        for cx in &keys {
+            if let Some(ch) = scratch.chunks.remove(cx) {
+                w.chunks.insert(*cx, ch);
+            }
+        }
+        lent.keys = keys;
+        lent
+    }
+
+    /// Take the lent chunks back (the draw only read them).
+    pub fn give_back(&mut self, w: &mut WorldRt, lent: Lent) {
+        let Some(scratch) = self.scratch.as_mut() else {
+            return;
+        };
+        for cx in lent.keys {
+            if let Some(ch) = w.chunks.remove(&cx) {
+                scratch.chunks.insert(cx, ch);
+            }
+        }
+    }
+}
+
 // port: world_draw
-/// `world_draw(vx, vy, vw, vh)`. Generates and reaches the chunks it looks at, like the original.
+/// `world_draw(vx, vy, vw, vh)`. The chunk generation and reach it does in the original is
+/// [`world_draw_generate`], run after each fixed step; chunks missing here (a view that changed
+/// since) are drawn from the next frame.
 pub fn world_draw(
     sim: &mut Sim,
     ctx: &DrawCtx,
@@ -372,11 +557,12 @@ pub fn world_draw(
     let r0 = gml::clamp(((vy - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let shade = merge_colour(0.0, C_WHITE, vis("food_shade"));
-    // Texture filter state: the LÖVE port's `gpu_get_tex_filter()` always returns true, so the
-    // HUD's `cave_perk_icons_draw` leaves `gpu_set_tex_filter(true)` behind every frame; world
-    // drawing therefore starts linear-filtered until the food glow switches it off (as below).
-    out.back.set_filter(true);
-    out.front.set_filter(true);
+    // Texture filter (ruling R27): every gpu_set_tex_filter(true) in the original is paired with
+    // false at its block's end, and only repeller_clouds_draw / cave_perk_icons_draw save and
+    // restore it, so a frame starts with what the last one left: off after the first frame
+    // (the mycelium glow pass ends with false every frame). `start_linear` carries it.
+    out.back.set_filter(ctx.start_linear);
+    out.front.set_filter(ctx.start_linear);
     let b = &mut out.back;
     let mut r = r0;
     while r <= r1 {
@@ -393,12 +579,7 @@ pub fn world_draw(
     world_draw_dirt(b, a, &sim.world, vx, vy, vw, vh);
     world_draw_bones(b, a, sim, ctx.now, vx, vy, vw, vh);
     world_draw_cave(&mut out.back, a, sim, ctx.now, vx, vy, vw, vh);
-    for ci in cx0..=cx1 {
-        sim.world.get_chunk(ci);
-        sim.world.chunk_reach(ci, r1 as i64);
-        maze::world_paint_clusters_late(&mut sim.world, ci);
-        out.chunks.push(ci);
-    }
+    out.chunks.extend(cx0..=cx1);
     let f = &mut out.front;
     for ci in cx0..=cx1 {
         let w = &sim.world;
@@ -562,7 +743,8 @@ pub fn world_draw_bones(
     let c0 = ((vx - 600.0) / cw).floor() as i64;
     let c1 = ((vx + vw) / cw).floor() as i64;
     for c in c0..=c1 {
-        let list = w.get_chunk(c).bones.clone();
+        let Some(ch) = w.chunk(c) else { continue };
+        let list = ch.bones.clone();
         for bn in &list {
             if bn.x + bn.w < vx || bn.x > vx + vw || bn.y + bn.h < vy || bn.y > vy + vh {
                 continue;
@@ -953,8 +1135,6 @@ pub fn world_draw_lakes(
     let fw = div(fsw, 3.0);
     let (ew, eh) = sprite_size(a, "water_edge");
     let ffps = vis("water_flare_fps").max(1.0);
-    let life = lake_flare_life_ms();
-    let seed = w.params.seed;
     let Some(ch) = w.chunk_mut(cx) else {
         return;
     };
@@ -985,29 +1165,11 @@ pub fn world_draw_lakes(
                 lk.y + cut,
             );
         }
-        let key = (cx, li, lk.seed);
-        let fl = flares
-            .0
-            .entry(key)
-            .or_insert_with(|| lake_init_flares(seed, lk, kd, cut, now));
-        for j in 0..fl.len() {
-            let f = fl[j];
-            let respawn = if f.placed {
-                now - f.born >= life
-            } else {
-                now - f.born >= 500.0
-            };
-            if respawn {
-                let spot = lake_flare_spot(seed, lk, fl, kd, j, cut);
-                let f = &mut fl[j];
-                f.born = now;
-                f.placed = spot.is_some();
-                if let Some((x, y)) = spot {
-                    f.x = x;
-                    f.y = y;
-                }
-            }
-            let f = fl[j];
+        // init and respawns: `world_lakes_step` after each step; a lake without flares yet
+        // (it came into view since) sparkles from the next step
+        let empty = Vec::new();
+        let fl = flares.map.get(&(cx, li, lk.seed)).unwrap_or(&empty);
+        for &f in fl {
             if f.placed {
                 let age = now - f.born;
                 let al = lake_flare_alpha(age);
@@ -1516,6 +1678,9 @@ pub fn cave_popups_draw(
 pub fn cave_perk_icons_draw(g: &mut Gm, state: &GameState, mut x: f64, y: f64) {
     let px = vis("cave_icon_px");
     let gap = vis("cave_icon_gap_px");
+    // old_filter = gpu_get_tex_filter(); gpu_set_tex_filter(cave_icon_smooth) ... restore
+    let old_filter = g.tex_filter();
+    g.set_tex_filter(vis("cave_icon_smooth") >= 0.5);
     for d in cave_defs() {
         if !perk_has(state, d.kind.id()) {
             continue;
@@ -1538,6 +1703,7 @@ pub fn cave_perk_icons_draw(g: &mut Gm, state: &GameState, mut x: f64, y: f64) {
         );
         x += px + gap;
     }
+    g.set_tex_filter(old_filter);
 }
 
 /// `anon__68900__caves_debug_draw`: nearest bones first.
@@ -1738,11 +1904,18 @@ struct GlowCamera(usize, AssetId<Image>);
 #[derive(Resource, Clone, Copy, Debug, PartialEq)]
 pub struct WorldDrawState {
     pub end_linear: bool,
+    /// The filter a frame starts with (ruling R27): on for the very first frame (the default
+    /// filter), off from then on (each frame's mycelium glow pass ends with
+    /// `gpu_set_tex_filter(false)`, and nothing turns it on at a frame's start).
+    pub start_linear: bool,
 }
 
 impl Default for WorldDrawState {
     fn default() -> Self {
-        WorldDrawState { end_linear: true }
+        WorldDrawState {
+            end_linear: true,
+            start_linear: true,
+        }
     }
 }
 
@@ -1768,10 +1941,24 @@ impl Plugin for WorldRenderPlugin {
             app.add_plugins(BatchPlugin);
         }
         app.init_resource::<LakeFlares>()
+            .init_resource::<RenderWorldCache>()
             .init_resource::<WorldPools>()
             .init_resource::<WorldDrawState>()
-            .add_systems(Startup, (build_world_art, spawn_glow))
-            .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui));
+            .add_systems(
+                Startup,
+                (
+                    build_world_art.in_set(crate::render::ArtPreloadSet),
+                    spawn_glow,
+                ),
+            )
+            .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui))
+            .add_systems(
+                FixedUpdate,
+                crate::render::draw_generate_system
+                    .in_set(crate::sim_bridge::SimSet::After)
+                    .before(crate::render::mycelium::tiles_step_system)
+                    .before(crate::autopilot::dump_state),
+            );
     }
 }
 
@@ -1866,7 +2053,7 @@ fn draw_world(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GmQuad>>,
     mut images: ResMut<Assets<Image>>,
-    white: Res<WhiteTexture>,
+    (white, mut cache): (Res<WhiteTexture>, ResMut<RenderWorldCache>),
     mut glow_cams: Query<(
         Entity,
         &mut Camera,
@@ -1877,6 +2064,11 @@ fn draw_world(
 ) {
     let rv = cams.render_view();
     let sim = &mut sim.0;
+    // R28: the part of the zoomed view past the 1× view draws from render-only chunks
+    let lent = cache.lend(sim.session, &mut sim.world, rv.x, rv.y, rv.w, rv.h);
+    for cx in &lent.changed {
+        pools.built.remove(cx);
+    }
     let now = sim.now_ms();
     let glow_out = glow.out.clone();
     let ctx = DrawCtx {
@@ -1884,13 +2076,18 @@ fn draw_world(
         stones: stones.as_deref(),
         glow_image: Some(&glow_out),
         now,
+        start_linear: draw_state.start_linear,
     };
     let frame = world_draw(sim, &ctx, &mut flares, rv.x, rv.y, rv.w, rv.h);
     let end_linear = if rv.y + rv.h < sim.world.params.surface_y {
-        true
+        draw_state.start_linear
     } else {
         frame.front.linear
     };
+    if draw_state.start_linear {
+        // the rest of the first frame (mycelium glow pass) leaves the filter off
+        draw_state.start_linear = false;
+    }
     if draw_state.end_linear != end_linear {
         draw_state.end_linear = end_linear;
     }
@@ -1933,6 +2130,7 @@ fn draw_world(
             );
         }
     }
+    cache.give_back(&mut sim.world, lent);
 
     // food glow passes
     let active = frame.glow.is_some();

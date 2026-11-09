@@ -372,12 +372,15 @@ function M.gpu_set_blendmode_ext_sepalpha(src, dst, srca, dsta)
   M.gpu_set_blendmode_ext(src, dst)
 end
 
+local texfilter = require("gm.texfilter")
 function M.gpu_set_tex_filter(on)
-  local mode = on and "linear" or "nearest"
+  texfilter.set(on)
+  local mode = texfilter.get() and "linear" or "nearest"
   for _, page in ipairs(assets.pages) do page:setFilter(mode, mode) end
   love.graphics.setDefaultFilter(mode, mode)
 end
-function M.gpu_get_tex_filter() return true end
+-- the state the last gpu_set_tex_filter left (ruling R27)
+function M.gpu_get_tex_filter() return texfilter.get() end
 
 -- Shaders ------------------------------------------------------------------------
 local compiled = {}

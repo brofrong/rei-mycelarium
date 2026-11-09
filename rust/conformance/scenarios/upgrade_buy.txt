@@ -1,0 +1,11 @@
+# upgrade_buy: a save with 60 upgrade points (fixtures/upgrades.json) loaded through Load Game;
+# the HUD's upgrade button opens the tree, two nodes are bought by click (shot_range, a level
+# upgrade, and unlock_absorption, an unlock), Escape closes the tree, the game runs on.
+seed: 31607
+fixture: ../fixtures/upgrades.json
+dump: 400
+input: 1:gmove:960,300; 60:gmove:960,736; 61:down:1; 62:up:1; 90:gmove:960,578; 91:down:1; 92:up:1
+input: 150:gmove:1806,123; 151:down:1; 152:up:1
+input: 200:gmove:458.3,684.2; 201:down:1; 202:up:1
+input: 230:gmove:961,799.2; 231:down:1; 232:up:1
+input: 260:gmove:960,300; 261:key:escape

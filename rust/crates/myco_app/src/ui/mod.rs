@@ -213,7 +213,6 @@ impl Plugin for HudPlugin {
             (
                 hud::hud_step_pre.in_set(HudStepSet::Pre),
                 hud::hud_step_game.in_set(HudStepSet::Game),
-                ui_demo.in_set(SimSet::After),
                 (
                     popups::popups_collect,
                     cursor_tip::cursor_tip_collect,
@@ -221,7 +220,8 @@ impl Plugin for HudPlugin {
                     hud::hud_tasks_fill,
                 )
                     .in_set(SimSet::After)
-                    .after(ui_demo),
+                    .after(crate::autopilot::ui_demo)
+                    .before(crate::autopilot::dump_state),
             ),
         )
         .add_systems(
@@ -247,44 +247,6 @@ fn init_fonts(mut commands: Commands, assets: Res<GameAssets>, locale: Option<Re
     }
 }
 
-/// `MYCO_UI_DEMO=1` (dev hook for screenshots): every 0.5 s synthetic resource events around the
-/// view centre and a refused node, as the logic tasks (T5/T8/T9) will emit them.
-fn ui_demo(
-    sim: Res<crate::sim_bridge::SimRes>,
-    cams: Res<crate::camera::Cameras>,
-    mut out: MessageWriter<crate::sim_bridge::SimEventMsg>,
-    mut on: Local<Option<bool>>,
-) {
-    use myco_core::events::{NodeReject, ResourceKind, SimEvent};
-    let on = *on.get_or_insert_with(|| std::env::var("MYCO_UI_DEMO").is_ok_and(|v| v == "1"));
-    if !on || !sim.0.frame.is_multiple_of(30) {
-        return;
-    }
-    let (cx, cy) = cams.game_view_center();
-    let k = (sim.0.frame / 30) as f64;
-    let ev = |kind, delta, dx: f64, dy: f64, source| SimEvent::Resource {
-        kind,
-        delta,
-        x: cx + dx,
-        y: cy + dy,
-        source,
-    };
-    for e in [
-        ev(ResourceKind::Food, 5.0, -300.0 + 20.0 * (k % 5.0), 80.0, 1),
-        ev(ResourceKind::Food, 3.0, -300.0, 80.0, 1),
-        ev(ResourceKind::Water, 12.0, 200.0, 140.0, 2),
-        ev(ResourceKind::Food, -15.0, -40.0, 220.0, 3),
-        ev(ResourceKind::UpgradePoints, 1.0, 420.0, 40.0, 4),
-        SimEvent::NodeRejected {
-            reason: NodeReject::NotEnoughFood { need: 12 },
-            x: cx,
-            y: cy,
-        },
-    ] {
-        out.write(crate::sim_bridge::SimEventMsg(e));
-    }
-}
-
 // ---- Task 18: menus --------------------------------------------------------------------------
 
 use crate::audio::{Audio, AudioRequest, VolumeKind};
@@ -305,12 +267,47 @@ pub const MENU_DRAW_ORDER: i32 = 600;
 #[derive(Resource, Default)]
 pub struct ExitSaved(pub bool);
 
+/// "Main menu" asked for `game_restart`: like GameMaker (gm/instance.lua), the restart happens
+/// at the end of the step, after the old room ran its whole step; [`apply_restart`] does it right
+/// after the simulation step, so the fresh title's first step is the next one.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct RestartPending(pub bool);
+
+/// The pending `game_restart` (see [`RestartPending`]): a fresh title, obj_hud recreated.
+pub fn apply_restart(
+    mut restart: ResMut<RestartPending>,
+    mut sim: ResMut<SimRes>,
+    mut menus: ResMut<Menus>,
+    mut flags: ResMut<UiFlags>,
+    mut tree: ResMut<TreeScreen>,
+    mut cams: ResMut<Cameras>,
+    hud: Option<ResMut<hud::HudState>>,
+) {
+    if !std::mem::take(&mut restart.0) {
+        return;
+    }
+    restart_to_title(&mut sim.0, &mut menus, &mut flags);
+    tree.close();
+    if let Some(mut hud) = hud {
+        *hud = hud::HudState::new();
+    }
+    cams.sync_game_view(&sim.0.camera);
+}
+
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UiFlags>()
             .init_resource::<ExitSaved>()
+            .init_resource::<RestartPending>()
+            .add_systems(
+                FixedUpdate,
+                apply_restart
+                    .in_set(SimSet::Step)
+                    .after(crate::sim_bridge::step_sim)
+                    .before(crate::sim_bridge::trace_rng_system),
+            )
             .add_systems(Startup, init_menus.after(init_locale))
             .add_systems(
                 FixedUpdate,
@@ -338,7 +335,7 @@ fn init_menus(
 
 /// The menu input of this fixed step, from the latched pending input.
 pub fn menu_input(pending: &PendingInput, cams: &Cameras) -> MenuInput {
-    let screen = pending.cursor_override.or(pending.cursor);
+    let screen = pending.screen_cursor();
     let g = screen.map(|p| cams.screen_to_gui(p)).unwrap_or_default();
     MenuInput {
         mx: if screen.is_some() { g.x } else { -1e9 },
@@ -367,7 +364,7 @@ fn volumes(audio: Option<&Audio>) -> [f64; 2] {
 /// The title as `game_restart` brings it back: a fresh world, obj_hud recreated, game_init's
 /// flags reset (`units_imperial` survives, as a global that game_init only creates once).
 pub fn restart_to_title(sim: &mut Sim, menus: &mut Menus, flags: &mut UiFlags) {
-    let mut fresh = Sim::title_screen(seed_from_env());
+    let mut fresh = sim.restart_title(seed_from_env());
     fresh.save_dir = menus.save_dir.clone();
     *sim = fresh;
     *menus = Menus::new(menus.save_dir.clone());
@@ -384,7 +381,11 @@ pub fn menu_step(
     mut flags: ResMut<UiFlags>,
     mut tree: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut ui: (ResMut<UiBlockers>, ResMut<UiCapture>),
+    mut ui: (
+        ResMut<UiBlockers>,
+        ResMut<UiCapture>,
+        ResMut<RestartPending>,
+    ),
     mut loc: ResMut<LocaleRes>,
     cams: Res<Cameras>,
     display: Res<Display>,
@@ -438,8 +439,8 @@ pub fn menu_step(
     for fx in effects {
         match fx {
             MenuEffect::Restart => {
-                restart_to_title(&mut sim.0, &mut menus, &mut flags);
-                tree.close();
+                // at the end of this step (`apply_restart`), as game_restart does
+                ui.2 .0 = true;
             }
             MenuEffect::Quit => {
                 writers.0.write(AppExit::Success);

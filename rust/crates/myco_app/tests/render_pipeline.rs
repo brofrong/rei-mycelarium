@@ -498,3 +498,15 @@ fn blackmetal_tone_maps_encoded_values_like_the_glsl() {
         );
     }
 }
+
+/// Draw_77 clears to black before drawing the application surface: the BLACK METAL final post
+/// camera clears black; the glow passes clear transparent.
+#[test]
+fn black_metal_final_camera_clears_black() {
+    use bevy::camera::ClearColorConfig;
+    use myco_app::render::post::post_camera_clear;
+    assert!(matches!(post_camera_clear(2), ClearColorConfig::Custom(c) if c == Color::BLACK));
+    for i in [0, 1] {
+        assert!(matches!(post_camera_clear(i), ClearColorConfig::Custom(c) if c == Color::NONE));
+    }
+}

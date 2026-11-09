@@ -180,6 +180,7 @@ fn world_draw_follows_the_original_passes() {
         stones: None,
         glow_image: Some(&img),
         now: 1000.0,
+        start_linear: false,
     };
     // above the surface: nothing
     let sy = sim.world.params.surface_y;
@@ -284,4 +285,155 @@ fn deposit_without_deep_falls_back_to_its_row() {
     let tinted = verts[6].col;
     assert_eq!(white, [1.0, 1.0, 1.0, 1.0], "above the deep line: untinted");
     assert_ne!(tinted, white, "below the deep line: deep_stone_colour");
+}
+
+/// Ruling R27: the world starts drawing with the filter the frame starts with (off after the
+/// first frame), and the perk icons turn it on (`cave_icon_smooth`) and restore it.
+#[test]
+fn texture_filter_follows_the_original_state() {
+    use myco_app::render::world::cave_perk_icons_draw;
+    use myco_app::ui::gm_draw::{DrawItem, Gm};
+    let Some(mut a) = assets() else { return };
+    let mut sim = sim();
+    let mut flares = LakeFlares::default();
+    let img = Handle::<Image>::default();
+    let sy = sim.world.params.surface_y;
+    let ctx = DrawCtx {
+        assets: &a,
+        stones: None,
+        glow_image: Some(&img),
+        now: 1000.0,
+        start_linear: false,
+    };
+    let f = world_draw(
+        &mut sim,
+        &ctx,
+        &mut flares,
+        -960.0,
+        sy - 540.0,
+        1920.0,
+        1080.0,
+    );
+    assert!(
+        !f.back.filter(),
+        "soil, seams, dirt, bones and caves draw nearest"
+    );
+    // perk icons: bilinear twin pages while drawn, the painter's filter restored after
+    let mut images = Assets::<Image>::default();
+    a.pages_linear = (0..a.pages.len())
+        .map(|_| images.add(Image::default()))
+        .collect();
+    let linear_ids: Vec<_> = a.pages_linear.iter().map(|h| h.id()).collect();
+    let mut st = sim.state.clone();
+    st.state.cave_perks = serde_json::from_str(r#"{"purple": 1, "blue": 1}"#).unwrap();
+    let mut g = Gm::new(&a);
+    assert!(!g.tex_filter());
+    cave_perk_icons_draw(&mut g, &st, 10.0, 10.0);
+    assert!(!g.tex_filter(), "old_filter restored");
+    let quads: Vec<_> = g
+        .items
+        .iter()
+        .filter_map(|i| match i {
+            DrawItem::Quad { image, .. } => Some(image.id()),
+            _ => None,
+        })
+        .collect();
+    assert!(!quads.is_empty());
+    assert!(quads.iter().all(|id| linear_ids.contains(id)));
+}
+
+/// Ruling R28: zooming out never touches the game. Steps with the after-step generation at zoom
+/// 0.3 leave the game RNG and `world.chunks` exactly as at 1×; the zoomed draw's render-only
+/// chunks are lent for the frame and taken back.
+#[test]
+fn zoom_out_leaves_game_rng_and_chunks_alone() {
+    use bevy::ecs::system::RunSystemOnce;
+    use myco_app::camera::Cameras;
+    use myco_app::render::draw_generate_system;
+    use myco_app::render::world::RenderWorldCache;
+    use myco_app::sim_bridge::{SimEventMsg, SimRes};
+    use myco_core::sim::StepInput;
+    let Some(a) = assets() else { return };
+    // the same game twice (a loaded save: nothing clock-seeded survives into it)
+    let dir = std::env::temp_dir().join(format!("myco-t22-r28-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../myco_core/tests/fixtures/exploration.json"),
+        dir.join("save_1.json"),
+    )
+    .unwrap();
+    let run = |zoom: f64| {
+        let mut world = World::new();
+        let mut s = Sim::load_game(&dir, 0).unwrap();
+        s.save_dir = None;
+        s.rng = myco_core::rng::Rng::new(5);
+        let mut cams = Cameras::default();
+        cams.sync_game_view(&s.camera);
+        cams.zoom = zoom;
+        assert!(zoom == 1.0 || cams.render_view().w > cams.game_view.w * 2.0);
+        world.insert_resource(SimRes(s));
+        world.insert_resource(cams);
+        world.insert_resource(
+            GameAssets::load(
+                &assets_dir(),
+                |_| Handle::default(),
+                |_| Handle::default(),
+                |_| Handle::default(),
+            )
+            .unwrap(),
+        );
+        world.insert_resource(LakeFlares::default());
+        world.init_resource::<Messages<SimEventMsg>>();
+        for _ in 0..30 {
+            {
+                let mut sim = world.resource_mut::<SimRes>();
+                let c = &sim.0.camera;
+                let view = myco_core::sim::ViewRect {
+                    x: c.view_x,
+                    y: c.view_y,
+                    w: c.width,
+                    h: c.height,
+                };
+                sim.0.step(&StepInput {
+                    view,
+                    ..Default::default()
+                });
+            }
+            world.run_system_once(draw_generate_system).unwrap();
+        }
+        let sim = &world.resource::<SimRes>().0;
+        let mut keys: Vec<i64> = sim.world.chunks.keys().copied().collect();
+        keys.sort_unstable();
+        let rows: Vec<i64> = keys.iter().map(|k| sim.world.chunks[k].rows).collect();
+        (sim.rng.state(), keys, rows, sim.forest.chunks.len())
+    };
+    assert_eq!(run(0.3), run(1.0));
+    drop(a);
+
+    // the zoomed draw's lend / give back
+    let mut s = sim();
+    let mut keys: Vec<i64> = s.world.chunks.keys().copied().collect();
+    keys.sort_unstable();
+    let dirty = s.world.dirty_chunks.clone();
+    let mut cache = RenderWorldCache::default();
+    let sy = s.world.params.surface_y;
+    let lent = cache.lend(
+        s.session,
+        &mut s.world,
+        -9000.0,
+        sy - 500.0,
+        18000.0,
+        4000.0,
+    );
+    assert!(
+        !lent.keys.is_empty(),
+        "the zoomed view needs chunks the game lacks"
+    );
+    assert!(lent.keys.iter().all(|k| !keys.contains(k)));
+    assert!(lent.keys.iter().all(|k| s.world.chunks.contains_key(k)));
+    cache.give_back(&mut s.world, lent);
+    let mut after: Vec<i64> = s.world.chunks.keys().copied().collect();
+    after.sort_unstable();
+    assert_eq!(after, keys);
+    assert_eq!(s.world.dirty_chunks, dirty);
 }

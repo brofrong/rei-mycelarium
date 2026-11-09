@@ -23,4 +23,12 @@ return {
     for _ = 1, 200 do seen[r.choose("a", "b", "c")] = true end
     assert(seen.a and seen.b and seen.c)
   end,
+  randomise_with_fixed_seed = function()
+    -- MYCO_RNG_SEED (conformance runs): randomise reseeds like random_set_seed(seed)
+    assert(r.randomise_from(4321) == 4321)
+    local a = r.random(1)
+    r.random_set_seed(4321)
+    assert(r.random(1) == a)
+    assert(type(r.randomise_from(nil)) == "number")
+  end,
 }

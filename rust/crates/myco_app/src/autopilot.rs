@@ -16,8 +16,10 @@
 //! - `MYCO_FOCUS` treats the window as focused (no pause on focus loss).
 //!
 //! A frame here is one fixed simulation step (1-based), which is one rendered frame in the LÖVE
-//! port. Actions run before that step's simulation, so a `down` at frame N is the `pressed` of
-//! step N.
+//! port. LÖVE runs a frame's actions in `love.draw`, after that frame's update (main.lua), so an
+//! action at frame N is seen by step N + 1; here the actions of frame N are applied at the start
+//! of step N + 1 ([`run_script`], `SimSet::Prepare`), so frame numbers mean the same step in both
+//! ports. A dump at frame N is the state after step N in both.
 
 use crate::camera::Cameras;
 use crate::sim_bridge::{key_from_love_name, ForceFocus, PendingInput, SimRes, SimSet};
@@ -164,6 +166,257 @@ impl Autopilot {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Development hooks for render comparisons. Each one acts only when its variable is set; with
+// none set they change nothing.
+
+/// `MYCO_CAMERA=x,y` (camera top-left when the game starts), `MYCO_CAVE_TAKE=<cave id>` (take
+/// that cave when the game starts), `MYCO_FORCE_RAIN=1` (start the rain cycle at boot, the
+/// original's `weather_force_rain` debug hook), `MYCO_BW=1` (BLACK METAL post effect on; the
+/// shipped menus cannot turn it on), `MYCO_UI_DEMO=1` (synthetic floating numbers),
+/// `MYCO_PERK=<frame>:<perk>` (grant a cave perk, e.g. `purple` for the glow on F, before that
+/// frame's step). The LÖVE side does the same through `MYCO_PROBE`.
+#[derive(Resource, Default, Clone, Debug, PartialEq)]
+pub struct DevHooks {
+    pub camera: Option<(f64, f64)>,
+    pub cave_take: Option<String>,
+    pub force_rain: bool,
+    pub bw: bool,
+    pub ui_demo: bool,
+    pub perk: Option<(u64, String)>,
+}
+
+/// `MYCO_PERK`'s value: `<frame>:<perk>`.
+pub fn parse_perk_hook(s: &str) -> Option<(u64, String)> {
+    let (f, id) = s.split_once(':')?;
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    Some((f.trim().parse().ok()?, id.to_string()))
+}
+
+impl DevHooks {
+    pub fn from_vars(get: impl Fn(&str) -> Option<String>) -> DevHooks {
+        let on = |k: &str| get(k).is_some_and(|v| v == "1");
+        DevHooks {
+            camera: get("MYCO_CAMERA").and_then(|v| {
+                let (x, y) = v.split_once(',')?;
+                Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
+            }),
+            cave_take: get("MYCO_CAVE_TAKE").filter(|v| !v.is_empty()),
+            force_rain: on("MYCO_FORCE_RAIN"),
+            bw: on("MYCO_BW"),
+            ui_demo: on("MYCO_UI_DEMO"),
+            perk: get("MYCO_PERK").and_then(|v| parse_perk_hook(&v)),
+        }
+    }
+
+    pub fn from_env() -> DevHooks {
+        DevHooks::from_vars(|k| std::env::var(k).ok())
+    }
+
+    /// Boot-time hooks on the title's sim (`MYCO_FORCE_RAIN`).
+    pub fn apply_at_boot(&self, sim: &mut myco_core::sim::Sim) {
+        if self.force_rain {
+            myco_core::weather::force_rain(sim);
+        }
+    }
+
+    /// Game-start hooks (`MYCO_CAMERA`, `MYCO_CAVE_TAKE`), once the title has closed.
+    pub fn apply_at_game_start(&self, sim: &mut myco_core::sim::Sim) {
+        if let Some((x, y)) = self.camera {
+            sim.camera.x = x;
+            sim.camera.y = y;
+            // camera_bounds is real (Task 21): grow the camera box so the forest step keeps the
+            // requested view (the LÖVE side neutralises camera_bounds through MYCO_PROBE)
+            let (w, h) = (sim.camera.width, sim.camera.height);
+            let b = &mut sim.state.state.cam_box;
+            b[0] = b[0].min(x);
+            b[1] = b[1].min(y);
+            b[2] = b[2].max(x + w);
+            b[3] = b[3].max(y + h);
+        }
+        if let Some(id) = &self.cave_take {
+            let cave = sim.world.cave_rects().iter().find(|c| &c.id == id).cloned();
+            if let Some(c) = cave {
+                myco_core::world::caves::cave_take(sim, &c, None, None);
+            }
+        }
+    }
+}
+
+fn dev_hooks_boot(
+    hooks: Res<DevHooks>,
+    mut sim: ResMut<SimRes>,
+    mut bw: Option<ResMut<crate::render::post::BwMode>>,
+) {
+    hooks.apply_at_boot(&mut sim.0);
+    if let Some(bw) = bw.as_mut() {
+        bw.0 |= hooks.bw;
+    }
+}
+
+/// Hooks due on a given step (`MYCO_PERK`), applied before it in the fixed step.
+fn dev_hooks_step(hooks: Res<DevHooks>, ap: Res<Autopilot>, mut sim: ResMut<SimRes>) {
+    if let Some((frame, id)) = &hooks.perk {
+        if ap.frame == *frame {
+            sim.0
+                .state
+                .state
+                .cave_perks
+                .insert(id.clone(), serde_json::Value::from(1));
+        }
+    }
+}
+
+fn dev_hooks_game_start(hooks: Res<DevHooks>, mut sim: ResMut<SimRes>, mut done: Local<bool>) {
+    if *done || sim.0.title_open {
+        return;
+    }
+    *done = true;
+    hooks.apply_at_game_start(&mut sim.0);
+}
+
+/// `MYCO_UI_DEMO=1` (dev hook for screenshots): every 0.5 s synthetic resource events around the
+/// view centre and a refused node, for the floating numbers and tips.
+pub fn ui_demo(
+    sim: Res<crate::sim_bridge::SimRes>,
+    cams: Res<crate::camera::Cameras>,
+    hooks: Res<DevHooks>,
+    mut out: MessageWriter<crate::sim_bridge::SimEventMsg>,
+) {
+    use myco_core::events::{NodeReject, ResourceKind, SimEvent};
+    if !hooks.ui_demo || !sim.0.frame.is_multiple_of(30) {
+        return;
+    }
+    let (cx, cy) = cams.game_view_center();
+    let k = (sim.0.frame / 30) as f64;
+    let ev = |kind, delta, dx: f64, dy: f64, source| SimEvent::Resource {
+        kind,
+        delta,
+        x: cx + dx,
+        y: cy + dy,
+        source,
+    };
+    for e in [
+        ev(ResourceKind::Food, 5.0, -300.0 + 20.0 * (k % 5.0), 80.0, 1),
+        ev(ResourceKind::Food, 3.0, -300.0, 80.0, 1),
+        ev(ResourceKind::Water, 12.0, 200.0, 140.0, 2),
+        ev(ResourceKind::Food, -15.0, -40.0, 220.0, 3),
+        ev(ResourceKind::UpgradePoints, 1.0, 420.0, 40.0, 4),
+        SimEvent::NodeRejected {
+            reason: NodeReject::NotEnoughFood { need: 12 },
+            x: cx,
+            y: cy,
+        },
+    ] {
+        out.write(crate::sim_bridge::SimEventMsg(e));
+    }
+}
+
+/// `MYCO_FPS_LOG=<steps>` (long runs): every that many fixed steps print the frame rate, the
+/// fixed step rate, the mean and worst frame time and the mean CPU time of a frame (First to
+/// Last, without waiting for the display), e.g. `FPS step 600: 60.0 frames/s, 60.0 steps/s,
+/// frame 16.67 ms, worst 20.1 ms, cpu 4.2 ms` (the window size: [`window_log`]).
+#[derive(Default)]
+pub struct FpsLog {
+    every: Option<u64>,
+    frames: u64,
+    span_start: Option<std::time::Instant>,
+    steps_at_start: u64,
+    worst_ms: f64,
+    last: Option<std::time::Instant>,
+    busy_ms: f64,
+}
+
+/// `MYCO_FPS_LOG` or `MYCO_WINDOW_LOG=1`: print the window's size, scale and mode every time it
+/// changes (`WINDOW 3024x1898 px, scale 2, BorderlessFullscreen(Primary), step 12`), so the
+/// fullscreen size below the notch can be measured.
+pub fn window_log(
+    ap: Res<Autopilot>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut last: Local<Option<(u32, u32, String)>>,
+    mut on: Local<Option<bool>>,
+) {
+    let on = *on.get_or_insert_with(|| {
+        std::env::var_os("MYCO_FPS_LOG").is_some()
+            || std::env::var("MYCO_WINDOW_LOG").is_ok_and(|v| v == "1")
+    });
+    if !on {
+        return;
+    }
+    let Ok(w) = windows.single() else { return };
+    let now = (
+        w.physical_width(),
+        w.physical_height(),
+        format!("scale {}, {:?}", w.scale_factor(), w.mode),
+    );
+    if last.as_ref() != Some(&now) {
+        println!(
+            "WINDOW {}x{} px, {}, step {}",
+            now.0, now.1, now.2, ap.frame
+        );
+        *last = Some(now);
+    }
+}
+
+/// When this frame started (`First`), for [`FpsLog`]'s CPU time.
+#[derive(Resource, Default)]
+pub struct FrameStart(pub Option<std::time::Instant>);
+
+fn frame_start(mut s: ResMut<FrameStart>) {
+    s.0 = Some(std::time::Instant::now());
+}
+
+fn fps_log(
+    ap: Res<Autopilot>,
+    start_of_frame: Res<FrameStart>,
+    mut log: Local<FpsLog>,
+    mut init: Local<bool>,
+) {
+    if !*init {
+        *init = true;
+        log.every = std::env::var("MYCO_FPS_LOG")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .filter(|n| *n > 0);
+    }
+    let Some(every) = log.every else { return };
+    let now = std::time::Instant::now();
+    if let Some(t0) = start_of_frame.0 {
+        log.busy_ms += (now - t0).as_secs_f64() * 1000.0;
+    }
+
+    if let Some(last) = log.last {
+        let ms = (now - last).as_secs_f64() * 1000.0;
+        if ms > log.worst_ms {
+            log.worst_ms = ms;
+        }
+    }
+    log.last = Some(now);
+    log.frames += 1;
+    let start = *log.span_start.get_or_insert(now);
+    let steps = ap.frame - log.steps_at_start;
+    if steps >= every {
+        let secs = (now - start).as_secs_f64().max(1e-9);
+        println!(
+            "FPS step {}: {:.1} frames/s, {:.1} steps/s, frame {:.2} ms, worst {:.1} ms, cpu {:.2} ms",
+            ap.frame,
+            log.frames as f64 / secs,
+            steps as f64 / secs,
+            secs * 1000.0 / log.frames as f64,
+            log.worst_ms,
+            log.busy_ms / log.frames as f64
+        );
+        log.frames = 0;
+        log.busy_ms = 0.0;
+        log.span_start = Some(now);
+        log.steps_at_start = ap.frame;
+        log.worst_ms = 0.0;
+    }
+}
+
 pub struct AutopilotPlugin;
 
 impl Plugin for AutopilotPlugin {
@@ -171,15 +424,25 @@ impl Plugin for AutopilotPlugin {
         let force_focus = std::env::var_os("MYCO_FOCUS").is_some();
         app.insert_resource(Autopilot::from_env())
             .insert_resource(ForceFocus(force_focus))
+            .insert_resource(DevHooks::from_env())
             .init_resource::<MyceliumAnchor>()
+            .add_systems(Startup, dev_hooks_boot)
             .add_systems(
                 FixedUpdate,
                 (
                     run_script.in_set(SimSet::Prepare),
+                    dev_hooks_game_start
+                        .in_set(SimSet::Prepare)
+                        .after(run_script),
+                    dev_hooks_step.in_set(SimSet::Prepare).after(run_script),
+                    ui_demo.in_set(SimSet::After),
                     dump_state.in_set(SimSet::After),
                 ),
             )
-            .add_systems(Update, (track_occlusion, take_screenshot).chain());
+            .add_systems(Update, (track_occlusion, take_screenshot).chain())
+            .init_resource::<FrameStart>()
+            .add_systems(First, frame_start)
+            .add_systems(Last, (fps_log, window_log));
     }
 }
 
@@ -199,16 +462,13 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
     match a {
         Action::Move(fx, fy) => {
             let p = DVec2::new(pic.x + pic.w * fx, pic.y + pic.h * fy) / sf;
-            pending.cursor_override = Some(p.as_vec2());
+            pending.cursor_override = Some(p);
         }
         Action::GMove(gx, gy) => {
-            pending.cursor_override = Some(cams.gui_to_screen(DVec2::new(*gx, *gy)).as_vec2())
+            pending.cursor_override = Some(cams.gui_to_screen(DVec2::new(*gx, *gy)))
         }
         Action::WMove(dx, dy) => {
-            pending.cursor_override = Some(
-                cams.world_to_screen(anchor + DVec2::new(*dx, *dy))
-                    .as_vec2(),
-            )
+            pending.cursor_override = Some(cams.world_to_screen(anchor + DVec2::new(*dx, *dy)))
         }
         Action::Down(b) | Action::Up(b) => {
             if let Some(mb) = mouse_button(*b) {
@@ -237,8 +497,18 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
     false
 }
 
-/// Runs the `MYCO_INPUT` actions due this fixed step (`SimSet::Prepare`); UI steps that read
-/// the pending input order themselves after it.
+/// The script entries applied at the start of step `step` (1-based): those of the frame before
+/// it, as LÖVE runs frame N's actions after step N (frame 0 never runs, as in main.lua).
+pub fn actions_before_step(script: &[(u64, Action)], step: u64) -> impl Iterator<Item = &Action> {
+    script
+        .iter()
+        .filter(move |(f, _)| *f >= 1 && *f + 1 == step)
+        .map(|(_, a)| a)
+}
+
+/// Starts fixed step `frame` and applies the `MYCO_INPUT` actions of the previous frame
+/// (`SimSet::Prepare`; see the module docs); UI steps that read the pending input order
+/// themselves after it.
 pub fn run_script(
     mut ap: ResMut<Autopilot>,
     mut pending: ResMut<PendingInput>,
@@ -248,14 +518,31 @@ pub fn run_script(
 ) {
     ap.frame += 1;
     let frame = ap.frame;
-    for (f, a) in &ap.script {
-        if *f == frame && apply_action(a, &mut pending, &cams, anchor.0) {
+    #[cfg(feature = "trace-draws")]
+    {
+        // MYCO_TRACE_STEPS=a-b: print the game-RNG draw callers from step a to b
+        let on = std::env::var("MYCO_TRACE_STEPS")
+            .ok()
+            .and_then(|v| {
+                let (a, b) = v.split_once('-')?;
+                Some(frame >= a.parse().ok()? && frame <= b.parse().ok()?)
+            })
+            .unwrap_or(false);
+        myco_core::rng::draw_trace::set_range(if on { 0 } else { u64::MAX }, u64::MAX);
+        if on {
+            println!("STEP {frame}");
+        }
+    }
+    for a in actions_before_step(&ap.script, frame) {
+        if apply_action(a, &mut pending, &cams, anchor.0) {
             exit.write(AppExit::Success);
         }
     }
 }
 
-fn dump_state(ap: Res<Autopilot>, sim: Res<SimRes>, mut exit: MessageWriter<AppExit>) {
+/// `MYCO_DUMP`: the save JSON after the step of the requested frame, once every `SimSet::After`
+/// system that touches the sim has run (LÖVE dumps after that frame's draw).
+pub fn dump_state(ap: Res<Autopilot>, sim: Res<SimRes>, mut exit: MessageWriter<AppExit>) {
     let Some((frame, path)) = &ap.dump else {
         return;
     };
@@ -381,6 +668,50 @@ mod tests {
         };
         assert!(!capture_rendered(&img([0, 0, 0, 0])), "never rendered");
         assert!(capture_rendered(&img([0, 0, 0, 255])), "rendered black");
+    }
+
+    #[test]
+    fn dev_hooks_are_off_without_their_variables() {
+        assert_eq!(DevHooks::from_vars(|_| None), DevHooks::default());
+        let h = DevHooks::from_vars(|k| match k {
+            "MYCO_CAMERA" => Some("100,-20.5".into()),
+            "MYCO_CAVE_TAKE" => Some("purple".into()),
+            "MYCO_FORCE_RAIN" | "MYCO_BW" | "MYCO_UI_DEMO" => Some("1".into()),
+            _ => None,
+        });
+        assert_eq!(h.camera, Some((100.0, -20.5)));
+        assert_eq!(h.cave_take.as_deref(), Some("purple"));
+        assert!(h.force_rain && h.bw && h.ui_demo);
+        assert_eq!(
+            parse_perk_hook("1300:purple"),
+            Some((1300, "purple".into()))
+        );
+        assert_eq!(parse_perk_hook("x:purple"), None);
+        assert_eq!(parse_perk_hook("12:"), None);
+        assert_eq!(parse_perk_hook("purple"), None);
+        // with no hook set, nothing in the game state changes
+        let mut sim =
+            myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "", Some(7));
+        let before = myco_core::save::to_love_json(&sim.to_save().0).unwrap();
+        DevHooks::default().apply_at_boot(&mut sim);
+        DevHooks::default().apply_at_game_start(&mut sim);
+        assert_eq!(
+            myco_core::save::to_love_json(&sim.to_save().0).unwrap(),
+            before
+        );
+    }
+
+    #[test]
+    fn frame_n_actions_reach_step_n_plus_one() {
+        let s = parse_script("0:key:a;1:down:1;3:up:1;3:key:space");
+        let at = |step| actions_before_step(&s, step).cloned().collect::<Vec<_>>();
+        assert!(
+            at(1).is_empty(),
+            "frame 0 never runs; nothing precedes step 1"
+        );
+        assert_eq!(at(2), vec![Action::Down(1)]);
+        assert!(at(3).is_empty());
+        assert_eq!(at(4), vec![Action::Up(1), Action::Key("space".into())]);
     }
 
     #[test]

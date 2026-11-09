@@ -11,3 +11,11 @@ serde_json.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[features]
+# conformance debugging: print the callers of game-RNG draws (examples/rng_trace.rs)
+trace-draws = []
+
+[[example]]
+name = "rng_trace"
+required-features = ["trace-draws"]

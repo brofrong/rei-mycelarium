@@ -102,4 +102,35 @@ fn cine_draw_paints_the_flash_then_the_planet() {
         })
         .sum();
     assert!(tris > 1000, "stars, glow and mycelium: {tris}");
+    // core_3.lua:175-178: the two glow sprites draw with gpu_set_blendmode(bm_add), before the
+    // Earth; the rest is normal blending
+    let add_at = g
+        .items
+        .iter()
+        .position(|i| matches!(i, DrawItem::TrisAdd(_)))
+        .expect("the additive glow");
+    let earth_at = g
+        .items
+        .iter()
+        .position(|i| matches!(i, DrawItem::Quad { .. }))
+        .unwrap();
+    assert!(add_at < earth_at);
+    assert!(
+        g.items[earth_at..]
+            .iter()
+            .all(|i| !matches!(i, DrawItem::TrisAdd(_))),
+        "bm_normal again after the glow"
+    );
+}
+
+/// The additive glow's pool slot gets the additive material from the frame it is spawned.
+#[test]
+fn additive_items_get_the_add_material() {
+    use myco_app::render::blend::GmBlend;
+    use myco_app::ui::gm_draw::material_for;
+    let mut mats = Assets::<GmBlend>::default();
+    let alpha = mats.add(GmBlend::new(myco_app::render::blend::GmBlendMode::Alpha));
+    let add = mats.add(GmBlend::new(myco_app::render::blend::GmBlendMode::Add));
+    assert_eq!(material_for(&DrawItem::TrisAdd(vec![]), &alpha, &add), &add);
+    assert_eq!(material_for(&DrawItem::Tris(vec![]), &alpha, &add), &alpha);
 }

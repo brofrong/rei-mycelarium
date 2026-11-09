@@ -460,3 +460,67 @@ fn display_sizes_follow_love() {
     let s = DisplaySizes::new(Some((800.0, 600.0)), Some((0, 0)));
     assert_eq!(s.sizes, vec![(1280, 720)]);
 }
+
+/// "Main menu" restarts like game_restart (gm/instance.lua): the old game runs the rest of its
+/// step, the fresh title replaces it at the end of the step, and the title's first step is the
+/// next one (found by the T22 conformance run: Rust stepped the new title in the restart step).
+#[test]
+fn main_menu_restart_happens_after_the_step() {
+    use bevy::time::TimeUpdateStrategy;
+    use myco_app::camera::Cameras;
+    use myco_app::sim_bridge::{SimBridgePlugin, SimRes, SimSet, StepHistory};
+    use myco_app::ui::menu::{Menus, UiFlags};
+    use myco_app::ui::tree::TreeScreen;
+    use myco_app::ui::{apply_restart, RestartPending};
+    use std::time::Duration;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, SimBridgePlugin));
+    let mut game =
+        myco_core::sim::Sim::new_game(myco_core::state::GameMode::Exploration, "R", Some(7));
+    game.title_open = false;
+    game.intro_active = false;
+    app.insert_resource(SimRes(game))
+        .insert_resource(Cameras::default())
+        .insert_resource(StepHistory::default())
+        .insert_resource(Menus::new(None))
+        .insert_resource(UiFlags::default())
+        .insert_resource(TreeScreen::default())
+        .insert_resource(RestartPending(false))
+        .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::ZERO))
+        .add_systems(
+            FixedUpdate,
+            (
+                (|mut r: ResMut<RestartPending>| r.0 = true).in_set(SimSet::Prepare),
+                apply_restart
+                    .in_set(SimSet::Step)
+                    .after(myco_app::sim_bridge::step_sim),
+            ),
+        );
+    app.update();
+    let old_session = app.world().resource::<SimRes>().0.session;
+    let step = app.world().resource::<Time<Fixed>>().timestep();
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(step));
+    app.update();
+    assert_eq!(app.world().resource::<StepHistory>().0.len(), 1, "one step");
+    let sim = &app.world().resource::<SimRes>().0;
+    assert_ne!(sim.session, old_session, "replaced by a fresh title");
+    assert!(sim.title_open);
+    assert_eq!(
+        sim.frame, 1,
+        "the old game took the step; the clock goes on"
+    );
+    // the new title has not stepped yet: its RNG is where a fresh title's is (draws since
+    // game_init's reseed), not past a step's draws
+    let draws = |s: &myco_core::sim::Sim| {
+        let mut r = myco_core::rng::Rng::new(s.rng.seed());
+        (0..100_000).find(|_| {
+            let hit = r.state() == s.rng.state();
+            r.next01();
+            hit
+        })
+    };
+    // a fresh room makes about a dozen draws (game_init, world_init, the start stump); the
+    // title's first step makes ~160 more (the backdrop leaves)
+    let n = draws(sim).expect("from the title's own seed");
+    assert!(n < 60, "the new title has not stepped yet ({n} draws)");
+}

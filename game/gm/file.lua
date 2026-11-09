@@ -139,7 +139,12 @@ function M.json_parse(s) return json.decode(s, json.gml) end
 function M.json_stringify(v) return json.encode(v) end
 
 local t0 = love.timer.getTime()
-function M.get_timer() return math.floor((love.timer.getTime() - t0) * 1e6) end
+-- frozen_timer: set by the conformance lockstep (gm/conform.lua), get_timer stands still
+M.frozen_timer = nil
+function M.get_timer()
+  if M.frozen_timer then return M.frozen_timer end
+  return math.floor((love.timer.getTime() - t0) * 1e6)
+end
 function M.date_current_datetime()
   -- GameMaker datetime: days since 1899-12-30, local time.
   local now = os.time()

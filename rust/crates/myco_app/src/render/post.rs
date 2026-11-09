@@ -281,13 +281,19 @@ struct PostState {
     glow_pool: BatchPool,
 }
 
+/// What post camera `i` clears to: the glow passes start transparent; the final picture starts
+/// black, as Draw_77 does `draw_clear(c_black)` before `post_layer_draw(application_surface)`.
+pub fn post_camera_clear(i: usize) -> ClearColorConfig {
+    if i == 2 {
+        ClearColorConfig::Custom(Color::BLACK)
+    } else {
+        ClearColorConfig::Custom(Color::NONE)
+    }
+}
+
 fn spawn_post_cameras(mut commands: Commands) {
     for (i, &layer) in POST_LAYERS.iter().enumerate() {
-        let clear = if i == 2 {
-            ClearColorConfig::None
-        } else {
-            ClearColorConfig::Custom(Color::NONE)
-        };
+        let clear = post_camera_clear(i);
         commands.spawn((
             Camera2d,
             Camera {
@@ -547,8 +553,8 @@ impl Plugin for PostPlugin {
             app.add_plugins(BatchPlugin);
         }
         app.add_plugins(BwPlugin);
-        let on = std::env::var("MYCO_BW").is_ok_and(|v| v == "1");
-        app.insert_resource(BwMode(on))
+        // off in the shipped game; `MYCO_BW=1` (autopilot::DevHooks) turns it on
+        app.insert_resource(BwMode(false))
             .init_resource::<PostRedirect>()
             .init_resource::<PostState>()
             .add_systems(Startup, spawn_post_cameras)

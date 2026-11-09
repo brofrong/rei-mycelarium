@@ -448,3 +448,36 @@ fn real_saves_roundtrip_bytes() {
         }
     }
 }
+
+/// load_game runs in the live room (meta_3.lua:820): `current_time` keeps counting from boot and
+/// the game RNG continues from the title, nothing reseeds it. A loaded game continues the title
+/// sim's clock and RNG; a restart to the title (`game_restart`) keeps the clock too.
+#[test]
+fn load_continues_the_live_clock_and_rng() {
+    use myco_core::sim::{Sim, StepInput};
+    let dir = std::env::temp_dir().join(format!("myco-t22-live-load-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::copy(fixture("exploration.json"), dir.join("save_1.json")).unwrap();
+    let mut title = Sim::title_screen(Some(31607));
+    for _ in 0..90 {
+        title.step(&StepInput::default());
+    }
+    let (frame, seed) = (title.frame, title.rng.seed());
+    let loaded = title.load_game_live(&dir, 0).unwrap();
+    assert_eq!(loaded.frame, frame, "current_time continues");
+    assert_eq!(loaded.rng.seed(), seed, "the game RNG is the title's");
+    assert_eq!(loaded.save.slot, 0);
+    assert!(!loaded.title_open);
+    assert_ne!(loaded.session, title.session);
+    let restarted = title.restart_title(Some(31607));
+    assert_eq!(restarted.frame, frame);
+    assert!(restarted.title_open);
+    // a GameMaker global no Create event resets survives game_restart
+    assert!(title.forest.backdrop_leaves.is_some());
+    assert_eq!(
+        restarted.forest.backdrop_leaves,
+        title.forest.backdrop_leaves
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

@@ -108,7 +108,7 @@ impl Menus {
             self.keyboard_string.clear();
         } else if let Some(dir) = self.save_dir.clone() {
             // load_game(i): continue the save, or keep the screen open if it fails
-            match Sim::load_game(&dir, i) {
+            match sim.load_game_live(&dir, i) {
                 Ok(loaded) => {
                     *sim = loaded;
                     self.hud_slot_close();
