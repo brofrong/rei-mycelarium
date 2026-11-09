@@ -29,6 +29,8 @@ gm.mouse_x, gm.mouse_y = 0, 0
 function gm.buffer_get_surface(buf, surf, offset) file.buffer_get_surface(buf, surf, offset, draw) end
 function gm.buffer_set_surface(buf, surf, offset) file.buffer_set_surface(buf, surf, offset, draw) end
 function gm.string_byte_length(s) return #s end
+function gm.int64(v) return math.floor(gm.real(v)) end
+gm.fps, gm.fps_real = 60, 60
 
 function gm.variable_global_exists(name) return gm.global[name] ~= nil end
 function gm.variable_global_get(name)
@@ -103,6 +105,7 @@ function gm.update(dt)
   while acc >= step do
     refresh_display()
     gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
+    gm.fps, gm.fps_real = love.timer.getFPS(), 1 / math.max(love.timer.getAverageDelta(), 1e-6)
     window.update_mouse(gm)
     gm.step()
     input.end_step()

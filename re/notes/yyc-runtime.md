@@ -28,6 +28,11 @@
 | `FUN_140024e60` | сравнение «меньше» |
 | `FUN_14004b9c0`, `FUN_14002f610` | сравнение «больше или равно» |
 | `FUN_14002f5a0(x, 0)` | `x > 0` |
+| `FUN_140045910` / `FUN_140024a60` / `FUN_14004b680` | `a - n` / `a + n` / `a - d` |
+| `FUN_140024e30` / `FUN_14002f570` | `<` / `>` |
+| `FUN_140b29df0` | `fmod` |
+| `FUN_1408c9bd0` / `FUN_1408c9c40` / `FUN_1408c9c70` | `draw_set_font` / `draw_set_halign` / `draw_set_valign` |
+| `FUN_140754f80` / `FUN_140756730` | `surface_set_target` / `surface_reset_target` |
 | `g_pGlobal` (0x141020570) | глобальный экземпляр: `(*g_pGlobal->vtbl[1])(g_pGlobal, vid_x)` → ссылка на `global.x` |
 | `g_pCurrentStackTrace` | кадр стек-трейса; строки `local_xx = N` рядом — номера строк GML |
 
