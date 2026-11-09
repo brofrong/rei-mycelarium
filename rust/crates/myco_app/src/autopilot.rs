@@ -388,6 +388,21 @@ pub fn run_script(
 ) {
     ap.frame += 1;
     let frame = ap.frame;
+    #[cfg(feature = "trace-draws")]
+    {
+        // MYCO_TRACE_STEPS=a-b: print the game-RNG draw callers from step a to b
+        let on = std::env::var("MYCO_TRACE_STEPS")
+            .ok()
+            .and_then(|v| {
+                let (a, b) = v.split_once('-')?;
+                Some(frame >= a.parse().ok()? && frame <= b.parse().ok()?)
+            })
+            .unwrap_or(false);
+        myco_core::rng::draw_trace::set_range(if on { 0 } else { u64::MAX }, u64::MAX);
+        if on {
+            println!("STEP {frame}");
+        }
+    }
     for a in actions_before_step(&ap.script, frame) {
         if apply_action(a, &mut pending, &cams, anchor.0) {
             exit.write(AppExit::Success);

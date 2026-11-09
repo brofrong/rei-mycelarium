@@ -144,6 +144,18 @@ pub mod draw_trace {
         }
     }
     pub(super) fn draw() {
+        static ENV: std::sync::Once = std::sync::Once::new();
+        ENV.call_once(|| {
+            // MYCO_TRACE_DRAWS=<from>-<to>, as the LÖVE port reads it
+            if let Some((a, b)) = std::env::var("MYCO_TRACE_DRAWS")
+                .ok()
+                .and_then(|v| v.split_once('-').map(|(a, b)| (a.parse().ok(), b.parse().ok())))
+            {
+                if let (Some(a), Some(b)) = (a, b) {
+                    set_range(a, b);
+                }
+            }
+        });
         if PAUSED.load(Ordering::Relaxed) {
             return;
         }
@@ -156,9 +168,10 @@ pub mod draw_trace {
         let mut lines = bt.lines().peekable();
         while let Some(l) = lines.next() {
             let l = l.trim();
-            if let Some(pos) = l.find("myco_core::") {
-                let name = &l[pos + "myco_core::".len()..];
-                if name.starts_with("rng::") {
+            let hit = l.find("myco_core::").or_else(|| l.find("myco_app::"));
+            if let Some(pos) = hit {
+                let name = &l[pos..];
+                if name.starts_with("myco_core::rng::") {
                     continue;
                 }
                 let at = lines

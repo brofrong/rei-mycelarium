@@ -17,7 +17,10 @@ MYCO_RNG_SEED (game_init's clock-seeded randomise() reseeds the same way in both
 The dumps (what save_game would write at that frame) are compared on the deterministic fields:
 state.food, state.water_free, state.length_px, state.upgrade_levels, state.tasks,
 mycelium.growths / mycelium.knots (positions within 0.5 px), mushrooms and world.chunks.
-Every difference is printed with its field path; the exit code is 1 if there is any.
+Every difference is printed with its field path; the exit code is 1 if there is any. The game
+RNG is traced after every step in both ports (MYCO_TRACE_RNG) and the report says whether the
+sequences stayed identical, or the first step where they part (tools/rng_compare.py then shows
+the per-step draw counts).
 """
 from __future__ import annotations
 
@@ -208,7 +211,7 @@ def prepare_save_dir(d: Path, save_text: str | None):
         (d / "save_1_meta.json").write_bytes(json.dumps(meta_for(save)).encode() + b"\0")
 
 
-TRACE_RNG = False
+TRACE_RNG = True
 
 
 def run_port(port: str, seed: int, script: str, dump_frame: int, out: Path, save_text: str | None,
@@ -319,10 +322,11 @@ def main(argv=None) -> int:
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--keep", type=Path, help="folder for dumps and logs (default: a temp folder)")
     ap.add_argument("--rust-bin", type=Path, default=RUST_BIN)
-    ap.add_argument("--trace-rng", action="store_true", help="print where the game RNG first differs")
+    ap.add_argument("--no-trace-rng", action="store_true",
+                    help="do not trace the game RNG (by default the report says where it first differs)")
     args = ap.parse_args(argv)
     global TRACE_RNG
-    TRACE_RNG = args.trace_rng
+    TRACE_RNG = not args.no_trace_rng
     names = sorted(p.stem for p in SCENARIOS.glob("*.txt")) if args.all else [args.scenario]
     if not names or names == [None]:
         ap.error("give a scenario or --all")

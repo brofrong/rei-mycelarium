@@ -16,3 +16,7 @@ serde_json.workspace = true
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSScreen", "objc2-core-foundation"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSGeometry"] }
+
+[features]
+# conformance debugging: print the callers of game-RNG draws in the steps MYCO_TRACE_STEPS=a-b
+trace-draws = ["myco_core/trace-draws"]
