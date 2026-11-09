@@ -746,7 +746,7 @@ pub fn stone_dress_blob(
             row,
             tc: t.0,
             tr: t.1,
-            deep,
+            deep: Some(deep),
             band: Some(band),
             ..Default::default()
         };
