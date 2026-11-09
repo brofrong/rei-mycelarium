@@ -486,7 +486,7 @@ pub fn menu_step(
     // the tree adds its own flag and screen after this (it runs next)
     let menus_up = sim.0.title_open || sim.0.pause_open || menus.logo.open || flags.debug_open;
     // the tree screen writes its own blocker (`UiBlockers::tree`)
-    ui.0.menus = menu::ui_blocking(&sim.0, &flags, menus.logo.open);
+    ui.0.menus = menu::menus_block(&sim.0, &flags, menus.logo.open);
     ui.1.menus = menus_up || sim.0.intro_active;
 }
 

@@ -614,3 +614,35 @@ fn main_menu_restart_happens_after_the_step() {
     let n = draws(sim).expect("from the title's own seed");
     assert!(n < 60, "the new title has not stepped yet ({n} draws)");
 }
+
+/// `menu::menus_block` is the menus' share of `ui_blocking()`; with the HUD's share
+/// (`hud::hud_blocks`: tasks popup, blocking cut-scene) it is the whole `hud::ui_blocking`.
+#[test]
+fn menus_block_plus_hud_blocks_is_ui_blocking() {
+    use myco_app::ui::hud::{hud_blocks, ui_blocking, HudState};
+    let dir = temp_dir("blocking");
+    let mut sim = title(&dir);
+    sim.start_from_title(1, "Blocks", GameMode::Exploration);
+    for bits in 0u32..128 {
+        let b = |i: u32| bits & (1 << i) != 0;
+        sim.intro_active = b(0);
+        sim.title_open = b(1);
+        sim.pause_open = b(2);
+        sim.state.state.tasks.popup = if b(3) { "t".into() } else { String::new() };
+        let flags = UiFlags {
+            menu_open: b(4),
+            debug_open: b(5),
+            ..Default::default()
+        };
+        let logo = b(6);
+        let mut hud = HudState::new();
+        hud.menu_open = flags.menu_open;
+        hud.debug_open = flags.debug_open;
+        hud.logo_open = logo;
+        assert_eq!(
+            menus_block(&sim, &flags, logo) || hud_blocks(&sim),
+            ui_blocking(&sim, &hud),
+            "bits {bits:07b}"
+        );
+    }
+}

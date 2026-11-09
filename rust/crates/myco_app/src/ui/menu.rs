@@ -196,14 +196,11 @@ pub fn length_text(locale: &Locale, imperial: bool, cm: f64) -> String {
     }
 }
 
-/// `tasks_popup_open()`.
-pub fn tasks_popup_open(sim: &Sim) -> bool {
-    !sim.state.state.tasks.popup.is_empty()
-        && myco_core::balance::game_mode(&sim.state) != GameMode::Survival
-}
-
-/// `ui_blocking()`: a menu covers the game (no focus pause, mouse captured).
-pub fn ui_blocking(sim: &Sim, flags: &UiFlags, logo_open: bool) -> bool {
+/// The menus' (Task 18) share of `ui_blocking()` (`hud::ui_blocking` is the whole port): the
+/// in-game menu, debug overlay, pause, logo screen, intro or title covers the game. The rest of
+/// `ui_blocking()` (a tasks popup, a blocking cut-scene) is `hud::hud_blocks`, and the tree
+/// screen writes its own flag; together they make `UiBlockers::any()` (no focus pause).
+pub fn menus_block(sim: &Sim, flags: &UiFlags, logo_open: bool) -> bool {
     flags.menu_open
         || flags.debug_open
         || sim.pause_open
@@ -286,7 +283,7 @@ impl Menus {
             self.keyboard_string.pop();
         }
         let title = sim.title_open;
-        let popup = tasks_popup_open(sim);
+        let popup = myco_core::progress::tasks::tasks_popup_open(sim);
         let cine = myco_core::camera::cine_blocking(sim);
         self.escape_used = false;
         if inp.escape && !popup && !cine {
