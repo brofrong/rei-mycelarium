@@ -510,11 +510,13 @@ pub struct CloudFrame {
 
 /// The end of `repeller_clouds_draw`: filter off, the body surface premultiplied
 /// (`bm_one, bm_inv_src_alpha`), the flash surface additively, `pixel` times larger; then the
-/// filter back to `gpu_get_tex_filter()`'s value — always true in the LÖVE port.
+/// filter back to the value saved on entry (`filt = gpu_get_tex_filter()`, scr_life_a_2.lua:744;
+/// the LÖVE stub always answers true, the original the real state).
 pub fn clouds_composite(b: &mut QuadBatch, f: &CloudFrame) {
     if !f.active {
         return;
     }
+    let filt = b.filter();
     let (w, h) = (f.sw as f64, f.sh as f64);
     b.set_filter(false);
     b.set_blend(QuadBlend::Premul);
@@ -546,7 +548,7 @@ pub fn clouds_composite(b: &mut QuadBatch, f: &CloudFrame) {
         );
     }
     b.set_blend(QuadBlend::Alpha);
-    b.set_filter(true);
+    b.set_filter(filt);
 }
 
 /// Cloud surface pass camera: pass index (0 body, 1 flash) and its current target.

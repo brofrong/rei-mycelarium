@@ -148,8 +148,8 @@ fn soft_disc(g: &mut Gm, x: f64, y: f64, r: f64, hardness: f64, col: f64, alpha:
 /// segment by segment, the white-out and the first half second's white fade), all faded by the
 /// cut-scene's alpha.
 ///
-/// The glow is the original's additive `repel_flash_sprite`; here it blends normally over the
-/// black backdrop (the same on black; slightly dimmer where it covers a star).
+/// The glow is the original's `repel_flash_sprite` (a soft disc, hardness 2.2) drawn with
+/// `bm_add` twice, as soft discs in the painter's additive mode.
 pub fn cine_draw(g: &mut Gm, sim: &Sim, gw: f64, gh: f64) {
     let Some(c) = sim.progress.tasks.cine.as_ref() else {
         return;
@@ -208,6 +208,7 @@ pub fn cine_draw(g: &mut Gm, sim: &Sim, gw: f64, gh: f64) {
     );
     let col = gml::merge_colour(16755310.0, C_WHITE, wk);
     let pulse = 1.0 + 0.04 * (tt * 3.0).sin();
+    g.set_blend_add(true);
     soft_disc(
         g,
         bx,
@@ -218,6 +219,7 @@ pub fn cine_draw(g: &mut Gm, sim: &Sim, gw: f64, gh: f64) {
         al * gml::lerp(0.35, 0.6, wk),
     );
     soft_disc(g, bx, by, br * 1.5, 2.2, col, al * gml::lerp(0.45, 0.9, wk));
+    g.set_blend_add(false);
     g.sprite_ext(
         "Earth",
         0,

@@ -281,13 +281,19 @@ struct PostState {
     glow_pool: BatchPool,
 }
 
+/// What post camera `i` clears to: the glow passes start transparent; the final picture starts
+/// black, as Draw_77 does `draw_clear(c_black)` before `post_layer_draw(application_surface)`.
+pub fn post_camera_clear(i: usize) -> ClearColorConfig {
+    if i == 2 {
+        ClearColorConfig::Custom(Color::BLACK)
+    } else {
+        ClearColorConfig::Custom(Color::NONE)
+    }
+}
+
 fn spawn_post_cameras(mut commands: Commands) {
     for (i, &layer) in POST_LAYERS.iter().enumerate() {
-        let clear = if i == 2 {
-            ClearColorConfig::None
-        } else {
-            ClearColorConfig::Custom(Color::NONE)
-        };
+        let clear = post_camera_clear(i);
         commands.spawn((
             Camera2d,
             Camera {

@@ -81,6 +81,8 @@ pub enum UiFont {
 pub enum DrawItem {
     /// a triangle list in GUI coordinates
     Tris(Vec<Vert>),
+    /// a triangle list drawn with `gpu_set_blendmode(bm_add)`: `dst += src·a`
+    TrisAdd(Vec<Vert>),
     /// a textured axis-aligned quad: `rect` on `image`, top-left at (x, y), size (w, h)
     Quad {
         image: Handle<Image>,
@@ -116,6 +118,8 @@ pub struct Gm<'a> {
     pub font: UiFont,
     /// `matrix_set(matrix_world, matrix_build(x, y, 0, 0, 0, 0, s, s, 1))`
     matrix: Option<(f64, f64, f64)>,
+    /// `gpu_set_blendmode(bm_add)` for the following geometry (`bm_normal` when false)
+    additive: bool,
 }
 
 impl<'a> Gm<'a> {
@@ -129,7 +133,14 @@ impl<'a> Gm<'a> {
             valign: FA_TOP,
             font: UiFont::Gm("fnt_gm_20".into()),
             matrix: None,
+            additive: false,
         }
+    }
+
+    /// `gpu_set_blendmode(bm_add)` (true) / `gpu_set_blendmode(bm_normal)` (false) for the
+    /// coloured geometry that follows.
+    pub fn set_blend_add(&mut self, on: bool) {
+        self.additive = on;
     }
 
     pub fn set_colour(&mut self, c: f64) {
@@ -161,9 +172,12 @@ impl<'a> Gm<'a> {
                 Vert { x, y, col, alpha }
             })
             .collect();
-        match self.items.last_mut() {
-            Some(DrawItem::Tris(t)) => t.extend(verts),
-            _ => self.items.push(DrawItem::Tris(verts)),
+        match (self.items.last_mut(), self.additive) {
+            (Some(DrawItem::Tris(t)), false) | (Some(DrawItem::TrisAdd(t)), true) => {
+                t.extend(verts)
+            }
+            (_, false) => self.items.push(DrawItem::Tris(verts)),
+            (_, true) => self.items.push(DrawItem::TrisAdd(verts)),
         }
     }
 
@@ -550,6 +564,7 @@ struct GuiPools {
     quads: Vec<Entity>,
     texts: Vec<Entity>,
     material: Option<Handle<GmBlend>>,
+    material_add: Option<Handle<GmBlend>>,
 }
 
 /// A pooled GUI mesh entity, its mesh, and whether the mesh holds only the invisible
@@ -600,7 +615,7 @@ fn paint_gui(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GmBlend>>,
     mut q_mesh: Query<
-        &mut Transform,
+        (&mut Transform, &mut MeshMaterial2d<GmBlend>),
         (
             With<GuiMeshSlot>,
             Without<GuiQuadSlot>,
@@ -628,13 +643,22 @@ fn paint_gui(
         .material
         .get_or_insert_with(|| materials.add(GmBlend::new(GmBlendMode::Alpha)))
         .clone();
+    let material_add = pools
+        .material_add
+        .get_or_insert_with(|| materials.add(GmBlend::new(GmBlendMode::Add)))
+        .clone();
     let n: usize = draw.lists.values().map(Vec::len).sum();
     let (mut mi, mut qi, mut ti) = (0usize, 0usize, 0usize);
     let layer = RenderLayers::layer(GUI_LAYER);
     for (i, item) in draw.lists.values().flatten().enumerate() {
         let z = z_of(i, n);
         match item {
-            DrawItem::Tris(verts) => {
+            DrawItem::Tris(verts) | DrawItem::TrisAdd(verts) => {
+                let mat = if matches!(item, DrawItem::TrisAdd(_)) {
+                    &material_add
+                } else {
+                    &material
+                };
                 if mi == pools.meshes.len() {
                     let h = meshes.add(empty_colour_mesh());
                     let e = commands
@@ -659,9 +683,12 @@ fn paint_gui(
                 }
                 slot.empty = false;
                 let e = slot.entity;
-                if let Ok(mut tf) = q_mesh.get_mut(e) {
+                if let Ok((mut tf, mut m)) = q_mesh.get_mut(e) {
                     if tf.translation.z != z {
                         tf.translation.z = z;
+                    }
+                    if m.0 != *mat {
+                        m.0 = mat.clone();
                     }
                 }
                 mi += 1;

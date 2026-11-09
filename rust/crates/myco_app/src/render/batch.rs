@@ -209,6 +209,11 @@ impl QuadBatch {
         self.linear = linear;
     }
 
+    /// `gpu_get_tex_filter`
+    pub fn filter(&self) -> bool {
+        self.linear
+    }
+
     /// `shader_set(sh_glow_blur)` + `u_step` in texels (`None` = `shader_reset`)
     pub fn set_blur(&mut self, step: Option<[f32; 2]>) {
         self.blur = step;

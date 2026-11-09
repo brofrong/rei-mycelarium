@@ -410,3 +410,24 @@ fn animals_fade_beyond_the_1x_view_when_zoomed_out() {
     assert!((a2 - 0.5).abs() < 0.02, "{a2}");
     assert_eq!(alpha(3), None, "past the margin: fully faded, no entity");
 }
+
+/// repeller_clouds_draw (scr_life_a_2.lua:744) ends with `gpu_set_tex_filter(filt)`: the filter
+/// saved on entry comes back, not always-linear (the LÖVE stub's gpu_get_tex_filter is true).
+#[test]
+fn clouds_composite_restores_the_saved_filter() {
+    use myco_app::render::batch::QuadBatch;
+    use myco_app::render::mushrooms::{clouds_composite, CloudFrame};
+    let f = CloudFrame {
+        active: true,
+        sw: 8,
+        sh: 8,
+        px: 4.0,
+        ..Default::default()
+    };
+    for start in [false, true] {
+        let mut b = QuadBatch::new();
+        b.set_filter(start);
+        clouds_composite(&mut b, &f);
+        assert_eq!(b.filter(), start);
+    }
+}

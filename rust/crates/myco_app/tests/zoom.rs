@@ -213,3 +213,21 @@ fn zoom_locked_during_cine() {
     settle(&mut cams, &mut sim, &mut zs, Vec2::ZERO, 120);
     assert!((cams.zoom - 1.7).abs() < 1e-3, "{}", cams.zoom);
 }
+
+/// Forest parallax and culling (forest_draw: `cams.game_view.x`, `cams.render_view()`) use the
+/// floored, shaken view `floor(camera_x + shake)` at 1x, as the Lua forest Draw_0 does.
+#[test]
+fn forest_view_is_the_floored_shaken_camera() {
+    let mut cam = myco_core::camera::CameraRt::default();
+    cam.x = 100.7;
+    cam.y = 20.2;
+    cam.shake = [0.6, -0.5];
+    cam.view_x = (cam.x + cam.shake[0]).floor();
+    cam.view_y = (cam.y + cam.shake[1]).floor();
+    let mut cams = Cameras::default();
+    cams.sync_game_view(&cam);
+    assert_eq!(cams.zoom, 1.0);
+    assert_eq!(cams.game_view.x, 101.0);
+    let rv = cams.render_view();
+    assert_eq!((rv.x, rv.y), (101.0, 19.0));
+}
