@@ -64,6 +64,8 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
     // obj_hud Step_1 runs water_counter_step before its input handling
     crate::world::water_counter_step(sim);
     upgrades::apply_commands(sim, input);
+    // the HUD's placement mode places mushrooms here (obj_hud Step_1 -> myc_place_mushroom)
+    crate::mycelium::apply_hud_commands(sim, input);
 }
 
 /// `load_game`'s progress part: `upgrade_grow` from owned upgrades, the tutorial tips merged
@@ -93,12 +95,6 @@ pub fn on_load(sim: &mut Sim) {
 
 /// `save_game`'s progress part: everything saved already lives in `sim.state`.
 pub fn before_save(_sim: &Sim, _out: &mut GameState) {}
-
-/// `mycelium_cm()` (Task 8 ports it; `Sim::to_save` computes it the same way): the mycelium
-/// length in cm.
-pub(crate) fn mycelium_cm(sim: &Sim) -> f64 {
-    sim.state.state.length_px / sim.bal("pixels_per_cm").max(0.01)
-}
 
 // port: cheats_step
 /// obj_game Step_0: count the cheat flash down (the cheat keys themselves are compiled out).

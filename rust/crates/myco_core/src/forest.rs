@@ -711,7 +711,7 @@ pub fn create(sim: &mut Sim) {
 }
 
 /// `ui_blocking()`: menu, debug and logo state come from the app through `StepInput`.
-fn ui_blocking(sim: &Sim, input: &StepInput) -> bool {
+pub(crate) fn ui_blocking(sim: &Sim, input: &StepInput) -> bool {
     input.menu_open
         || input.debug_open
         || sim.pause_open

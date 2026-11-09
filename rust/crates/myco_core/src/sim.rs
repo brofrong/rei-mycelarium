@@ -114,6 +114,8 @@ pub struct StepInput {
     pub logo_open: bool,
     /// the HUD is hidden (`global.hud_hidden`, HUD state; read by `tasks_visible`)
     pub hud_hidden: bool,
+    /// a slot name is being typed (`obj_hud.hud_slot_naming != -1`): the F glow key is text
+    pub slot_naming: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -133,6 +135,21 @@ pub enum Command {
     },
     SetPaused(bool),
     Save,
+    /// Task 8: a click on the in-world build menu's option `index` (the app hit-tests
+    /// `myc_build_button_rect`; ruling R9b)
+    MycBuildOption {
+        index: usize,
+    },
+    /// Task 8: a click on the "release spores" button (`myc_spore_button_rect`)
+    MycReleaseSpores,
+    /// Task 8: a click on the "regenerate" button (`myc_regen_button_rect`)
+    MycRegenRepeller,
+    /// Task 8: open the in-world build menu at a world point (the original's right click,
+    /// `myc_open_build_menu_at`; the port's right click is `QuickNode`)
+    OpenBuildMenu {
+        x: f64,
+        y: f64,
+    },
     // Tasks 9–12 add their variants here and touch nothing else
 }
 
@@ -464,8 +481,7 @@ impl Sim {
                 lake.flares = None;
             }
         }
-        // mycelium_cm() = pixels_to_cm(mycelium_length_px)
-        let length_cm = out.state.length_px / self.bal("pixels_per_cm").max(0.01);
+        let length_cm = crate::mycelium::soil::pixels_to_cm(self, out.state.length_px);
         let meta = SlotMeta {
             length_cm,
             mode: balance::game_mode(&self.state),
