@@ -329,7 +329,7 @@ fn volumes(audio: Option<&Audio>) -> [f64; 2] {
 /// The title as `game_restart` brings it back: a fresh world, obj_hud recreated, game_init's
 /// flags reset (`units_imperial` survives, as a global that game_init only creates once).
 pub fn restart_to_title(sim: &mut Sim, menus: &mut Menus, flags: &mut UiFlags) {
-    let mut fresh = Sim::title_screen(seed_from_env());
+    let mut fresh = sim.restart_title(seed_from_env());
     fresh.save_dir = menus.save_dir.clone();
     *sim = fresh;
     *menus = Menus::new(menus.save_dir.clone());

@@ -563,17 +563,46 @@ impl Sim {
         Ok(sim)
     }
 
+    /// `load_game(slot)` from the title menu: the original loads into the live room, so the
+    /// loaded game keeps this sim's clock (`current_time` counts from boot) and game RNG (load
+    /// never reseeds it); everything load_game resets is rebuilt from the save.
+    pub fn load_game_live(&self, dir: &Path, slot: usize) -> Result<Sim, LoadError> {
+        let state = save::read_slot(dir, slot)?;
+        let mut sim = Sim::from_save_on(state, Some((self.rng.clone(), self.frame)))?;
+        sim.save.slot = slot as i64;
+        sim.save_dir = Some(dir.to_path_buf());
+        Ok(sim)
+    }
+
+    /// `game_restart` back to the title: a fresh room (game_init reseeds the RNG), the clock
+    /// keeps counting from boot (`current_time`).
+    pub fn restart_title(&self, world_seed: Option<i64>) -> Sim {
+        let mut sim = Sim::title_screen(world_seed);
+        sim.frame = self.frame;
+        sim
+    }
+
     // port: load_game
     /// A Sim continuing a save (no slot bound: see [`Sim::load_game`]). Applies load_game's
     /// fixups to the data, then lets each subsystem rebuild its runtime state. Like the
     /// original, it runs on a live room: the Create sequence first (see the module docs).
-    pub fn from_save(mut state: GameState) -> Result<Sim, LoadError> {
+    pub fn from_save(state: GameState) -> Result<Sim, LoadError> {
+        Sim::from_save_on(state, None)
+    }
+
+    /// [`Sim::from_save`]; `live`: the running game's RNG and clock, which the loaded game
+    /// continues (the original's load_game runs in the live room).
+    fn from_save_on(mut state: GameState, live: Option<(Rng, u64)>) -> Result<Sim, LoadError> {
         if state.version != 1 {
             return Err(LoadError::Version(state.version));
         }
         // tips/stats merges and the mode-aware boar timer fallback (idempotent after read_slot)
         state.apply_load_defaults();
         let mut sim = Sim::create_room(None);
+        if let Some((rng, frame)) = live {
+            sim.rng = rng;
+            sim.frame = frame;
+        }
         sim.state = state;
         let mode = sim.state.state.mode;
         sim.game_mode_apply(mode);

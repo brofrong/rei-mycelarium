@@ -1,0 +1,11 @@
+# mushroom_economy: a save with the spore and predator mushrooms unlocked (fixtures/economy.json:
+# explore_basic's LÖVE dump with food 2000, water 400, unlock_spore/unlock_predator) loaded
+# through the title's Load Game, then a spore mushroom (key 1) and a predator (key 2) placed
+# from the HUD's placement mode on free surface spots, then 1800 frames of growth and
+# production.
+seed: 31607
+fixture: ../fixtures/economy.json
+dump: 2100
+input: 1:gmove:960,300; 60:gmove:960,736; 61:down:1; 62:up:1; 90:gmove:960,578; 91:down:1; 92:up:1
+input: 150:key:1; 151:wmove:-160,-20; 160:down:1; 161:up:1
+input: 200:key:2; 201:wmove:200,-20; 210:down:1; 211:up:1; 212:gmove:960,300
