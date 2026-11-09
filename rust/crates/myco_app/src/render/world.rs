@@ -64,8 +64,8 @@ pub const Z_WORLD_FRONT: f32 = Z_WORLD + 110.0;
 /// Render layers of the food-glow passes (seed, across, down).
 pub const GLOW_LAYERS: [usize; 3] = [5, 6, 7];
 /// Draw-list keys in [`GuiDraw`]: perk icons with the HUD, popups after the HUD text.
-pub const PERK_ICONS_DRAW_ORDER: i32 = 210;
-pub const CAVE_POPUPS_DRAW_ORDER: i32 = 220;
+pub const PERK_ICONS_DRAW_ORDER: i32 = crate::ui::draw_order::CAVES;
+pub const CAVE_POPUPS_DRAW_ORDER: i32 = 310;
 
 fn div(a: f64, b: f64) -> f64 {
     (a / b).trunc()
@@ -1970,41 +1970,40 @@ fn draw_world(
     }
 }
 
-/// `ui_font()`: the language's font, `Font1` (bitmap) for the default languages. The fitted
-/// full-size TTF for the other languages is T17's `locale_font_fit`; until then they use the
-/// small fitted TTF.
-fn ui_font(locale: Option<&crate::ui::LocaleRes>) -> UiFont {
-    match locale {
-        Some(l) if l.locale.font_for() != myco_core::locale::FontId::Default => {
-            l.font_small.clone()
-        }
-        _ => UiFont::Gm("Font1".into()),
-    }
-}
-
+/// HUD Draw_75's two Task 13 calls, inside its `!hud_hidden` part: `cave_perk_icons_draw` under
+/// [`draw_order::CAVES`](crate::ui::draw_order::CAVES), and `cave_popups_draw` (after the HUD's
+/// `draw_set_font(ui_font())`) under [`CAVE_POPUPS_DRAW_ORDER`] (between the tasks panel and the
+/// markers, as Task 17 reserved).
+#[allow(clippy::too_many_arguments)]
 fn draw_world_gui(
     mut sim: ResMut<SimRes>,
     assets: Res<GameAssets>,
     cams: Res<Cameras>,
     locale: Option<Res<crate::ui::LocaleRes>>,
+    fonts: Option<Res<crate::ui::fonts::UiFonts>>,
+    hud: Option<Res<crate::ui::hud::HudState>>,
     mut draw: ResMut<GuiDraw>,
 ) {
+    if hud.is_some_and(|h| h.hud_hidden) {
+        draw.lists.insert(PERK_ICONS_DRAW_ORDER, Vec::new());
+        draw.lists.insert(CAVE_POPUPS_DRAW_ORDER, Vec::new());
+        return;
+    }
     let sim = &mut sim.0;
     let now = sim.now_ms();
     let mut g = Gm::new(&assets);
-    let ui_font = ui_font(locale.as_deref());
-    let ui_ox = cams.layout.ui_ox;
     cave_perk_icons_draw(
         &mut g,
         &sim.state,
-        vis("cave_icons_x") + ui_ox,
+        vis("cave_icons_x") + cams.layout.ui_ox,
         vis("cave_icons_y"),
     );
     draw.lists
         .insert(PERK_ICONS_DRAW_ORDER, std::mem::take(&mut g.items));
-    // cave_popups_draw runs after the HUD's `draw_set_font(ui_font())`
-    g.font = ui_font;
-    let gv = cams.game_view;
+    g.font = fonts
+        .map(|f| f.font.clone())
+        .unwrap_or_else(|| UiFont::Gm("Font1".into()));
+    let (vx, vy) = crate::ui::hud::view_xy(&cams);
     let loc = |k: &str| -> String {
         locale
             .as_ref()
@@ -2016,8 +2015,8 @@ fn draw_world_gui(
         &mut sim.world.caves,
         &loc,
         now,
-        gv.x,
-        gv.y,
+        vx,
+        vy,
         1.0,
         cams.layout.view_w,
     );
