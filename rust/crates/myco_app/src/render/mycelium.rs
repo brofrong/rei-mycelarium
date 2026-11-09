@@ -672,10 +672,19 @@ fn sync_anchor(sim: Res<SimRes>, mut anchor: ResMut<crate::autopilot::MyceliumAn
 /// A replaced `Sim` (restart to the title, a loaded slot: `Sim::load_game` builds a new `Sim`, so
 /// its `on_load` never sees the old growths) means the old controller went away: its CleanUp_0
 /// stops the hyphae sounds that may still play. A second stop of an id is harmless.
-pub fn tiles_step_system(mut sim: ResMut<SimRes>, mut bake: ResMut<MycBake>) {
+///
+/// `step_sim` already sent this step's events, so the stops go out as [`SimEventMsg`] here, and
+/// the audio (ordered after `SimSet::After`) plays them in this step, like CleanUp_0's stops.
+pub fn tiles_step_system(
+    mut sim: ResMut<SimRes>,
+    mut bake: ResMut<MycBake>,
+    mut out: MessageWriter<crate::sim_bridge::SimEventMsg>,
+) {
     if replaced(&sim.0.mycelium, &bake) || sim.0.mycelium.tiles_reset {
         for id in std::mem::take(&mut bake.sounding) {
-            sim.0.emit(SimEvent::Audio(AudioCall::HyphaeStop { id }));
+            out.write(crate::sim_bridge::SimEventMsg(SimEvent::Audio(
+                AudioCall::HyphaeStop { id },
+            )));
         }
     }
     tiles_step(&mut sim.0.mycelium, &mut bake);

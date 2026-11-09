@@ -928,9 +928,11 @@ impl Plugin for GameAudioPlugin {
             .add_systems(Startup, init_audio)
             .add_systems(
                 FixedUpdate,
+                // after every `SimSet::After` system: events sent there (the tiles step's
+                // hyphae stops) play in their own step
                 (audio_fixed_step, backend::spawn_voices)
                     .chain()
-                    .after(SimSet::Step),
+                    .after(SimSet::After),
             )
             .add_systems(
                 Update,
