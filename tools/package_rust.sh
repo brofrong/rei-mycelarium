@@ -14,19 +14,20 @@ CARGO="${CARGO:-$(command -v cargo || echo "$HOME/.cargo/bin/cargo")}"
 [[ -f "$ASSETS/sprites.json" ]] || { echo "missing $ASSETS (run: python3 -I tools/extract.py)" >&2; exit 1; }
 
 (cd "$ROOT/rust" && "$CARGO" build --release -p myco_app)
-TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/rust/target}"
+TARGET_DIR=$(cd "$ROOT/rust" && "$CARGO" metadata --format-version 1 --no-deps | jq -r .target_directory)
 BIN="$TARGET_DIR/release/myco_app"
 [[ -x "$BIN" ]] || { echo "missing $BIN" >&2; exit 1; }
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/$EXE_NAME"
-strip -x "$APP/Contents/MacOS/$EXE_NAME" 2>/dev/null  # local symbols only (~136 MB -> ~91 MB); signed below
+strip -x "$APP/Contents/MacOS/$EXE_NAME"  # local symbols only (~136 MB -> ~91 MB); signed below
 cp -R "$ASSETS" "$APP/Contents/Resources/assets"
 
-# Minimum macOS = the binary's own deployment target (LC_BUILD_VERSION minos).
+# Minimum macOS = max(binary's deployment target (LC_BUILD_VERSION minos), 12.0):
+# display.rs uses NSScreen.safeAreaInsets, which exists from macOS 12.0.
 MINOS=$(otool -l "$BIN" | awk '/LC_BUILD_VERSION/ {f=1} f && /minos/ {print $2; exit}')
-MINOS="${MINOS:-11.0}"
+MINOS=$(printf '%s\n' "${MINOS:-12.0}" 12.0 | sort -t. -k1,1n -k2,2n | tail -1)
 
 PLIST="$APP/Contents/Info.plist"
 plutil -create xml1 "$PLIST"
