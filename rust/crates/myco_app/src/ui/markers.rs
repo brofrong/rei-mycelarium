@@ -193,6 +193,11 @@ pub fn animal_markers_update(
     }
     for c in cur {
         if let Some(o) = m.list.iter_mut().find(|o| o.src == c.src) {
+            // a warned crow that arrived keeps the warning's id (crow_due rebinds the marker
+            // to the crow and clears `warn`)
+            if o.warn && !c.warn {
+                o.warn = false;
+            }
             if !blocked {
                 o.vx = c.x - o.x;
                 o.vy = c.y - o.y;
@@ -458,5 +463,62 @@ pub fn hover_bar_step_draw(g: &mut Gm, sim: &Sim, hud: &HudState, cams: &Cameras
             );
             return;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn marker(src: u64, warn: bool) -> Marker {
+        Marker {
+            src,
+            sprite: "crow",
+            frames: 9.0,
+            frame: 0.0,
+            mirror: 1.0,
+            x: 0.0,
+            y: 0.0,
+            w: 10.0,
+            h: 10.0,
+            warn,
+            alpha: 0.0,
+            vx: 0.0,
+            vy: 0.0,
+            gone: false,
+            seen: false,
+            follow: 0.0,
+            ui: None,
+        }
+    }
+
+    /// crow_due: the pending crow's marker becomes the arriving crow's (same source id) and
+    /// stops being a warning.
+    #[test]
+    fn arriving_crow_takes_over_its_warning_marker() {
+        let mut m = AnimalMarkers::default();
+        animal_markers_update(
+            &mut m,
+            vec![marker(7, true)],
+            false,
+            0.016,
+            0.0,
+            0.0,
+            100.0,
+            100.0,
+        );
+        assert!(m.list[0].warn);
+        animal_markers_update(
+            &mut m,
+            vec![marker(7, false)],
+            false,
+            0.016,
+            0.0,
+            0.0,
+            100.0,
+            100.0,
+        );
+        assert_eq!(m.list.len(), 1);
+        assert!(!m.list[0].warn);
     }
 }
