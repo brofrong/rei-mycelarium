@@ -269,7 +269,7 @@ pub fn game_mode(state: &GameState) -> GameMode {
 }
 
 /// `gm.bool`: numbers are true above 0.5; `undefined` (missing) is false.
-pub(crate) fn gml_truthy(v: Option<&Value>) -> bool {
+pub fn gml_truthy(v: Option<&Value>) -> bool {
     match v {
         None | Some(Value::Null) => false,
         Some(Value::Bool(b)) => *b,

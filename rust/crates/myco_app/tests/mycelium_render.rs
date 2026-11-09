@@ -331,6 +331,33 @@ fn tiles_reset_and_clear_drop_every_mesh() {
 }
 
 #[test]
+fn a_replaced_sim_drops_the_old_meshes() {
+    // a game with one merged growth and a live strand with chunks
+    let mut m = MyceliumRt::default();
+    let mut g = growth(&line(100.0, 300.0, 200.0), 6.0, true);
+    g.finished = true;
+    m.growths.push(g);
+    m.dirty_growths.push(0);
+    let mut b = MycBake::default();
+    for _ in 0..31 {
+        tiles_step(&mut m, &mut b);
+    }
+    let mut live = growth(&[Pt { x: 0.0, y: 0.0 }, Pt { x: 900.0, y: 0.0 }], 3.0, true);
+    live.age = 59.0;
+    m.growths.push(live);
+    m.active.push(1);
+    live_strands(&m, &mut b, (-100.0, -100.0, 2000.0, 2000.0));
+    assert!(!b.chunks.is_empty());
+    b.ops.clear();
+    // restart to the title: a fresh Sim, nothing flagged — the bake state notices
+    let mut fresh = MyceliumRt::default();
+    tiles_step(&mut fresh, &mut b);
+    assert!(b.tiles.is_empty() && b.growths.is_empty() && b.chunks.is_empty());
+    assert!(b.ops.contains(&MeshOp::Clear));
+    assert!(b.ops.contains(&MeshOp::Remove(MeshKey::Chunk(1, 0, 0))));
+}
+
+#[test]
 fn live_strand_shows_its_grown_part_in_96_cell_chunks() {
     let mut m = MyceliumRt::default();
     let pts = vec![Pt { x: 0.0, y: 100.0 }, Pt { x: 800.0, y: 100.0 }];

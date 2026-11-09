@@ -334,6 +334,24 @@ pub fn tiles_clear(m: &mut MyceliumRt, b: &mut MycBake) {
     b.ops.push(MeshOp::Clear);
 }
 
+/// Drop every baked mesh and live chunk when the logic's mycelium was reset under us: a load
+/// (`tiles_reset`, set by `on_load`) or a whole new `Sim` (restart to the title, a loaded slot),
+/// which shows as fewer growths or tiles than the bake state knows (both only grow in a game).
+pub fn sync_reset(m: &mut MyceliumRt, b: &mut MycBake) {
+    if !(m.tiles_reset || m.tile_list.len() < b.tiles.len() || m.growths.len() < b.growths.len())
+    {
+        return;
+    }
+    m.tiles_reset = false;
+    tiles_clear(m, b);
+    b.growths.clear();
+    for ((gi, bi), n) in std::mem::take(&mut b.chunks) {
+        for ci in 0..n {
+            b.ops.push(MeshOp::Remove(MeshKey::Chunk(gi, bi, ci)));
+        }
+    }
+}
+
 // port: anon__84786__gml_Object_obj_mycelium_controller_Create_0
 /// `myc_tiles_step` (end of Step_0): advance `myc_frame`, bake every queued growth (the time
 /// budget never runs out here, like an infinitely fast machine) and merge the first tile whose
@@ -342,16 +360,7 @@ pub fn tiles_clear(m: &mut MyceliumRt, b: &mut MycBake) {
 /// A logic reset (`tiles_reset`, set by load) clears everything first, as `load_game`'s
 /// `myc_tiles_clear` does; the old growths' meshes and live chunks go with it.
 pub fn tiles_step(m: &mut MyceliumRt, b: &mut MycBake) {
-    if m.tiles_reset {
-        m.tiles_reset = false;
-        tiles_clear(m, b);
-        b.growths.clear();
-        for ((gi, bi), n) in std::mem::take(&mut b.chunks) {
-            for ci in 0..n {
-                b.ops.push(MeshOp::Remove(MeshKey::Chunk(gi, bi, ci)));
-            }
-        }
-    }
+    sync_reset(m, b);
     m.frame += 1.0;
     while let Some(gi) = m.dirty_growths.pop() {
         // myc_finish_growth frees the live chunks before queueing the growth
@@ -422,6 +431,7 @@ pub fn live_strands(m: &MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64))
 /// `leaf_tendrils_draw(col)`, called at the end of the original, is Task 15's.
 pub fn draw_strands(m: &mut MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64)) -> Vec<V2> {
     let (vx1, vy1, vx2, vy2) = view;
+    sync_reset(m, b);
     let queued: Vec<usize> = m.dirty_growths.clone();
     for gi in queued {
         if b.vbuf(gi) != Vbuf::Unbaked {

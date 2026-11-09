@@ -87,3 +87,18 @@ pub fn cine_showing(_sim: &Sim) -> bool {
 /// `forest_fit_view` (Task 21, ruling R12b): re-centre the camera on a new view size. Called by
 /// the forest step when the camera size differs from the logical view.
 pub fn forest_fit_view(_sim: &mut Sim, _view_w: f64, _view_h: f64) {}
+
+/// `cine_show_start` (Task 21): start the migration spore cut-scene (the tasks popup's
+/// "spores" button). Until then: nothing.
+pub fn cine_show_start(_sim: &mut Sim) {}
+
+/// The cut-scene part of `tasks_popup_close` (Task 21): `if cine_active() and
+/// tasks.cine.phase == "hold" then phase = "out"; t = 0`. Until then: nothing (no cut-scene
+/// can be active).
+pub fn cine_release_hold(_sim: &mut Sim) {}
+
+/// `camera_jump_edge(dir)` (Task 21): the HUD's left/right camera buttons. Until then: nothing.
+pub fn camera_jump_edge(_sim: &mut Sim, _dir: f64) {}
+
+/// `camera_jump_origin()` (Task 21): the HUD's origin button. Until then: nothing.
+pub fn camera_jump_origin(_sim: &mut Sim) {}

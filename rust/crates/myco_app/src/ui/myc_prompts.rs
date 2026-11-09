@@ -24,9 +24,9 @@ use myco_core::mycelium::soil::{gml_string, length_text, pixels_to_cm};
 use myco_core::mycelium::BuildOption;
 use myco_core::sim::{Command, Sim};
 
-/// `GuiDraw` key of the mycelium's GUI drawing (Task 17's `draw_order::WORLD`): Draw_64 of the
-/// controller comes before the HUD's Draw_75.
-pub const MYC_DRAW_ORDER: i32 = 100;
+/// `GuiDraw` key of the mycelium's GUI drawing: Draw_64 of the controller comes before every
+/// HUD layer (obj_hud Draw_75; Task 17's keys start at `draw_order::WORLD` = 100).
+pub const MYC_DRAW_ORDER: i32 = 90;
 
 /// A button (`___struct___466`): GUI rectangle and label.
 #[derive(Clone, Debug, PartialEq)]
@@ -379,6 +379,7 @@ fn draw_system(
     assets: Res<GameAssets>,
     locale: Option<Res<LocaleRes>>,
     pending: Res<PendingInput>,
+    flags: Option<Res<crate::ui::menu::UiFlags>>,
     mut draw: ResMut<GuiDraw>,
 ) {
     let loc = loc_fn(&locale);
@@ -391,8 +392,8 @@ fn draw_system(
             cams: &cams,
             loc: &loc,
         };
-        // TODO(T17): `global.units_imperial` is HudState.units_imperial once Task 17 lands
-        draw_aim(&mut gm, &sim.0, &ctx, false);
+        let imperial = flags.is_some_and(|f| f.units_imperial);
+        draw_aim(&mut gm, &sim.0, &ctx, imperial);
     }
     draw_buttons(&mut gm, &mut sim.0, &cams, &loc, mouse);
     draw.lists.insert(MYC_DRAW_ORDER, gm.items);

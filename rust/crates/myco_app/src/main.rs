@@ -15,10 +15,9 @@ use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::mycelium::MyceliumRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
-use myco_app::ui::UiPlugin;
+use myco_app::ui::{MenuPlugin, UiPlugin};
 use myco_core::save;
 use myco_core::sim::Sim;
-use myco_core::state::GameMode;
 
 fn main() {
     let save_dir = display::save_dir();
@@ -27,7 +26,8 @@ fn main() {
     let screen = display::main_screen_info();
     let window = display::primary_window(&settings, screen.as_ref());
 
-    let mut sim = Sim::new_game(GameMode::Exploration, "", seed_from_env());
+    // the game boots into the title menu over a fresh world (obj_game Create_0)
+    let mut sim = Sim::title_screen(seed_from_env());
     sim.save_dir = Some(save_dir.clone());
     // MYCO_FORCE_RAIN=1: start the rain cycle now (the original's weather_force_rain debug hook;
     // used for render comparisons)
@@ -63,6 +63,7 @@ fn main() {
         ForestRenderPlugin,
         WeatherRenderPlugin,
         MyceliumRenderPlugin,
+        MenuPlugin,
     ));
     if let Some(s) = screen {
         app.insert_resource(s);

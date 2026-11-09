@@ -64,6 +64,24 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
     // obj_hud Step_1 runs water_counter_step before its input handling
     crate::world::water_counter_step(sim);
     upgrades::apply_commands(sim, input);
+    tasks::apply_commands(sim, input);
+    for cmd in &input.commands {
+        match *cmd {
+            crate::sim::Command::CameraJumpEdge { dir } => {
+                crate::camera::camera_jump_edge(sim, dir)
+            }
+            crate::sim::Command::CameraJumpOrigin => crate::camera::camera_jump_origin(sim),
+            crate::sim::Command::CameraFlyTo { x, y } => {
+                // camera_fly_to_marker: global.camera_fly = { marker, t = 0 }
+                sim.camera.fly = Some(crate::camera::CameraFly { t: 0.0, x, y });
+            }
+            _ => {}
+        }
+    }
+    // `if cine_blocking and not popup_open: return; if popup_open: tasks_popup_step; return`
+    if tasks::tasks_popup_open(sim) {
+        tasks::tasks_popup_step(sim, input);
+    }
     // the HUD's placement mode places mushrooms here (obj_hud Step_1 -> myc_place_mushroom)
     crate::mycelium::apply_hud_commands(sim, input);
 }

@@ -1,0 +1,5 @@
+key,context,en,de,fr,es,it,pt-BR,ru,uk,zh-Hant,zh-Hans,ko,ja
+tip_node_need_food,"Right-click node refused: not enough food; {n} is the amount (CAPS, near the cursor)",NEED {n} FOOD,{n} NAHRUNG NÖTIG,IL FAUT {n} NOURRITURE,NECESITAS {n} DE COMIDA,SERVE {n} DI CIBO,PRECISA DE {n} DE COMIDA,НУЖНО {n} ЕДЫ,ПОТРІБНО {n} ЇЖІ,需要 {n} 食物,需要 {n} 食物,음식 {n} 필요,食料が{n}必要
+tip_node_not_on_mycelium,Right-click node refused: the point is not on the mycelium,NOT ON THE MYCELIUM,NICHT AUF DEM MYZEL,PAS SUR LE MYCÉLIUM,FUERA DEL MICELIO,NON SUL MICELIO,FORA DO MICÉLIO,НЕ НА МИЦЕЛИИ,НЕ НА МІЦЕЛІЇ,不在菌絲上,不在菌丝上,균사체 위가 아님,菌糸の上ではない
+tip_node_too_close,Right-click node refused: another node is too close,TOO CLOSE TO A NODE,ZU NAH AN EINEM KNOTEN,TROP PRÈS D'UN NŒUD,DEMASIADO CERCA DE UN NODO,TROPPO VICINO A UN NODO,MUITO PERTO DE UM NÓ,СЛИШКОМ БЛИЗКО К УЗЛУ,ЗАНАДТО БЛИЗЬКО ДО ВУЗЛА,離節點太近,离节点太近,노드와 너무 가까움,ノードに近すぎる
+tip_node_blocked,Right-click node refused: something blocks the place (stone etc.),THE WAY IS BLOCKED,DER WEG IST VERSPERRT,LE PASSAGE EST BLOQUÉ,EL CAMINO ESTÁ BLOQUEADO,LA STRADA È BLOCCATA,O CAMINHO ESTÁ BLOQUEADO,ПУТЬ ПРЕГРАЖДЁН,ШЛЯХ ПЕРЕКРИТО,路被擋住了,路被挡住了,길이 막혀 있음,道がふさがっている
