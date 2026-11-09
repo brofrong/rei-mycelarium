@@ -413,9 +413,15 @@ for k = 0, 1799 do
     global.experience_crow_timers[0], global.experience_crow_timers[1], global.leaf_timer, global.worm_timer,
     note or "" }
   local st = {}
-  for i = 0, gm.array_length(global.squirrels) - 1 do st[#st + 1] = global.squirrels[i].state end
+  for i = 0, gm.array_length(global.squirrels) - 1 do
+    st[#st + 1] = global.squirrels[i].state
+    st[#st + 1] = global.squirrels[i].frame
+  end
   st[#st + 1] = -1
-  for i = 0, gm.array_length(global.crows) - 1 do st[#st + 1] = global.crows[i].state end
+  for i = 0, gm.array_length(global.crows) - 1 do
+    st[#st + 1] = global.crows[i].state
+    st[#st + 1] = global.crows[i].frame
+  end
   R.states[#R.states + 1] = st
   if k % 25 == 24 then
     local s = snap()
@@ -460,6 +466,10 @@ local far_view = { x = 40000, y = 0, w = 1920, h = 1080 }
 for k = 0, 1499 do
   frame = k
   now()
+  if k >= 200 and k < 400 then
+    -- the near zone's left edge cuts through the colony
+    VIEW = { x = -7.5 + 1920 * bal(global, global, "life_near_screens"), y = 0, w = 1920, h = 1080 }
+  end
   if k >= 400 then VIEW = far_view end
   set_view()
   if k < #xs then leaf_spawn(global, global, false, xs[k + 1], SY - 60 - k * 7) end

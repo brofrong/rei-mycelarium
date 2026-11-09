@@ -843,9 +843,17 @@ fn seeded_run_matches_love() {
         let wnote = want.pop().unwrap();
         row(&format!("frame {k}"), &got, &Value::from(want));
         assert_eq!(note, wnote.as_str().unwrap(), "frame {k} note");
-        let mut st: Vec<f64> = l.squirrels.iter().map(|q| q.state.code() as f64).collect();
+        let mut st: Vec<f64> = l
+            .squirrels
+            .iter()
+            .flat_map(|q| [q.state.code() as f64, q.frame])
+            .collect();
         st.push(-1.0);
-        st.extend(l.crows.iter().map(|c| c.state.code() as f64));
+        st.extend(
+            l.crows
+                .iter()
+                .flat_map(|c| [c.state.code() as f64, c.frame]),
+        );
         row(&format!("frame {k} states"), &st, &r["states"][k as usize]);
         if s < snaps.len() && i(&snaps[s]["frame"]) == k as i64 {
             snap_eq(&format!("snap {k}"), &sim, &snaps[s]);
@@ -889,6 +897,9 @@ fn leaves_and_far_life_match_love() {
     let mut absorbed = false;
     for k in 0..1500u64 {
         sim.frame = k;
+        if (200..400).contains(&k) {
+            sim.camera.view_x = -7.5 + 1920.0 * sim.bal("life_near_screens");
+        }
         if k >= 400 {
             sim.camera.view_x = 40000.0;
         }
