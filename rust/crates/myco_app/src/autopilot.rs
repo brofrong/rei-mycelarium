@@ -288,6 +288,8 @@ fn take_screenshot(mut ap: ResMut<Autopilot>, mut commands: Commands) {
         return;
     }
     ap.shot_requested = true;
+    // the capture is of this frame; the observer runs a few frames later (async readback)
+    let at = ap.frame;
     let mut save = save_to_disk(path.clone());
     commands.spawn(Screenshot::primary_window()).observe(
         move |ev: On<ScreenshotCaptured>,
@@ -295,13 +297,11 @@ fn take_screenshot(mut ap: ResMut<Autopilot>, mut commands: Commands) {
               mut exit: MessageWriter<AppExit>| {
             if !capture_rendered(&ev.image) {
                 eprintln!(
-                    "SHOT discarded: frame {} was not rendered (window occluded), retrying",
-                    ap.frame
+                    "SHOT discarded: frame {at} was not rendered (window occluded), retrying"
                 );
                 ap.shot_requested = false;
                 return;
             }
-            let at = ap.frame;
             save(ev);
             if at == frame {
                 println!("SHOT wrote {}", path.display());
