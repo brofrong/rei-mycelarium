@@ -17,7 +17,7 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, UiBlocking};
+use crate::sim_bridge::{PendingInput, SimRes, UiBlocking, UiCapture};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -572,6 +572,7 @@ pub fn tree_icon_scale(spr: &str) -> f64 {
 }
 
 /// `shroom_sheet_cells` (Task 9's row; an unmarked copy until T9 lands in myco_core).
+/// TODO(T9): replace with the canonical `shroom_sheet_cells` / `mushroom_cell_width`.
 fn shroom_sheet_cells(spr: &str) -> f64 {
     match spr {
         "sporeshroom"
@@ -1115,6 +1116,7 @@ impl TreeView {
         out
     }
 
+    // port: hud_tree_label_back
     /// `hud_tree_label_back`: a rounded translucent plate behind a label.
     #[allow(clippy::too_many_arguments)]
     fn label_back(&self, gm: &mut Gm, cx: f64, y: f64, w: f64, h: f64, scale: f64, alpha: f64) {
@@ -1137,6 +1139,7 @@ impl TreeView {
     }
 }
 
+/// Same as `ui::hud::hud_fit` (the marked port, Task 17).
 /// `hud_fit`: the scale that keeps `s` within `maxw` × `maxh` (maxh 0: no height limit).
 pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
     let mut k = sc;
@@ -1151,6 +1154,7 @@ pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
     k
 }
 
+/// Same as `ui::hud::hud_text_box` (the marked port, Task 17) without the HUD's text minimum.
 /// `hud_text_box`: text fitted into a button rectangle, left-padded, vertically centred.
 fn hud_text_box(gm: &mut Gm, r: Rect4, s: &str, sc: f64, pad: f64) {
     let (ha, va) = (gm.halign, gm.valign);
@@ -1652,12 +1656,14 @@ fn collect_wheel(mut screen: ResMut<TreeScreen>, mut wheel: MessageReader<MouseW
 
 /// Before each simulation step: the tree branch of obj_hud Step_1 on the step's input. A click
 /// on a node becomes `Command::BuyUpgrade`, applied in the same step by `hud_begin_step`.
-fn tree_step_system(
+pub fn tree_step_system(
     mut screen: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
     mut blocking: ResMut<UiBlocking>,
+    mut capture: ResMut<UiCapture>,
     cams: Res<Cameras>,
     sim: Res<SimRes>,
+    hud: Option<Res<crate::ui::hud::HudState>>,
 ) {
     let screen = &mut *screen;
     screen
@@ -1665,16 +1671,33 @@ fn tree_step_system(
         .set_gui_size(cams.layout.view_w, cams.layout.view_h);
     screen.cache.mode = myco_core::balance::game_mode(&sim.0.state);
     let wheel = std::mem::take(&mut screen.wheel);
-    if screen.open {
-        // obj_hud Step_1's Escape chain ends in `menu_open = false` (Task 17 owns the chain)
-        if pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open {
-            screen.open = false;
-        }
+    // obj_hud Step_1's Escape chain (Task 17's `hud::step_pre`) reaches `menu_open = false`
+    // only when no slot list, credits, debug or logo screen took the Escape first, and not while
+    // a tasks popup or a blocking cut-scene is up
+    let escape = match &hud {
+        Some(h) => h.escape_closes_tree,
+        None => pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open,
+    };
+    if screen.open && escape {
+        screen.open = false;
+    }
+    // the original returns before the tree branch while a cut-scene blocks or the tasks popup
+    // is open (ui_4.lua:1053-1056): the screen stays open but takes no input
+    if screen.open
+        && (myco_core::camera::cine_blocking(&sim.0)
+            || myco_core::progress::tasks::tasks_popup_open(&sim.0))
+    {
+        pending.menu_open = true;
+        capture.tree = true;
+        blocking.0 = true;
+        return;
     }
     if !screen.open {
         screen.view.closed_step();
         pending.menu_open = false;
         blocking.0 = false;
+        // `global.ui_capture_mouse` is recomputed every step (ui_4.lua:1051)
+        capture.tree = false;
         return;
     }
     let cursor = pending.cursor_override.or(pending.cursor);
@@ -1702,7 +1725,7 @@ fn tree_step_system(
         screen.open = false;
     }
     pending.menu_open = screen.open;
-    pending.ui_captured = screen.open || pending.ui_captured;
+    capture.tree = screen.open;
     blocking.0 = screen.open;
 }
 

@@ -10,7 +10,7 @@
 //! Schedules (Task 17):
 //! - `FixedUpdate` / `SimSet::Prepare`: [`HudStepSet`] runs obj_hud's Begin Step on the input
 //!   latched for this step, before the simulation consumes it; it sets
-//!   `PendingInput.ui_captured` and pushes `Command`s. The tree screen's step (Task 19) is in
+//!   its `UiCapture.hud` flag and pushes `Command`s. The tree screen's step (Task 19) is in
 //!   [`HudStepSet::Screens`]; menus (Task 18) go there too.
 //! - `FixedUpdate` / `SimSet::After`: floating numbers and tips read this step's events.
 //! - `Update`: the HUD paints into [`gm_draw::GuiDraw`] under the [`draw_order`] keys (Draw_75
@@ -29,7 +29,7 @@ pub mod tree;
 use crate::assets::GameAssets;
 use crate::display::SaveDir;
 use bevy::prelude::*;
-use gm_draw::{TtfFont, UiFont};
+use gm_draw::UiFont;
 use myco_core::locale::{self, Locale};
 
 /// The game's strings (`loc`) and `ui_font_small()` as the painter uses it: `fnt_gm_20` for
@@ -70,18 +70,8 @@ impl LocaleRes {
         let mut loc = Locale::init(&csv, &locale::read_language(save_dir), &lang, &region);
         // the Rust port's strings (ruling R4)
         loc.extend_from_csv(LOCALE_EXTRA_CSV);
-        let font_small = loc
-            .font_small_for()
-            .and_then(|id| {
-                let bytes = std::fs::read(assets.root.join(id.file()?)).ok()?;
-                let ref_h = assets
-                    .gm_font("fnt_gm_20")
-                    .map(|f| f.glyphs.values().map(|g| g.h as f64).fold(0.0, f64::max))
-                    .unwrap_or(31.0);
-                TtfFont::fit(assets.font(id), bytes, ref_h, 12.0)
-            })
-            .map(UiFont::Ttf)
-            .unwrap_or_else(|| UiFont::Gm("fnt_gm_20".into()));
+        // ui_font_small(): locale_font_fit(file, -1) (Task 17's full port)
+        let font_small = fonts::UiFonts::load(assets, &loc).small;
         LocaleRes {
             locale: loc,
             font_small,
@@ -145,7 +135,8 @@ pub enum HudStepSet {
 
 /// Logical screen px per GUI unit (`f64` bits), kept by [`track_gui_scale`] for the text
 /// minimum ([`min_text_scale`]).
-static PX_PER_UNIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0x3FF0_0000_0000_0000);
+static PX_PER_UNIT: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0x3FF0_0000_0000_0000);
 
 /// The owner's minimum text size on screen (logical px).
 pub const MIN_TEXT_PX: f64 = 14.0;
@@ -197,7 +188,11 @@ impl Plugin for HudPlugin {
             (
                 hud::hud_step_pre.in_set(HudStepSet::Pre),
                 hud::hud_step_game.in_set(HudStepSet::Game),
-                (popups::popups_collect, cursor_tip::cursor_tip_collect, hud::hud_events)
+                (
+                    popups::popups_collect,
+                    cursor_tip::cursor_tip_collect,
+                    hud::hud_events,
+                )
                     .in_set(SimSet::After),
             ),
         )

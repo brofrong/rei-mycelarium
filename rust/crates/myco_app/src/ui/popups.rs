@@ -78,7 +78,11 @@ fn on_view(v: &ViewRect, x: f64, y: f64) -> bool {
 
 impl Popups {
     /// Add one simulation step's events (`view`: the drawn world view).
-    pub fn add_step<'a>(&mut self, events: impl IntoIterator<Item = &'a SimEvent>, view: &ViewRect) {
+    pub fn add_step<'a>(
+        &mut self,
+        events: impl IntoIterator<Item = &'a SimEvent>,
+        view: &ViewRect,
+    ) {
         // (source, kind) → summed delta at the first event's position, in event order
         let mut step: Vec<(u64, ResourceKind, f64, f64, f64)> = Vec::new();
         for e in events {
@@ -135,7 +139,11 @@ impl Popups {
 }
 
 /// After each step: this step's resource events.
-pub fn popups_collect(mut popups: ResMut<Popups>, mut ev: MessageReader<SimEventMsg>, cams: Res<Cameras>) {
+pub fn popups_collect(
+    mut popups: ResMut<Popups>,
+    mut ev: MessageReader<SimEventMsg>,
+    cams: Res<Cameras>,
+) {
     let events: Vec<SimEvent> = ev.read().map(|e| e.0.clone()).collect();
     popups.add_step(events.iter(), &cams.render_view());
 }
@@ -185,7 +193,16 @@ pub fn popups_draw(g: &mut Gm, popups: &Popups, assets: &GameAssets, uf: &UiFont
         if let Some(d) = assets.try_sprite(icon) {
             let ox = d.origin.x as f64 * isc;
             let oy = d.origin.y as f64 * isc;
-            g.sprite_ext(icon, 0, x0 + tw + gap + ox, c.y - ih * 0.5 + oy, isc, isc, C_WHITE, a);
+            g.sprite_ext(
+                icon,
+                0,
+                x0 + tw + gap + ox,
+                c.y - ih * 0.5 + oy,
+                isc,
+                isc,
+                C_WHITE,
+                a,
+            );
         }
     }
     g.set_alpha(1.0);

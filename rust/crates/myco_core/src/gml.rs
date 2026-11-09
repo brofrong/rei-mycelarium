@@ -41,10 +41,17 @@ pub fn point_in_rectangle(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64) 
     px >= x1 && px <= x2 && py >= y1 && py <= y2
 }
 
+/// `gm.power(a, b)` = Lua's `a ^ b`: the C library `pow`, called for every exponent. LLVM
+/// would turn `pow(x, 2.0)` into `x * x`, but the macOS libm `pow` is not correctly rounded
+/// (e.g. `pow(19.07197..., 2)` is one ulp above the product), so the exponent is hidden from
+/// the optimizer.
+pub fn power(a: f64, b: f64) -> f64 {
+    a.powf(std::hint::black_box(b))
+}
+
+/// `math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)`, squares through `pow` like the original.
 pub fn point_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-    let dx = x2 - x1;
-    let dy = y2 - y1;
-    (dx * dx + dy * dy).sqrt()
+    (power(x2 - x1, 2.0) + power(y2 - y1, 2.0)).sqrt()
 }
 
 /// Degrees in [0, 360), counter-clockwise on screen (y down).

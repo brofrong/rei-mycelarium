@@ -59,25 +59,28 @@ fn sprite_size(assets: &GameAssets, name: &str) -> (f64, f64) {
 /// The live animals as markers: hedgehogs and boars centred on their bodies (mirror against
 /// the walking direction), squirrels at their position, crows and pending crows (warnings).
 pub fn animal_marker_list(views: &[AnimalView], assets: &GameAssets, now_ms: f64) -> Vec<Marker> {
-    let mk = |v: &AnimalView, sprite: &'static str, frames: f64, frame, mirror, x, y, w, h, warn| Marker {
-        src: v.src,
-        sprite,
-        frames,
-        frame,
-        mirror,
-        x,
-        y,
-        w,
-        h,
-        warn,
-        alpha: 0.0,
-        vx: 0.0,
-        vy: 0.0,
-        gone: false,
-        seen: false,
-        follow: 0.0,
-        ui: None,
-    };
+    let mk =
+        |v: &AnimalView, sprite: &'static str, frames: f64, frame, mirror, x, y, w, h, warn| {
+            Marker {
+                src: v.src,
+                sprite,
+                frames,
+                frame,
+                mirror,
+                x,
+                y,
+                w,
+                h,
+                warn,
+                alpha: 0.0,
+                vx: 0.0,
+                vy: 0.0,
+                gone: false,
+                seen: false,
+                follow: 0.0,
+                ui: None,
+            }
+        };
     let mut out = Vec::new();
     for kind in [
         AnimalKind::Hedgehog,
@@ -93,18 +96,51 @@ pub fn animal_marker_list(views: &[AnimalView], assets: &GameAssets, now_ms: f64
                     let (sw, sh) = sprite_size(assets, "hedgehog");
                     let sc = vis("hedgehog_scale");
                     let h = sh * sc;
-                    mk(v, "hedgehog", 8.0, v.frame, dir_mirror, v.x, v.y - h * 0.5, sw / 8.0 * sc, h, false)
+                    mk(
+                        v,
+                        "hedgehog",
+                        8.0,
+                        v.frame,
+                        dir_mirror,
+                        v.x,
+                        v.y - h * 0.5,
+                        sw / 8.0 * sc,
+                        h,
+                        false,
+                    )
                 }
                 AnimalKind::Boar => {
                     let (sw, sh) = sprite_size(assets, "boar");
                     let sc = vis("boar_scale");
                     let h = sh * sc;
-                    mk(v, "boar", 6.0, v.frame, dir_mirror, v.x, v.y - h * 0.5, sw / 6.0 * sc, h, false)
+                    mk(
+                        v,
+                        "boar",
+                        6.0,
+                        v.frame,
+                        dir_mirror,
+                        v.x,
+                        v.y - h * 0.5,
+                        sw / 6.0 * sc,
+                        h,
+                        false,
+                    )
                 }
                 AnimalKind::Squirrel => {
                     let (sw, sh) = sprite_size(assets, "squirrel");
                     let sc = vis("squirrel_scale");
-                    mk(v, "squirrel", 9.0, v.frame, v.mirror, v.x, v.y, sw / 9.0 * sc, sh * sc, false)
+                    mk(
+                        v,
+                        "squirrel",
+                        9.0,
+                        v.frame,
+                        v.mirror,
+                        v.x,
+                        v.y,
+                        sw / 9.0 * sc,
+                        sh * sc,
+                        false,
+                    )
                 }
                 AnimalKind::Crow | AnimalKind::CrowPending => {
                     let (sw, sh) = sprite_size(assets, "crow");
@@ -116,7 +152,18 @@ pub fn animal_marker_list(views: &[AnimalView], assets: &GameAssets, now_ms: f64
                     } else {
                         v.frame
                     };
-                    mk(v, "crow", 9.0, frame, -v.dir, v.x, v.y - h * 0.5, (sw / 9.0).trunc() * sc, h, pending)
+                    mk(
+                        v,
+                        "crow",
+                        9.0,
+                        frame,
+                        -v.dir,
+                        v.x,
+                        v.y - h * 0.5,
+                        (sw / 9.0).trunc() * sc,
+                        h,
+                        pending,
+                    )
                 }
             });
         }
@@ -130,7 +177,16 @@ pub fn animal_marker_list(views: &[AnimalView], assets: &GameAssets, now_ms: f64
 /// `animal_marker_follow_seconds` (warnings stop at once); alpha eases to 1 while the animal is
 /// off the view's edge... and to 0 when on screen or gone.
 #[allow(clippy::too_many_arguments)]
-pub fn animal_markers_update(m: &mut AnimalMarkers, cur: Vec<Marker>, blocked: bool, dt: f64, vx: f64, vy: f64, vw: f64, vh: f64) {
+pub fn animal_markers_update(
+    m: &mut AnimalMarkers,
+    cur: Vec<Marker>,
+    blocked: bool,
+    dt: f64,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+) {
     let fade = vis("animal_marker_fade_seconds").max(0.01);
     for o in &mut m.list {
         o.seen = false;
@@ -204,7 +260,18 @@ pub fn animal_markers_update(m: &mut AnimalMarkers, cur: Vec<Marker>, blocked: b
 /// hovered). `rv` is the drawn world view; the GUI is `vw`×`vh` (zoom = vw / rv.w; 1 in the
 /// original).
 #[allow(clippy::too_many_arguments)]
-pub fn animal_markers_draw(g: &mut Gm, m: &mut AnimalMarkers, sim: &Sim, assets: &GameAssets, hud: &HudState, blocked: bool, rv: myco_core::sim::ViewRect, vw: f64, vh: f64, dt: f64) {
+pub fn animal_markers_draw(
+    g: &mut Gm,
+    m: &mut AnimalMarkers,
+    sim: &Sim,
+    assets: &GameAssets,
+    hud: &HudState,
+    blocked: bool,
+    rv: myco_core::sim::ViewRect,
+    vw: f64,
+    vh: f64,
+    dt: f64,
+) {
     let now_ms = sim.frame as f64 * 1000.0 / 60.0;
     let cur = animal_marker_list(&life::animal_views(sim), assets, now_ms);
     animal_markers_update(m, cur, blocked, dt, rv.x, rv.y, rv.w, rv.h);
@@ -243,7 +310,15 @@ pub fn animal_markers_draw(g: &mut Gm, m: &mut AnimalMarkers, sim: &Sim, assets:
         o.ui = Some((ux, uy));
         g.set_alpha(a);
         g.set_colour(col);
-        triangle(g, ux + gml::lengthdir_x(r + 18.0, dir), uy + gml::lengthdir_y(r + 18.0, dir), ux + gml::lengthdir_x(r + 4.0, dir + 16.0), uy + gml::lengthdir_y(r + 4.0, dir + 16.0), ux + gml::lengthdir_x(r + 4.0, dir - 16.0), uy + gml::lengthdir_y(r + 4.0, dir - 16.0));
+        triangle(
+            g,
+            ux + gml::lengthdir_x(r + 18.0, dir),
+            uy + gml::lengthdir_y(r + 18.0, dir),
+            ux + gml::lengthdir_x(r + 4.0, dir + 16.0),
+            uy + gml::lengthdir_y(r + 4.0, dir + 16.0),
+            ux + gml::lengthdir_x(r + 4.0, dir - 16.0),
+            uy + gml::lengthdir_y(r + 4.0, dir - 16.0),
+        );
         g.set_colour(bg);
         g.set_alpha(0.92 * a);
         g.circle(ux, uy, r, false);
@@ -251,7 +326,20 @@ pub fn animal_markers_draw(g: &mut Gm, m: &mut AnimalMarkers, sim: &Sim, assets:
         let fw = sw / o.frames;
         let sc = r * 2.0 * vis("animal_marker_fill") / fw.max(sh).max(1e-9);
         let fr = gml::clamp(o.frame.floor(), 0.0, o.frames - 1.0);
-        g.sprite_part_ext(o.sprite, 0, fr * fw, 0.0, fw, sh, ux - o.mirror * fw * sc * 0.5, uy - sh * sc * 0.5, o.mirror * sc, sc, C_WHITE, a);
+        g.sprite_part_ext(
+            o.sprite,
+            0,
+            fr * fw,
+            0.0,
+            fw,
+            sh,
+            ux - o.mirror * fw * sc * 0.5,
+            uy - sh * sc * 0.5,
+            o.mirror * sc,
+            sc,
+            C_WHITE,
+            a,
+        );
         g.set_alpha(a);
         g.set_colour(col);
         g.circle(ux, uy, r, true);
@@ -274,8 +362,7 @@ pub fn animal_marker_at(m: &AnimalMarkers, px: f64, py: f64) -> Option<u64> {
         .rev()
         .find(|o| {
             o.alpha >= 0.5
-                && o
-                    .ui
+                && o.ui
                     .is_some_and(|(x, y)| gml::point_distance(px, py, x, y) <= hit)
         })
         .map(|o| o.src)
@@ -283,7 +370,14 @@ pub fn animal_marker_at(m: &AnimalMarkers, px: f64, py: f64) -> Option<u64> {
 
 // port: hover_bar_draw
 /// A progress bar centred at `cx` with its bottom at `by` (world units, drawn through `to_gui`).
-pub fn hover_bar_draw(g: &mut Gm, to_gui: &dyn Fn(f64, f64) -> (f64, f64), zoom: f64, cx: f64, by: f64, p: f64) {
+pub fn hover_bar_draw(
+    g: &mut Gm,
+    to_gui: &dyn Fn(f64, f64) -> (f64, f64),
+    zoom: f64,
+    cx: f64,
+    by: f64,
+    p: f64,
+) {
     let w = vis("hover_bar_w");
     let h = vis("hover_bar_h");
     let x = (cx - w * 0.5).floor();
@@ -334,7 +428,14 @@ pub fn hover_bar_step_draw(g: &mut Gm, sim: &Sim, hud: &HudState, cams: &Cameras
     let lr = vis("hover_leaf_radius_px");
     for l in life::absorbing_leaves(sim) {
         if gml::point_distance(mx, my, l.x, l.y) <= lr {
-            hover_bar_draw(g, &to_gui, cams.zoom, l.x, l.y - lr - gap, 1.0 - l.timer / l.total.max(1.0));
+            hover_bar_draw(
+                g,
+                &to_gui,
+                cams.zoom,
+                l.x,
+                l.y - lr - gap,
+                1.0 - l.timer / l.total.max(1.0),
+            );
             return;
         }
     }
@@ -348,7 +449,14 @@ pub fn hover_bar_step_draw(g: &mut Gm, sim: &Sim, hud: &HudState, cams: &Cameras
         if hit && !w.body.is_empty() {
             let mid = w.body[w.body.len() / 2];
             let th = vis("worm_thickness_px");
-            hover_bar_draw(g, &to_gui, cams.zoom, mid.0, top - th - gap, 1.0 - w.timer / w.total.max(1.0));
+            hover_bar_draw(
+                g,
+                &to_gui,
+                cams.zoom,
+                mid.0,
+                top - th - gap,
+                1.0 - w.timer / w.total.max(1.0),
+            );
             return;
         }
     }

@@ -90,12 +90,18 @@ fn tasks_popup_geometry_matches_lua() {
     assert!(tasks::tasks_popup_open(&sim));
     let r = tasks::tasks_popup_rect(&sim, 1920.0, 1080.0);
     // w 1300, h 640: y1 = 540 - 740 / 2
-    assert_eq!((r.x1, r.y1, r.x2, r.y2, r.cx), (310.0, 170.0, 1610.0, 810.0, 960.0));
+    assert_eq!(
+        (r.x1, r.y1, r.x2, r.y2, r.cx),
+        (310.0, 170.0, 1610.0, 810.0, 960.0)
+    );
     let b = tasks::tasks_popup_buttons(&sim, 1920.0, 1080.0);
     assert_eq!(b.len(), 1);
     assert_eq!(b[0].id, PopupButton::Close);
     assert_eq!(b[0].label_key, "goal_button_grow");
-    assert_eq!((b[0].x1, b[0].y1, b[0].x2, b[0].y2), (750.0, 838.0, 1170.0, 902.0));
+    assert_eq!(
+        (b[0].x1, b[0].y1, b[0].x2, b[0].y2),
+        (750.0, 838.0, 1170.0, 902.0)
+    );
     sim.state.state.tasks.popup = "migration_ready".into();
     let b = tasks::tasks_popup_buttons(&sim, 1920.0, 1080.0);
     assert_eq!(b[0].id, PopupButton::Spores);

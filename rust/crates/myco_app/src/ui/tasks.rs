@@ -39,7 +39,11 @@ pub fn tasks_block_items(sim: &Sim, loc: &Locale, block: Block) -> Vec<Item> {
             })
             .collect(),
         Block::Migration => {
-            let have = [goal_spore_count(sim), sim.water_total(), sim.state.state.food];
+            let have = [
+                goal_spore_count(sim),
+                sim.water_total(),
+                sim.state.state.food,
+            ];
             let need = [
                 sim.bal("migration_spore_mushrooms"),
                 sim.bal("migration_water"),
@@ -119,7 +123,8 @@ pub fn tasks_blocks(sim: &Sim, loc: &Locale) -> Vec<BlockHead> {
             y,
             k,
         });
-        y += (vis("tasks_first_gap") + (n - 1.0) * vis("tasks_line_px")) * k + vis("tasks_block_gap");
+        y += (vis("tasks_first_gap") + (n - 1.0) * vis("tasks_line_px")) * k
+            + vis("tasks_block_gap");
     }
     out
 }
@@ -133,7 +138,12 @@ pub struct HeaderRect {
 
 // port: tasks_header_rect
 /// The clickable header: the title (ui font) plus the fold arrow, padded.
-pub fn tasks_header_rect(assets: &GameAssets, uf: &UiFonts, ui_ox: f64, b: &BlockHead) -> HeaderRect {
+pub fn tasks_header_rect(
+    assets: &GameAssets,
+    uf: &UiFonts,
+    ui_ox: f64,
+    b: &BlockHead,
+) -> HeaderRect {
     let x = vis("tasks_x") + ui_ox;
     let scale = vis("tasks_title_scale");
     let mut m = Gm::new(assets);
@@ -155,7 +165,18 @@ pub fn tasks_header_rect(assets: &GameAssets, uf: &UiFonts, ui_ox: f64, b: &Bloc
 /// A click on a header toggles its block (`Command::ToggleTaskBlock`); the cursor on a header
 /// takes the mouse.
 #[allow(clippy::too_many_arguments)]
-pub fn tasks_mouse_step(sim: &Sim, hud: &HudState, assets: &GameAssets, uf: &UiFonts, loc: &Locale, ui_ox: f64, mx: f64, my: f64, click: bool, cmds: &mut Vec<Command>) -> bool {
+pub fn tasks_mouse_step(
+    sim: &Sim,
+    hud: &HudState,
+    assets: &GameAssets,
+    uf: &UiFonts,
+    loc: &Locale,
+    ui_ox: f64,
+    mx: f64,
+    my: f64,
+    click: bool,
+    cmds: &mut Vec<Command>,
+) -> bool {
     if !visible(sim, hud) || super::hud::ui_blocking(sim, hud) {
         return false;
     }
@@ -181,8 +202,18 @@ pub fn visible(sim: &Sim, hud: &HudState) -> bool {
 }
 
 // port: tasks_draw
+#[allow(clippy::too_many_arguments)]
 /// The tasks panel (all visible blocks).
-pub fn tasks_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts, loc: &Locale, ui_ox: f64, gw: f64, assets: &GameAssets) {
+pub fn tasks_draw(
+    g: &mut Gm,
+    sim: &mut Sim,
+    hud: &HudState,
+    uf: &UiFonts,
+    loc: &Locale,
+    ui_ox: f64,
+    gw: f64,
+    assets: &GameAssets,
+) {
     if !visible(sim, hud) {
         return;
     }
@@ -201,8 +232,21 @@ pub fn tasks_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts, loc: 
 /// One block: shadowed title (hover colour), fold arrow, the fill animation of every item, then
 /// (unfolded) circles with their fill, the shadowed texts and the "+N" reward with its icon.
 #[allow(clippy::too_many_arguments)]
-pub fn tasks_block_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts, ui_ox: f64, gw: f64, assets: &GameAssets, b: &BlockHead, items: &[Item], step: f64) {
-    use super::hud::{COLOR_DIM as C_REWARD, COLOR_GOOD as C_HOVER, COLOR_INK as C_TEXT, COLOR_PANEL as C_BOX};
+pub fn tasks_block_draw(
+    g: &mut Gm,
+    sim: &mut Sim,
+    hud: &HudState,
+    uf: &UiFonts,
+    ui_ox: f64,
+    gw: f64,
+    assets: &GameAssets,
+    b: &BlockHead,
+    items: &[Item],
+    step: f64,
+) {
+    use super::hud::{
+        COLOR_DIM as C_REWARD, COLOR_GOOD as C_HOVER, COLOR_INK as C_TEXT, COLOR_PANEL as C_BOX,
+    };
     let a = sim.progress.tasks.alpha;
     let hr = tasks_header_rect(assets, uf, ui_ox, b);
     let x = vis("tasks_x") + ui_ox;
@@ -226,7 +270,15 @@ pub fn tasks_block_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts,
     text(g, x, y, &b.title, ts, ts);
     let ax = x + hr.text_w + vis("tasks_arrow_gap") + ap * 0.5;
     let off = ap * 0.45 * gml::lerp(1.0, -1.0, 1.0 - k);
-    triangle(g, ax - ap * 0.5, y + off, ax + ap * 0.5, y + off, ax, y - off);
+    triangle(
+        g,
+        ax - ap * 0.5,
+        y + off,
+        ax + ap * 0.5,
+        y + off,
+        ax,
+        y - off,
+    );
     let fill = &mut sim.progress.tasks.fill;
     for it in items {
         let target = if it.done { 1.0 } else { 0.0 };
@@ -266,7 +318,11 @@ pub fn tasks_block_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts,
         g.set_colour(0.0);
         g.set_alpha(ia * 0.6);
         text(g, tx + 2.0, iy + 2.0, &it.text, xs, xs);
-        g.set_colour(if it.done && it.reward { C_REWARD } else { C_TEXT });
+        g.set_colour(if it.done && it.reward {
+            C_REWARD
+        } else {
+            C_TEXT
+        });
         g.set_alpha(ia);
         text(g, tx, iy, &it.text, xs, xs);
         if it.done && it.reward {
@@ -279,7 +335,16 @@ pub fn tasks_block_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts,
             text(g, rx, iy, &s, rs, rs);
             let isc = icon * pulse;
             let sx = rx + g.string_width(&s) * rs + 4.0;
-            g.sprite_ext("UPGRADE", 0, sx, iy - up_h * isc * 0.5, isc, isc, C_WHITE, ia * f);
+            g.sprite_ext(
+                "UPGRADE",
+                0,
+                sx,
+                iy - up_h * isc * 0.5,
+                isc,
+                isc,
+                C_WHITE,
+                ia * f,
+            );
         }
     }
 }
@@ -287,7 +352,15 @@ pub fn tasks_block_draw(g: &mut Gm, sim: &mut Sim, hud: &HudState, uf: &UiFonts,
 // port: goal_sprite_fit
 /// A sprite fitted into a w×h box centred at (cx, cy), respecting its origin.
 #[allow(clippy::too_many_arguments)]
-pub fn goal_sprite_fit(g: &mut Gm, assets: &GameAssets, spr: &str, cx: f64, cy: f64, w: f64, h: f64) {
+pub fn goal_sprite_fit(
+    g: &mut Gm,
+    assets: &GameAssets,
+    spr: &str,
+    cx: f64,
+    cy: f64,
+    w: f64,
+    h: f64,
+) {
     let Some(def) = assets.try_sprite(spr) else {
         return;
     };
@@ -301,7 +374,19 @@ pub fn goal_sprite_fit(g: &mut Gm, assets: &GameAssets, spr: &str, cx: f64, cy: 
 // port: goal_sprite_part_fit
 /// A part of a sprite fitted into a w×h box centred at (cx, cy).
 #[allow(clippy::too_many_arguments)]
-pub fn goal_sprite_part_fit(g: &mut Gm, _assets: &GameAssets, spr: &str, left: f64, top: f64, pw: f64, ph: f64, cx: f64, cy: f64, w: f64, h: f64) {
+pub fn goal_sprite_part_fit(
+    g: &mut Gm,
+    _assets: &GameAssets,
+    spr: &str,
+    left: f64,
+    top: f64,
+    pw: f64,
+    ph: f64,
+    cx: f64,
+    cy: f64,
+    w: f64,
+    h: f64,
+) {
     let s = (w / pw.max(1.0)).min(h / ph.max(1.0));
     let x = cx - pw * s * 0.5;
     let y = cy - ph * s * 0.5;
@@ -312,7 +397,19 @@ pub fn goal_sprite_part_fit(g: &mut Gm, _assets: &GameAssets, spr: &str, left: f
 /// The tasks / goal popup: dimmed screen and rounded panel (not for `migration_end`), the
 /// "tasks done" page with both goals and the migration needs, or the goal text; then the button.
 #[allow(clippy::too_many_arguments)]
-pub fn tasks_popup_draw(g: &mut Gm, sim: &Sim, uf: &UiFonts, loc: &Locale, assets: &GameAssets, c_text: f64, c_btn_text: f64, c_btn: f64, gw: f64, gh: f64, mouse: (f64, f64)) {
+pub fn tasks_popup_draw(
+    g: &mut Gm,
+    sim: &Sim,
+    uf: &UiFonts,
+    loc: &Locale,
+    assets: &GameAssets,
+    c_text: f64,
+    c_btn_text: f64,
+    c_btn: f64,
+    gw: f64,
+    gh: f64,
+    mouse: (f64, f64),
+) {
     if !tasks::tasks_popup_open(sim) {
         return;
     }
@@ -350,8 +447,14 @@ pub fn tasks_popup_draw(g: &mut Gm, sim: &Sim, uf: &UiFonts, loc: &Locale, asset
             let (lx, rx) = (cx - 323.0, cx + 320.0);
             let sep = 38.0 / s;
             let (mig, mag) = (loc.loc("goal_migration_title"), loc.loc("goal_magic_title"));
-            let ts = goal_fit(&GmMeasure(g), mig, s, 600.0, 120.0, sep)
-                .min(goal_fit(&GmMeasure(g), mag, s, 600.0, 120.0, sep));
+            let ts = goal_fit(&GmMeasure(g), mig, s, 600.0, 120.0, sep).min(goal_fit(
+                &GmMeasure(g),
+                mag,
+                s,
+                600.0,
+                120.0,
+                sep,
+            ));
             text_ext(g, lx, ly + 55.0, mig, sep, 600.0 / ts, ts, ts);
             text_ext(g, rx, ly + 55.0, mag, sep, 600.0 / ts, ts, ts);
             let icons = ["", "apple_bite", "water65"];
@@ -364,7 +467,19 @@ pub fn tasks_popup_draw(g: &mut Gm, sim: &Sim, uf: &UiFonts, loc: &Locale, asset
             let ns = goal_text_scale(&GmMeasure(g), 30.0);
             for i in 0..3 {
                 if i == 0 {
-                    goal_sprite_part_fit(g, assets, "sporeshroom", 4.0, 15.0, 38.0, 49.0, xs[i], ly + 207.0, 76.0, 88.0);
+                    goal_sprite_part_fit(
+                        g,
+                        assets,
+                        "sporeshroom",
+                        4.0,
+                        15.0,
+                        38.0,
+                        49.0,
+                        xs[i],
+                        ly + 207.0,
+                        76.0,
+                        88.0,
+                    );
                 } else {
                     goal_sprite_fit(g, assets, icons[i], xs[i], ly + 207.0, 80.0, 84.0);
                 }
@@ -379,14 +494,31 @@ pub fn tasks_popup_draw(g: &mut Gm, sim: &Sim, uf: &UiFonts, loc: &Locale, asset
                 "goal_magic_done"
             });
             let sep = 52.0 / s;
-            s = goal_fit(&GmMeasure(g), txt, s, (r.x2 - r.x1) - 40.0, (r.y2 - r.y1) * 0.55, sep);
-            text_ext(g, cx, (r.y1 + r.y2) * 0.5, txt, sep, ((r.x2 - r.x1) - 40.0) / s, s, s);
+            s = goal_fit(
+                &GmMeasure(g),
+                txt,
+                s,
+                (r.x2 - r.x1) - 40.0,
+                (r.y2 - r.y1) * 0.55,
+                sep,
+            );
+            text_ext(
+                g,
+                cx,
+                (r.y1 + r.y2) * 0.5,
+                txt,
+                sep,
+                ((r.x2 - r.x1) - 40.0) / s,
+                s,
+                s,
+            );
         }
     }
     for b in tasks::tasks_popup_buttons(sim, gw, gh) {
         let label = loc.loc(b.label_key);
         let hov = gml::point_in_rectangle(mx, my, b.x1, b.y1, b.x2, b.y2);
-        let bs = goal_text_scale(&GmMeasure(g), 20.0).min((b.x2 - b.x1 - 32.0) / g.string_width(label).max(1.0));
+        let bs = goal_text_scale(&GmMeasure(g), 20.0)
+            .min((b.x2 - b.x1 - 32.0) / g.string_width(label).max(1.0));
         g.set_colour(c_btn);
         g.set_alpha(0.95);
         g.rectangle(b.x1, b.y1, b.x2, b.y2, false);
@@ -414,7 +546,20 @@ pub fn hand_frames(assets: &GameAssets) -> Vec<String> {
 /// visible tip (wrapped, fitted to the GUI width, clamped on screen unless world-anchored) with
 /// a shadow.
 #[allow(clippy::too_many_arguments)]
-pub fn tutorial_draw(g: &mut Gm, sim: &Sim, assets: &GameAssets, uf: &UiFonts, loc: &Locale, box_: R, col: f64, gw: f64, gh: f64, vx: f64, vy: f64, myc: (f64, f64)) {
+pub fn tutorial_draw(
+    g: &mut Gm,
+    sim: &Sim,
+    assets: &GameAssets,
+    uf: &UiFonts,
+    loc: &Locale,
+    box_: R,
+    col: f64,
+    gw: f64,
+    gh: f64,
+    vx: f64,
+    vy: f64,
+    myc: (f64, f64),
+) {
     let rt = &sim.progress.tutorial;
     let pad = 24.0;
     let frames = hand_frames(assets);
@@ -422,7 +567,16 @@ pub fn tutorial_draw(g: &mut Gm, sim: &Sim, assets: &GameAssets, uf: &UiFonts, l
     if nf > 0 && rt.hand_alpha > 0.0 {
         let spr = &frames[gml::gmod(rt.hand_frame.floor(), nf as f64) as usize];
         let sc = vis("tutorial_hand_scale");
-        g.sprite_ext(spr, 0, myc.0 - vx + vis("tutorial_hand_offset_x"), myc.1 - vy + vis("tutorial_hand_offset_y"), sc, sc, C_WHITE, rt.hand_alpha);
+        g.sprite_ext(
+            spr,
+            0,
+            myc.0 - vx + vis("tutorial_hand_offset_x"),
+            myc.1 - vy + vis("tutorial_hand_offset_y"),
+            sc,
+            sc,
+            C_WHITE,
+            rt.hand_alpha,
+        );
     }
     if let Some(cs) = assets.try_sprite("CAMERA_TUTOR") {
         if rt.camera_alpha > 0.0 {
@@ -431,7 +585,16 @@ pub fn tutorial_draw(g: &mut Gm, sim: &Sim, assets: &GameAssets, uf: &UiFonts, l
             let cx = myc.0 - vx - (sw * 0.5 - cs.origin.x as f64) * sc;
             let cy = myc.1 - vy - vis("tutorial_camera_offset_y") - (sh - cs.origin.y as f64) * sc;
             let n = cs.frames.len().max(1) as f64;
-            g.sprite_ext("CAMERA_TUTOR", (gml::gmod(rt.camera_frame.floor(), n)) as usize, cx, cy, sc, sc, C_WHITE, rt.camera_alpha);
+            g.sprite_ext(
+                "CAMERA_TUTOR",
+                (gml::gmod(rt.camera_frame.floor(), n)) as usize,
+                cx,
+                cy,
+                sc,
+                sc,
+                C_WHITE,
+                rt.camera_alpha,
+            );
         }
     }
     g.font = uf.font.clone();

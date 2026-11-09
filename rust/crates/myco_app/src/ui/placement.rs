@@ -10,7 +10,10 @@ pub enum RmbAction {
     /// leave placement mode / close the build bar (`hud_build_close`)
     CancelPlacement,
     /// place a node at this world point
-    QuickNode { x: f64, y: f64 },
+    QuickNode {
+        x: f64,
+        y: f64,
+    },
 }
 
 /// Route a right click. `placement`: a mushroom type is picked or the build bar is open;
@@ -50,8 +53,14 @@ mod tests {
             rmb_route(true, false, false, false, w),
             RmbAction::QuickNode { x: 10.0, y: 20.0 }
         );
-        assert_eq!(rmb_route(true, false, true, false, w), RmbAction::CancelPlacement);
-        assert_eq!(rmb_route(true, true, true, true, w), RmbAction::CancelPlacement);
+        assert_eq!(
+            rmb_route(true, false, true, false, w),
+            RmbAction::CancelPlacement
+        );
+        assert_eq!(
+            rmb_route(true, true, true, true, w),
+            RmbAction::CancelPlacement
+        );
         assert_eq!(rmb_route(true, false, false, true, w), RmbAction::None);
         assert_eq!(rmb_route(true, true, false, false, w), RmbAction::None);
         assert_eq!(rmb_route(true, false, false, false, None), RmbAction::None);

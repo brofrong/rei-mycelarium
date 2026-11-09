@@ -360,6 +360,12 @@ impl Sim {
     }
 
     /// One logic frame (1/60 s).
+    /// `current_time` on the sim clock: ms since the Sim was created, `floor(frame * 1000 / 60)`.
+    /// Every port of `current_time` uses this mapping.
+    pub fn now_ms(&self) -> f64 {
+        (self.frame as f64 * 1000.0 / 60.0).floor()
+    }
+
     pub fn step(&mut self, input: &StepInput) {
         for cmd in &input.commands {
             match cmd {

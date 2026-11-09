@@ -154,8 +154,13 @@ pub fn type_sprite(t: MushroomKind) -> &'static str {
 /// `shroom_sheet_cells(spr)`: variants side by side in the sheet.
 pub fn sheet_cells(sprite: &str) -> f64 {
     match sprite {
-        "sporeshroom" | "explosiveshroom" | "explosiveshroom_exploded" | "predatorshroom"
-        | "diggershroom" | "experienceshroom" | "consumptorshroom" => 2.0,
+        "sporeshroom"
+        | "explosiveshroom"
+        | "explosiveshroom_exploded"
+        | "predatorshroom"
+        | "diggershroom"
+        | "experienceshroom"
+        | "consumptorshroom" => 2.0,
         "stinkyshroom" => 3.0,
         _ => 1.0,
     }

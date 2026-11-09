@@ -21,7 +21,7 @@ use super::tree::{tree_draw_glow, tree_draw_icon, TreeScreen};
 use super::{draw_order, min_text_scale, LocaleRes, MIN_TEXT_PX};
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimEventMsg, SimRes, UiBlocking};
+use crate::sim_bridge::{PendingInput, SimEventMsg, SimRes, UiBlocking, UiCapture};
 use bevy::prelude::*;
 use myco_core::balance::{bal, vis};
 use myco_core::camera::cine_blocking;
@@ -226,6 +226,8 @@ pub struct HudState {
     pub hover_id: String,
     /// `global.ui_capture_mouse`
     pub ui_capture_mouse: bool,
+    /// this step's Escape reached `menu_open = false` in the chain (the tree screen closes)
+    pub escape_closes_tree: bool,
     /// `global.right_click_used`
     pub right_click_used: bool,
     pub menu_open: bool,
@@ -278,13 +280,21 @@ pub const VOLUME_LABELS: [&str; 2] = ["volume_sfx", "volume_music"];
 /// `hud_credits_columns`: per column, groups of (title key, names).
 pub const CREDITS_COLUMNS: [&[(&str, &[&str])]; 2] = [
     &[
-        ("credits_plan_kapkan", &["Andrey Tyulenev", "Philipp Zybkovets"]),
+        (
+            "credits_plan_kapkan",
+            &["Andrey Tyulenev", "Philipp Zybkovets"],
+        ),
         ("credits_smm_qa", &["Daria Konakhova"]),
     ],
     &[
         (
             "credits_art_ui",
-            &["LaNa_FeeD", "Wothy (@wothella)", "Olga Zaporozhskaia", "Oniks"],
+            &[
+                "LaNa_FeeD",
+                "Wothy (@wothella)",
+                "Olga Zaporozhskaia",
+                "Oniks",
+            ],
         ),
         ("credits_forest_assets", &["Eder Muniz"]),
     ],
@@ -341,6 +351,7 @@ impl HudState {
             saves_exist,
             hover_id: String::new(),
             ui_capture_mouse: false,
+            escape_closes_tree: false,
             right_click_used: false,
             menu_open: false,
             debug_open: false,
@@ -478,19 +489,47 @@ impl HudState {
                 s *= c.hover_scale;
             }
             let x = self.cam_x(i);
-            g.sprite_ext(name, 0, x + w * 0.5 * (1.0 - s), c.y + h * 0.5 * (1.0 - s), s, s, C_WHITE, 1.0);
+            g.sprite_ext(
+                name,
+                0,
+                x + w * 0.5 * (1.0 - s),
+                c.y + h * 0.5 * (1.0 - s),
+                s,
+                s,
+                C_WHITE,
+                1.0,
+            );
         }
     }
 
     // port: hud_draw_button
     /// A round button: hover sprite when `cond`, squeezed while pressed.
     #[allow(clippy::too_many_arguments)]
-    pub fn draw_button(&self, g: &mut Gm, assets: &GameAssets, spr_a: &str, spr_b: &str, x: f64, y: f64, cond: bool, press: f64) {
+    pub fn draw_button(
+        &self,
+        g: &mut Gm,
+        assets: &GameAssets,
+        spr_a: &str,
+        spr_b: &str,
+        x: f64,
+        y: f64,
+        cond: bool,
+        press: f64,
+    ) {
         let spr = if cond { spr_b } else { spr_a };
         let def = assets.sprite(spr);
         let (w, h) = (def.size.x as f64, def.size.y as f64);
         let s = self.press_scale(press);
-        g.sprite_ext(spr, 0, x + w * 0.5 * (1.0 - s), y + h * 0.5 * (1.0 - s), s, s, C_WHITE, 1.0);
+        g.sprite_ext(
+            spr,
+            0,
+            x + w * 0.5 * (1.0 - s),
+            y + h * 0.5 * (1.0 - s),
+            s,
+            s,
+            C_WHITE,
+            1.0,
+        );
     }
 
     // port: hud_build_all_types
@@ -571,8 +610,7 @@ impl HudState {
     /// Round hit test of the upgrades button.
     pub fn upgrades_button_over(&self, assets: &GameAssets, mx: f64, my: f64) -> bool {
         let r = self.upgrades_button_rect(assets);
-        gml::point_distance(mx, my, (r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5)
-            <= (r.x2 - r.x1) * 0.5
+        gml::point_distance(mx, my, (r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5) <= (r.x2 - r.x1) * 0.5
     }
 
     // port: hud_pause_cy
@@ -822,6 +860,7 @@ pub fn step_pre(
         &PAUSE_ITEMS_GAME
     };
     // water_counter_step: the logic's hud_begin_step
+    hud.escape_closes_tree = false;
     if inp.pressed(Key::Escape) && !tasks::tasks_popup_open(sim) && !cine_blocking(sim) {
         if !hud.slot_mode.is_empty() {
             if hud.slot_naming >= 0 {
@@ -836,7 +875,8 @@ pub fn step_pre(
         } else if hud.logo_open {
             hud.logo_open = false;
         } else if hud.menu_open {
-            // `global.menu_open = false`: the tree screen closes itself on this Escape (Task 19)
+            // `global.menu_open = false`: the tree screen (Task 19) closes on this flag
+            hud.escape_closes_tree = true;
         } else if hud.place_type.is_some() || hud.build_open {
             hud.build_close();
         } else if sim.pause_open || !sim.title_open {
@@ -871,7 +911,9 @@ pub fn step_pre(
     hud.wind_hover = !blocking && hud.wind_tab_rect(assets).contains(mx, my);
     hud.points_hover = !blocking && hud.points_tab_rect(assets).contains(mx, my);
     hud.upgrade_btn_press = (hud.upgrade_btn_press - 1.0).max(0.0);
-    let tasks_hit = ui_tasks::tasks_mouse_step(sim, hud, assets, ui_fonts, loc, ui_ox, mx, my, inp.click, &mut cmds);
+    let tasks_hit = ui_tasks::tasks_mouse_step(
+        sim, hud, assets, ui_fonts, loc, ui_ox, mx, my, inp.click, &mut cmds,
+    );
     hud.animal_marker_hover = if !sim.title_open && !sim.intro_active && !blocking {
         markers::animal_marker_at(markers, mx, my)
     } else {
@@ -885,19 +927,13 @@ pub fn step_pre(
             }
         }
     }
-    let capture = if blocking || tasks_hit {
-        true
-    } else if !hud.hud_hidden && hud.upgrade_btn_hover {
-        true
-    } else if hud.cam_hover >= 0 || hud.animal_marker_hover.is_some() {
-        true
-    } else if hud.hud_hidden {
-        false
-    } else if hud.place_type.is_some() {
-        true
-    } else {
-        hud.build_mouse_over(mx, my)
-    };
+    // the original's if/elseif chain (all `true` branches merged)
+    let capture = blocking
+        || tasks_hit
+        || (!hud.hud_hidden && hud.upgrade_btn_hover)
+        || hud.cam_hover >= 0
+        || hud.animal_marker_hover.is_some()
+        || (!hud.hud_hidden && (hud.place_type.is_some() || hud.build_mouse_over(mx, my)));
     hud.ui_capture_mouse = capture;
     // cine_step: the logic's (Task 21)
     cmds
@@ -931,8 +967,11 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
         return out;
     }
     let dir = if hud.build_open { 1.0 } else { -1.0 };
-    hud.build_slide =
-        gml::clamp(hud.build_slide + dir / hud.build.slide_frames.max(1.0), 0.0, 1.0);
+    hud.build_slide = gml::clamp(
+        hud.build_slide + dir / hud.build.slide_frames.max(1.0),
+        0.0,
+        1.0,
+    );
     hud.build_hover = -1;
     if hud.hud_hidden || sim.intro_active {
         hud.build_close();
@@ -1000,7 +1039,11 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
         if click && !on_circle && !hud.build_mouse_over(mx, my) {
             // myc_place_mushroom: Task 9 answers with SimEvent::MushroomPlaced, which closes
             // the bar (`hud_events`)
-            out.commands.push(Command::PlaceMushroom { kind: t, x: wx, y: wy });
+            out.commands.push(Command::PlaceMushroom {
+                kind: t,
+                x: wx,
+                y: wy,
+            });
         } else if click && on_circle {
             hud.build_btn_press = hud.ui.press_frames;
             hud.build_close();
@@ -1031,6 +1074,7 @@ pub fn hud_step_pre(
     tree: Option<Res<TreeScreen>>,
     mut pending: ResMut<PendingInput>,
     mut blocking: ResMut<UiBlocking>,
+    mut capture: ResMut<UiCapture>,
 ) {
     hud.menu_open = tree.is_some_and(|t| t.open);
     let inp = StepIn::from_pending(&pending, &cams);
@@ -1046,7 +1090,7 @@ pub fn hud_step_pre(
         &inp,
     );
     pending.commands.extend(cmds);
-    pending.ui_captured = hud.ui_capture_mouse;
+    capture.hud = hud.ui_capture_mouse;
     pending.tasks_popup_open = tasks::tasks_popup_open(&sim.0);
     blocking.0 = ui_blocking(&sim.0, &hud);
     sync_flags(&hud, &mut pending);
@@ -1063,11 +1107,11 @@ pub fn sync_flags(hud: &HudState, pending: &mut PendingInput) {
 pub fn hud_step_game(
     mut hud: ResMut<HudState>,
     sim: Res<SimRes>,
-    assets: Res<GameAssets>,
     cams: Res<Cameras>,
     tree: Option<ResMut<TreeScreen>>,
     mut pending: ResMut<PendingInput>,
     mut blocking: ResMut<UiBlocking>,
+    mut capture: ResMut<UiCapture>,
 ) {
     let mut tree = tree;
     hud.menu_open = tree.as_ref().is_some_and(|t| t.open);
@@ -1081,7 +1125,7 @@ pub fn hud_step_game(
         }
     }
     blocking.0 = ui_blocking(&sim.0, &hud) || hud.menu_open;
-    pending.ui_captured = pending.ui_captured || hud.ui_capture_mouse;
+    capture.hud = hud.ui_capture_mouse;
     sync_flags(&hud, &mut pending);
 }
 
@@ -1119,7 +1163,11 @@ pub const C_WHITE: f64 = 16777215.0;
 /// width is in unscaled units, so it shrinks with the extra scale).
 #[allow(clippy::too_many_arguments)]
 pub fn text_ext(g: &mut Gm, x: f64, y: f64, s: &str, sep: f64, w: f64, xs: f64, ys: f64) {
-    let lh = if sep >= 0.0 { sep } else { g.string_height("M") };
+    let lh = if sep >= 0.0 {
+        sep
+    } else {
+        g.string_height("M")
+    };
     let k = min_text_scale(ys, lh, MIN_TEXT_PX) / if ys == 0.0 { 1.0 } else { ys };
     let w = if w >= 0.0 { w / k } else { w };
     g.text_ext_transformed(x, y, s, sep, w, xs * k, ys * k);
@@ -1186,7 +1234,17 @@ pub fn hud_text_box(g: &mut Gm, r: R, s: &str, sc: f64, pad: f64) {
 // port: hud_icon_number
 /// An icon and a number centred together at (cx, cy).
 #[allow(clippy::too_many_arguments)]
-pub fn hud_icon_number(g: &mut Gm, assets: &GameAssets, hud: &HudState, spr: &str, cx: f64, cy: f64, iscale: f64, text: &str, tscale: f64) {
+pub fn hud_icon_number(
+    g: &mut Gm,
+    assets: &GameAssets,
+    hud: &HudState,
+    spr: &str,
+    cx: f64,
+    cy: f64,
+    iscale: f64,
+    text: &str,
+    tscale: f64,
+) {
     let s = assets.sprite(spr).size.as_dvec2();
     let (w, h) = (s.x * iscale, s.y * iscale);
     let tw = g.string_width(text) * tscale;
@@ -1216,7 +1274,14 @@ pub fn hud_draw_top(
     draw.lists.insert(draw_order::TOP, g.items);
 }
 
-pub fn draw_top(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &UiFonts, loc: &Locale) {
+pub fn draw_top(
+    g: &mut Gm,
+    hud: &HudState,
+    sim: &Sim,
+    assets: &GameAssets,
+    uf: &UiFonts,
+    loc: &Locale,
+) {
     g.halign = 0;
     g.valign = 0;
     g.font = uf.small.clone();
@@ -1249,14 +1314,26 @@ pub fn draw_top(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: 
     g.set_colour(COLOR_INK);
     let len_val = if hud.units_imperial { cm / 2.54 } else { cm };
     let len_str = fmt_num(gml::round(len_val));
-    let unit_str = loc.loc(if hud.units_imperial { "hud_in" } else { "hud_cm" }).to_string();
+    let unit_str = loc
+        .loc(if hud.units_imperial {
+            "hud_in"
+        } else {
+            "hud_cm"
+        })
+        .to_string();
     let len_w = g.string_width(&len_str) * u.length_scale;
     let unit_w = g.string_width(&unit_str) * u.unit_scale;
     let len_x = u.length_x - (len_w + u.unit_gap + unit_w) * 0.5;
     g.halign = 0;
     hud_text(g, len_x, u.text_y, &len_str, u.length_scale);
     g.set_colour(COLOR_DIM);
-    hud_text(g, len_x + len_w + u.unit_gap, u.text_y + 4.0, &unit_str, u.unit_scale);
+    hud_text(
+        g,
+        len_x + len_w + u.unit_gap,
+        u.text_y + 4.0,
+        &unit_str,
+        u.unit_scale,
+    );
     g.set_colour(COLOR_INK);
     let (fi, wi) = (&u.food_icon, &u.water_icon);
     let aw = assets.sprite("apple_bite").size.x as f64;
@@ -1343,7 +1420,18 @@ pub fn draw_main(
         // cave_popups_draw(vx, vy): Task 13
         if !sim.intro_active {
             let blocked = ui_blocking(sim, hud);
-            markers::animal_markers_draw(g, markers, sim, assets, hud, blocked, cams.render_view(), gw, gh, dt);
+            markers::animal_markers_draw(
+                g,
+                markers,
+                sim,
+                assets,
+                hud,
+                blocked,
+                cams.render_view(),
+                gw,
+                gh,
+                dt,
+            );
         }
         g.font = uf.font.clone();
         g.valign = 1;
@@ -1399,18 +1487,32 @@ pub fn draw_main(
         g.set_alpha(1.0);
     }
     let box_ = hud.upgrades_button_rect(assets);
-    ui_tasks::tutorial_draw(g, sim, assets, uf, loc, box_, COLOR_INK, gw, gh, vx, vy, myc);
+    ui_tasks::tutorial_draw(
+        g, sim, assets, uf, loc, box_, COLOR_INK, gw, gh, vx, vy, myc,
+    );
 }
 
 /// The placement preview and the build bar (Draw_75's build block).
-fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &UiFonts, loc: &Locale, cams: &Cameras) {
+fn draw_build(
+    g: &mut Gm,
+    hud: &HudState,
+    sim: &Sim,
+    assets: &GameAssets,
+    uf: &UiFonts,
+    loc: &Locale,
+    cams: &Cameras,
+) {
     let b = &hud.build;
     if let (Some(t), Some(pa)) = (hud.place_type, hud.place_at) {
         let spr = mushrooms::type_sprite(t);
         if let Some(def) = assets.try_sprite(spr) {
             let sw = def.size.x as f64;
             let cw = mushrooms::cell_width(spr, sw);
-            let col = if pa.ok { 0x78e678 as f64 } else { 0x505aeb as f64 };
+            let col = if pa.ok {
+                0x78e678 as f64
+            } else {
+                0x505aeb as f64
+            };
             let variant = if t == MushroomKind::Consumptor {
                 mushrooms::consumptor_variant(pa.face.unwrap_or(1.0))
             } else {
@@ -1421,7 +1523,20 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
                 pa.x - def.origin.x as f64,
                 pa.y - def.origin.y as f64,
             ));
-            g.sprite_part_ext(spr, 0, left, 0.0, cw, def.size.y as f64, p.x, p.y, cams.zoom, cams.zoom, col, 0.75);
+            g.sprite_part_ext(
+                spr,
+                0,
+                left,
+                0.0,
+                cw,
+                def.size.y as f64,
+                p.x,
+                p.y,
+                cams.zoom,
+                cams.zoom,
+                col,
+                0.75,
+            );
         }
     }
     if hud.build_slide <= 0.0 {
@@ -1435,7 +1550,20 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
     let bar = assets.sprite("LOWER_UI_BAR").size.as_dvec2();
     if cut < bar.x {
         let a = g.alpha;
-        g.sprite_part_ext("LOWER_UI_BAR", 0, cut, 0.0, bar.x - cut, bar.y, bx + cut, b.bar_y, 1.0, 1.0, C_WHITE, a);
+        g.sprite_part_ext(
+            "LOWER_UI_BAR",
+            0,
+            cut,
+            0.0,
+            bar.x - cut,
+            bar.y,
+            bx + cut,
+            b.bar_y,
+            1.0,
+            1.0,
+            C_WHITE,
+            a,
+        );
     }
     g.font = uf.font.clone();
     g.valign = 1;
@@ -1445,7 +1573,13 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
     if types.is_empty() && hud.build_slide >= 1.0 {
         g.halign = 0;
         g.set_colour(COLOR_DIM);
-        hud_text(g, b.slot_x0 - 40.0 + off, b.slot_y, loc.loc("build_none"), 0.38);
+        hud_text(
+            g,
+            b.slot_x0 - 40.0 + off,
+            b.slot_y,
+            loc.loc("build_none"),
+            0.38,
+        );
     }
     let step = hud.build_slot_step(types.len());
     for (i, &t) in types.iter().enumerate() {
@@ -1469,7 +1603,16 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
             1.0
         };
         let ialpha = if affordable { 1.0 } else { 0.45 };
-        tree_draw_icon(g, Some(mushrooms::type_sprite(t)), x, b.slot_y, b.icon * isc, ialpha, true, false);
+        tree_draw_icon(
+            g,
+            Some(mushrooms::type_sprite(t)),
+            x,
+            b.slot_y,
+            b.icon * isc,
+            ialpha,
+            true,
+            false,
+        );
         let key = HudState::build_key_of(t);
         if key > 0 {
             let kr = vis("build_key_badge_radius");
@@ -1491,10 +1634,25 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
         let apple = assets.sprite("apple_bite").size.as_dvec2();
         let bs = b.bite_size / apple.x.max(1.0);
         let falpha = if can_food { 1.0 } else { 0.5 };
-        g.sprite_ext("apple_bite", 0, px, price_y - apple.y * bs * 0.5, bs, bs, C_WHITE, falpha);
+        g.sprite_ext(
+            "apple_bite",
+            0,
+            px,
+            price_y - apple.y * bs * 0.5,
+            bs,
+            bs,
+            C_WHITE,
+            falpha,
+        );
         g.halign = 0;
         g.set_colour(if can_food { COLOR_INK } else { COLOR_BAD });
-        hud_text(g, px + b.bite_size + 4.0, price_y, &fmt_num(cost), b.price_scale);
+        hud_text(
+            g,
+            px + b.bite_size + 4.0,
+            price_y,
+            &fmt_num(cost),
+            b.price_scale,
+        );
         if wcost > 0.0 {
             let can_w = sim.water_total() >= wcost;
             let wy = price_y + b.price_line;
@@ -1502,9 +1660,24 @@ fn draw_build(g: &mut Gm, hud: &HudState, sim: &Sim, assets: &GameAssets, uf: &U
             let (ww, wh) = (wd.size.x as f64, wd.size.y as f64);
             let ws = b.bite_size / ww.max(1.0);
             let walpha = if can_w { 1.0 } else { 0.5 };
-            g.sprite_ext("water65", 0, px + b.bite_size * 0.5 + (wd.origin.x as f64 - ww * 0.5) * ws, wy + (wd.origin.y as f64 - wh * 0.5) * ws, ws, ws, C_WHITE, walpha);
+            g.sprite_ext(
+                "water65",
+                0,
+                px + b.bite_size * 0.5 + (wd.origin.x as f64 - ww * 0.5) * ws,
+                wy + (wd.origin.y as f64 - wh * 0.5) * ws,
+                ws,
+                ws,
+                C_WHITE,
+                walpha,
+            );
             g.set_colour(if can_w { COLOR_INK } else { COLOR_BAD });
-            hud_text(g, px + b.bite_size + 4.0, wy, &fmt_num(wcost), b.price_scale);
+            hud_text(
+                g,
+                px + b.bite_size + 4.0,
+                wy,
+                &fmt_num(wcost),
+                b.price_scale,
+            );
         }
     }
     g.font = uf.small.clone();
@@ -1529,11 +1702,27 @@ pub fn hud_draw_tooltip(
     cams: Res<Cameras>,
 ) {
     let mut g = Gm::new(&assets);
-    draw_tooltip(&mut g, &hud, &mut sim.0, &assets, &ui_fonts, &loc.locale, &cams);
+    draw_tooltip(
+        &mut g,
+        &hud,
+        &mut sim.0,
+        &assets,
+        &ui_fonts,
+        &loc.locale,
+        &cams,
+    );
     draw.lists.insert(draw_order::TOOLTIP, g.items);
 }
 
-pub fn draw_tooltip(g: &mut Gm, hud: &HudState, sim: &mut Sim, assets: &GameAssets, uf: &UiFonts, loc: &Locale, cams: &Cameras) {
+pub fn draw_tooltip(
+    g: &mut Gm,
+    hud: &HudState,
+    sim: &mut Sim,
+    assets: &GameAssets,
+    uf: &UiFonts,
+    loc: &Locale,
+    cams: &Cameras,
+) {
     let (gw, gh) = (cams.layout.view_w, cams.layout.view_h);
     let (mx, my) = hud.mouse_gui;
     let cm = mycelium_cm(sim);
@@ -1587,7 +1776,19 @@ pub fn draw_tooltip(g: &mut Gm, hud: &HudState, sim: &mut Sim, assets: &GameAsse
         hud_text(g, tx + pad, ty + pad, &tip, tsc);
     }
     // cine_draw: Task 21
-    ui_tasks::tasks_popup_draw(g, sim, uf, loc, assets, COLOR_INK, COLOR_DIM, COLOR_PANEL, gw, gh, (mx, my));
+    ui_tasks::tasks_popup_draw(
+        g,
+        sim,
+        uf,
+        loc,
+        assets,
+        COLOR_INK,
+        COLOR_DIM,
+        COLOR_PANEL,
+        gw,
+        gh,
+        (mx, my),
+    );
     g.set_alpha(1.0);
     g.set_colour(C_WHITE);
 }

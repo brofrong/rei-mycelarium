@@ -67,7 +67,9 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
     tasks::apply_commands(sim, input);
     for cmd in &input.commands {
         match *cmd {
-            crate::sim::Command::CameraJumpEdge { dir } => crate::camera::camera_jump_edge(sim, dir),
+            crate::sim::Command::CameraJumpEdge { dir } => {
+                crate::camera::camera_jump_edge(sim, dir)
+            }
             crate::sim::Command::CameraJumpOrigin => crate::camera::camera_jump_origin(sim),
             crate::sim::Command::CameraFlyTo { x, y } => {
                 // camera_fly_to_marker: global.camera_fly = { marker, t = 0 }

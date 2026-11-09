@@ -1,44 +1,52 @@
--- Shared helpers for the Task 5 world golden scripts (not a topic itself).
---
--- `neutralize_caves()` (Task 6) and `neutralize_stones()` (Task 7) replace the cave (Task 6) and stone/maze/obstacle (Task 7) entry points that
--- world generation and the tile queries call with neutral versions: no caves, no stones, no
--- bones, no obstacles. myco_core's world hooks for those tasks have exactly these neutral
--- bodies until Tasks 6/7 port them, so the Task 5 references compare the Task 5 logic alone.
--- Tasks 6/7 re-capture these topics without neutralizing.
+-- Shared helpers for the world golden scripts (not a topic itself). Since ruling R19's
+-- re-capture everything is live: caves, bones, relics, stones, deposits, walls, mazes and rock
+-- clusters.
 local gm = require("gm")
 local L = {}
 
--- Task 6's entry points: no caves, no bones (T6 stops calling this and re-captures)
-function L.neutralize_caves()
-  local function noop() return gm.undefined end
-  local function no() return false end
-  caves_extend = noop
-  world_paint_bones = noop
-  world_clear_caves = noop
-  world_cave_hits = no
-  world_cave_solid_any = no
+-- the file-local caches (statics) of the cave/bone/relic/cluster functions and the cave
+-- globals, emptied so a new world computes them afresh like a new process (the boot world may
+-- share the seed); myco_core keeps these caches in WorldRt, new with every world
+local function reset_static(fn, name, fields)
+  local i = 1
+  while true do
+    local n, v = debug.getupvalue(fn, i)
+    if n == nil then error("no upvalue " .. name) end
+    if n == name then
+      for k, x in pairs(fields) do v[k] = x end
+      return
+    end
+    i = i + 1
+  end
 end
 
--- Task 7's entry points: no stones, rock clusters, mazes, walls (T7 stops calling this)
-function L.neutralize_stones()
-  local function noop() return gm.undefined end
-  local function no() return false end
-  world_paint_clusters = noop
-  world_paint_stone_clusters = noop
-  world_paint_stone_pillar = noop
-  world_obstacles_at_chunk = function() return gm.array() end
-  world_paint_maze_part = noop
-  world_paint_surface_wall = noop
-  world_paint_stone_deposits = noop
-  world_paint_stones = noop
-  stone_solid_at = no
-  world_stone_covers = no
+function L.reset()
+  reset_static(world_cave_rects, "world_cave_rects_static", { _cache = gm.undefined })
+  reset_static(world_big_bones, "world_big_bones_static", { _cache = gm.undefined, _key = "" })
+  reset_static(world_clear_zones, "world_clear_zones_static", { _cache = gm.undefined, _key = "" })
+  reset_static(world_relics, "world_relics_static", { _for = gm.undefined, _out = gm.array() })
+  reset_static(world_rock_clusters, "world_rock_clusters_static", { _init = false })
+  global.cave_yellow = gm.undefined
+  global.cave_blue_state = gm.undefined
+  global.cave_perks = gm.struct({})
+  global.cave_taken = gm.struct({})
+  global.relic_taken = gm.struct({})
+  global.cave_flash = gm.struct({})
+  global.cave_wrap = gm.struct({})
+  global.cave_popups = gm.array()
+  global.cave_burst_pending = false
+  global.play_frames = 0
 end
 
--- the asset caches the Rust port always has (art_preload_step builds them on the first step)
+-- the asset caches the Rust port always has (art_preload_step / world_draw build them in LÖVE),
+-- then fresh caches
 function L.preload()
   lakes_init(global, global)
   leaf_fg_art_init(global, global)
+  stones_init(global, global)
+  stone_tiles_init(global, global)
+  caves_mask_init(global, global)
+  L.reset()
 end
 
 -- gm arrays (0-based, __n) and structs -> plain Lua tables for main.lua's JSON writer;

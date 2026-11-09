@@ -82,7 +82,15 @@ pub fn cursor_tip_tick(mut tip: ResMut<CursorTip>, time: Res<Time>) {
 }
 
 /// Draw the tip right below the cursor, kept on screen.
-pub fn draw_tip(g: &mut Gm, tip: &CursorTip, loc: &Locale, uf: &UiFonts, mouse: (f64, f64), gw: f64, gh: f64) {
+pub fn draw_tip(
+    g: &mut Gm,
+    tip: &CursorTip,
+    loc: &Locale,
+    uf: &UiFonts,
+    mouse: (f64, f64),
+    gw: f64,
+    gh: f64,
+) {
     let Some(r) = &tip.reason else {
         return;
     };
@@ -125,6 +133,14 @@ pub fn cursor_tip_draw(
         .or(pending.cursor)
         .map(|p| cams.screen_to_gui(p).into())
         .unwrap_or(hud.mouse_gui);
-    draw_tip(&mut g, &tip, &loc.locale, &uf, mouse, cams.layout.view_w, cams.layout.view_h);
+    draw_tip(
+        &mut g,
+        &tip,
+        &loc.locale,
+        &uf,
+        mouse,
+        cams.layout.view_w,
+        cams.layout.view_h,
+    );
     draw.lists.insert(draw_order::CURSOR, g.items);
 }

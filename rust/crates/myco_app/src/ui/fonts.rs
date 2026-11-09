@@ -205,7 +205,13 @@ pub fn locale_font_ink_h(assets: &GameAssets, pages: &FontPages, f: InkFont, s: 
 /// `locale_font_fit(file, ref_font)`: add the TTF at the reference font's size (12 for font
 /// `-1`), resize once when its "Mg" line height is more than 5 % off, then up to twice until
 /// the "HEXN" ink height is within `max(1, 3 %)` of the reference's.
-pub fn locale_font_fit(assets: &GameAssets, pages: &FontPages, handle: &Handle<Font>, bytes: &[u8], ref_font: Option<&str>) -> Option<TtfFont> {
+pub fn locale_font_fit(
+    assets: &GameAssets,
+    pages: &FontPages,
+    handle: &Handle<Font>,
+    bytes: &[u8],
+    ref_font: Option<&str>,
+) -> Option<TtfFont> {
     let probe = "HEXN";
     let ref_name = ref_font.unwrap_or("fnt_gm_20");
     let mut size = match ref_font {

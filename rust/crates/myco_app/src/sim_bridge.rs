@@ -36,8 +36,6 @@ pub struct PendingInput {
     pub keys_down: Vec<Key>,
     pub text: String,
     pub commands: Vec<Command>,
-    /// set by the UI each frame: the cursor is over the HUD / a menu
-    pub ui_captured: bool,
     pub tasks_popup_open: bool,
     /// HUD globals the logic reads (set by the HUD, Task 17)
     pub menu_open: bool,
@@ -94,7 +92,7 @@ impl PendingInput {
             keys_pressed: std::mem::take(&mut self.keys_pressed),
             keys_down: self.keys_down.clone(),
             text: std::mem::take(&mut self.text),
-            ui_captured: self.ui_captured,
+            ui_captured: false,
             view: cams.game_view,
             commands: std::mem::take(&mut self.commands),
             tasks_popup_open: self.tasks_popup_open,
@@ -123,6 +121,24 @@ pub struct ForceFocus(pub bool);
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiBlocking(pub bool);
 
+/// Per-step mouse capture by UI screens (`global.ui_capture_mouse`, recomputed every step,
+/// ui_4.lua:1051). Each screen writes its own flag every step; `step_sim` ORs them into
+/// `StepInput.ui_captured`.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct UiCapture {
+    /// the upgrade-tree screen is open (Task 19)
+    pub tree: bool,
+    /// obj_hud's `ui_capture_mouse`: the cursor is on the HUD, a popup or a blocking screen
+    /// (Task 17, recomputed every step)
+    pub hud: bool,
+}
+
+impl UiCapture {
+    pub fn any(&self) -> bool {
+        self.tree || self.hud
+    }
+}
+
 /// Fixed-step system sets, in order.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SimSet {
@@ -141,6 +157,7 @@ impl Plugin for SimBridgePlugin {
             .init_resource::<PendingInput>()
             .init_resource::<ForceFocus>()
             .init_resource::<UiBlocking>()
+            .init_resource::<UiCapture>()
             .add_message::<SimEventMsg>()
             .configure_sets(
                 FixedUpdate,
@@ -304,10 +321,12 @@ fn step_sim(
     mut sim: ResMut<SimRes>,
     mut pending: ResMut<PendingInput>,
     mut cams: ResMut<Cameras>,
+    capture: Res<UiCapture>,
     history: Option<ResMut<StepHistory>>,
     mut out: MessageWriter<SimEventMsg>,
 ) {
-    let input = pending.take_step(&cams);
+    let mut input = pending.take_step(&cams);
+    input.ui_captured = capture.any();
     sim.0.step(&input);
     if let Some(mut h) = history {
         h.0.push(input);

@@ -67,11 +67,20 @@ fn popups_aggregate_per_source_per_step() {
     p.add_step(step.iter(), &view());
     assert_eq!(p.list.len(), 3);
     let f1 = &p.list[0];
-    assert_eq!((f1.kind, f1.value, f1.x, f1.y), (ResourceKind::Food, 5.0, 100.0, 100.0));
+    assert_eq!(
+        (f1.kind, f1.value, f1.x, f1.y),
+        (ResourceKind::Food, 5.0, 100.0, 100.0)
+    );
     assert_eq!(p.list[1].value, 1.0);
-    assert_eq!((p.list[2].kind, p.list[2].value), (ResourceKind::Water, 4.0));
+    assert_eq!(
+        (p.list[2].kind, p.list[2].value),
+        (ResourceKind::Water, 4.0)
+    );
     // the next step makes a new number for the same source
-    p.add_step([res(ResourceKind::Food, 2.0, 100.0, 100.0, 1)].iter(), &view());
+    p.add_step(
+        [res(ResourceKind::Food, 2.0, 100.0, 100.0, 1)].iter(),
+        &view(),
+    );
     assert_eq!(p.list.len(), 4);
     // a source whose deltas cancel out makes none
     p.add_step(
@@ -103,12 +112,18 @@ fn popups_cap_64_merges_into_nearest() {
     let near = p.list.iter().find(|q| q.x == 640.0).unwrap();
     assert!(near.value >= 2.0);
     // full: a new food number merges into the nearest food number
-    p.add_step([res(ResourceKind::Food, 7.0, 333.0, 500.0, 500)].iter(), &view());
+    p.add_step(
+        [res(ResourceKind::Food, 7.0, 333.0, 500.0, 500)].iter(),
+        &view(),
+    );
     assert_eq!(p.list.len(), CAP);
     let at330 = p.list.iter().find(|q| q.x == 330.0).unwrap();
     assert_eq!(at330.value, 8.0);
     // no live water number to merge into: dropped, still 64
-    p.add_step([res(ResourceKind::Water, 5.0, 333.0, 500.0, 501)].iter(), &view());
+    p.add_step(
+        [res(ResourceKind::Water, 5.0, 333.0, 500.0, 501)].iter(),
+        &view(),
+    );
     assert_eq!(p.list.len(), CAP);
     assert!(p.list.iter().all(|q| q.kind == ResourceKind::Food));
 }
@@ -139,7 +154,10 @@ fn popups_skip_offscreen() {
 #[test]
 fn popup_rises_and_fades() {
     let mut p = Popups::default();
-    p.add_step([res(ResourceKind::Food, 3.0, 100.0, 100.0, 1)].iter(), &view());
+    p.add_step(
+        [res(ResourceKind::Food, 3.0, 100.0, 100.0, 1)].iter(),
+        &view(),
+    );
     assert_eq!((p.list[0].rise(), p.list[0].alpha()), (0.0, 1.0));
     for _ in 0..30 {
         p.tick(1.0 / 60.0);
@@ -189,7 +207,11 @@ fn rmb_in_placement_cancels_not_places() {
     assert_eq!(hud.place_type, None);
     assert!(!hud.build_open);
     assert!(hud.right_click_used);
-    assert!(out.commands.is_empty(), "no node, no mushroom: {:?}", out.commands);
+    assert!(
+        out.commands.is_empty(),
+        "no node, no mushroom: {:?}",
+        out.commands
+    );
     // only the bar open (no type picked): also just closes
     hud.build_open = true;
     hud.ui_capture_mouse = false;
@@ -208,14 +230,20 @@ fn rmb_over_hud_does_nothing() {
     let uf = UiFonts::bitmap();
     let markers = AnimalMarkers::default();
     let mut hud = HudState::new(false);
-    let mut step = |hud: &mut HudState, inp: StepIn| {
+    let step = |hud: &mut HudState, inp: StepIn| {
         let mut cmds = step_pre(hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
         cmds.extend(step_game(hud, &s, &inp).commands);
         cmds
     };
     // over the build button (the round button bottom-left)
     let (bx, by) = (hud.build.cx, hud.build.cy);
-    let cmds = step(&mut hud, StepIn { rclick: true, ..input(bx, by) });
+    let cmds = step(
+        &mut hud,
+        StepIn {
+            rclick: true,
+            ..input(bx, by)
+        },
+    );
     assert!(hud.ui_capture_mouse);
     assert!(cmds.is_empty(), "{cmds:?}");
     // over the upgrades button
@@ -231,11 +259,29 @@ fn rmb_over_hud_does_nothing() {
     // over a camera button
     let cx = hud.cam_x(1) + 40.0;
     let cy = hud.camnav.y + 40.0;
-    let cmds = step(&mut hud, StepIn { rclick: true, ..input(cx, cy) });
+    let cmds = step(
+        &mut hud,
+        StepIn {
+            rclick: true,
+            ..input(cx, cy)
+        },
+    );
     assert!(cmds.is_empty(), "{cmds:?}");
     // in the world: a node right under the cursor
-    let cmds = step(&mut hud, StepIn { rclick: true, ..input(900.0, 500.0) });
-    assert_eq!(cmds, vec![Command::QuickNode { x: 1900.0, y: 550.0 }]);
+    let cmds = step(
+        &mut hud,
+        StepIn {
+            rclick: true,
+            ..input(900.0, 500.0)
+        },
+    );
+    assert_eq!(
+        cmds,
+        vec![Command::QuickNode {
+            x: 1900.0,
+            y: 550.0
+        }]
+    );
     // while aiming (left button held): nothing
     let cmds = step(
         &mut hud,
@@ -249,8 +295,13 @@ fn rmb_over_hud_does_nothing() {
     // in the pause menu: nothing
     let mut paused = sim();
     paused.pause_open = true;
-    let inp = StepIn { rclick: true, ..input(900.0, 500.0) };
-    let mut cmds = step_pre(&mut hud, &paused, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
+    let inp = StepIn {
+        rclick: true,
+        ..input(900.0, 500.0)
+    };
+    let mut cmds = step_pre(
+        &mut hud, &paused, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp,
+    );
     cmds.extend(step_game(&mut hud, &paused, &inp).commands);
     assert!(cmds.is_empty(), "{cmds:?}");
 }
@@ -295,10 +346,22 @@ fn tasks_header_click_toggles_block() {
         ..input(x, y)
     };
     let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, &inp);
-    assert_eq!(cmds, vec![Command::ToggleTaskBlock { block: Block::Tasks }]);
+    assert_eq!(
+        cmds,
+        vec![Command::ToggleTaskBlock {
+            block: Block::Tasks
+        }]
+    );
     assert!(hud.ui_capture_mouse, "the header takes the mouse");
     // and a right click on it places nothing
-    let out = step_game(&mut hud, &s, &StepIn { rclick: true, ..input(x, y) });
+    let out = step_game(
+        &mut hud,
+        &s,
+        &StepIn {
+            rclick: true,
+            ..input(x, y)
+        },
+    );
     assert!(out.commands.is_empty());
 }
 
@@ -331,7 +394,11 @@ fn layout_follows_ui_offset() {
     let (lx, cx, by) = (hud.ui.length_x, hud.camnav.left_x, hud.build.cy);
     hud.layout_apply(100.0, 40.0);
     assert_eq!(hud.ui.length_x, lx + 100.0);
-    assert_eq!(hud.camnav.left_x, cx + 200.0, "camera buttons move by twice the offset");
+    assert_eq!(
+        hud.camnav.left_x,
+        cx + 200.0,
+        "camera buttons move by twice the offset"
+    );
     assert_eq!(hud.build.cy, by + 40.0);
     hud.layout_apply(100.0, 40.0);
     assert_eq!(hud.ui.length_x, lx + 100.0);
