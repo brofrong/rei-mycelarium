@@ -473,5 +473,8 @@ fn load_continues_the_live_clock_and_rng() {
     let restarted = title.restart_title(Some(31607));
     assert_eq!(restarted.frame, frame);
     assert!(restarted.title_open);
+    // a GameMaker global no Create event resets survives game_restart
+    assert!(title.forest.backdrop_leaves.is_some());
+    assert_eq!(restarted.forest.backdrop_leaves, title.forest.backdrop_leaves);
     let _ = std::fs::remove_dir_all(&dir);
 }

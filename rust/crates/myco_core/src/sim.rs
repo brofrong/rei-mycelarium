@@ -575,10 +575,13 @@ impl Sim {
     }
 
     /// `game_restart` back to the title: a fresh room (game_init reseeds the RNG), the clock
-    /// keeps counting from boot (`current_time`).
+    /// keeps counting from boot (`current_time`). GameMaker keeps global variables across a
+    /// restart; those no Create event or game_init sets again survive: `global.backdrop_leaves`
+    /// (backdrop_leaves_init only fills it when undefined).
     pub fn restart_title(&self, world_seed: Option<i64>) -> Sim {
         let mut sim = Sim::title_screen(world_seed);
         sim.frame = self.frame;
+        sim.forest.backdrop_leaves = self.forest.backdrop_leaves.clone();
         sim
     }
 

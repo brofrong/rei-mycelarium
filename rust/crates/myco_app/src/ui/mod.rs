@@ -267,12 +267,47 @@ pub const MENU_DRAW_ORDER: i32 = 600;
 #[derive(Resource, Default)]
 pub struct ExitSaved(pub bool);
 
+/// "Main menu" asked for `game_restart`: like GameMaker (gm/instance.lua), the restart happens
+/// at the end of the step, after the old room ran its whole step; [`apply_restart`] does it right
+/// after the simulation step, so the fresh title's first step is the next one.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct RestartPending(pub bool);
+
+/// The pending `game_restart` (see [`RestartPending`]): a fresh title, obj_hud recreated.
+pub fn apply_restart(
+    mut restart: ResMut<RestartPending>,
+    mut sim: ResMut<SimRes>,
+    mut menus: ResMut<Menus>,
+    mut flags: ResMut<UiFlags>,
+    mut tree: ResMut<TreeScreen>,
+    mut cams: ResMut<Cameras>,
+    hud: Option<ResMut<hud::HudState>>,
+) {
+    if !std::mem::take(&mut restart.0) {
+        return;
+    }
+    restart_to_title(&mut sim.0, &mut menus, &mut flags);
+    tree.close();
+    if let Some(mut hud) = hud {
+        *hud = hud::HudState::new();
+    }
+    cams.sync_game_view(&sim.0.camera);
+}
+
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UiFlags>()
             .init_resource::<ExitSaved>()
+            .init_resource::<RestartPending>()
+            .add_systems(
+                FixedUpdate,
+                apply_restart
+                    .in_set(SimSet::Step)
+                    .after(crate::sim_bridge::step_sim)
+                    .before(crate::sim_bridge::trace_rng_system),
+            )
             .add_systems(Startup, init_menus.after(init_locale))
             .add_systems(
                 FixedUpdate,
@@ -346,7 +381,7 @@ pub fn menu_step(
     mut flags: ResMut<UiFlags>,
     mut tree: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut ui: (ResMut<UiBlockers>, ResMut<UiCapture>),
+    mut ui: (ResMut<UiBlockers>, ResMut<UiCapture>, ResMut<RestartPending>),
     mut loc: ResMut<LocaleRes>,
     cams: Res<Cameras>,
     display: Res<Display>,
@@ -400,8 +435,8 @@ pub fn menu_step(
     for fx in effects {
         match fx {
             MenuEffect::Restart => {
-                restart_to_title(&mut sim.0, &mut menus, &mut flags);
-                tree.close();
+                // at the end of this step (`apply_restart`), as game_restart does
+                ui.2 .0 = true;
             }
             MenuEffect::Quit => {
                 writers.0.write(AppExit::Success);

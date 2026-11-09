@@ -209,6 +209,7 @@ impl Plugin for SimBridgePlugin {
                 (
                     focus_step.in_set(SimSet::Prepare),
                     step_sim.in_set(SimSet::Step),
+                    trace_rng_system.in_set(SimSet::Step).after(step_sim),
                 ),
             );
     }
@@ -366,8 +367,16 @@ fn focus_step(
     }
 }
 
+/// `MYCO_TRACE_RNG` (conformance aid): the game RNG after every step, once the step is complete
+/// (a restart included), as LÖVE prints it after `gm.step` with MYCO_CONFORM.
+pub fn trace_rng_system(sim: Res<SimRes>, mut on: Local<Option<bool>>) {
+    if *on.get_or_insert_with(|| std::env::var_os("MYCO_TRACE_RNG").is_some()) {
+        println!("RNG {} {}", sim.0.frame, sim.0.rng.state());
+    }
+}
+
 /// One simulation step per fixed tick.
-fn step_sim(
+pub fn step_sim(
     mut sim: ResMut<SimRes>,
     mut pending: ResMut<PendingInput>,
     mut cams: ResMut<Cameras>,
@@ -383,10 +392,6 @@ fn step_sim(
         println!("RNG 0 {}", sim.0.rng.state());
     }
     sim.0.step(&input);
-    if trace {
-        // conformance aid: the game RNG after every step (LÖVE prints the same with MYCO_CONFORM)
-        println!("RNG {} {}", sim.0.frame, sim.0.rng.state());
-    }
     if let Some(mut h) = history {
         h.0.push(input);
     }
