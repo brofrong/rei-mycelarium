@@ -55,12 +55,12 @@ pub trait TextMetrics {
     fn height(&self, font: FontSel, s: &str) -> f64;
 }
 
-/// `hud_fit(s, sc, maxw, maxh)`: the scale `sc`, reduced so `s` fits `maxw` (and `maxh` when
-/// positive).
-pub fn hud_fit(m: &dyn TextMetrics, font: FontSel, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
+// port: anon__1399__gml_Object_obj_hud_Create_0
+/// `hud_fit(s, sc, maxw, maxh)` on the string's measured size (`string_width/height(s)` in the
+/// current font): the scale `sc`, reduced so the text fits `maxw` (and `maxh` when positive).
+/// The menus and the tree screen both measure and call this.
+pub fn hud_fit_size(w: f64, h: f64, sc: f64, maxw: f64, maxh: f64) -> f64 {
     let mut k = sc;
-    let w = m.width(font, s);
-    let h = m.height(font, s);
     if w * k > maxw {
         k = maxw.max(0.05) / w.max(1.0);
     }
@@ -68,6 +68,27 @@ pub fn hud_fit(m: &dyn TextMetrics, font: FontSel, s: &str, sc: f64, maxw: f64, 
         k = maxh.max(0.05) / h.max(1.0);
     }
     k
+}
+
+/// [`hud_fit_size`] with the menus' metrics.
+pub fn hud_fit(m: &dyn TextMetrics, font: FontSel, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
+    hud_fit_size(m.width(font, s), m.height(font, s), sc, maxw, maxh)
+}
+
+// port: anon__1832__gml_Object_obj_hud_Create_0
+/// `hud_text_box(r, s, sc, pad)`: where and how big a label goes in a button rectangle; the text
+/// is drawn left-aligned and vertically centred at the returned `(x, y)` with scale `k`. Takes the
+/// label's measured size and the rectangle `(x1, y1, x2, y2)`.
+pub fn hud_text_box_place(
+    w: f64,
+    h: f64,
+    r: (f64, f64, f64, f64),
+    sc: f64,
+    pad: f64,
+) -> (f64, f64, f64) {
+    let (x1, y1, x2, y2) = r;
+    let k = hud_fit_size(w, h, sc, x2 - x1 - pad * 2.0, y2 - y1 - 6.0);
+    (x1 + pad, (y1 + y2) * 0.5, k)
 }
 
 /// Triangle strips as a triangle list of one colour.

@@ -122,9 +122,27 @@ pub struct StepHistory(pub Vec<StepInput>);
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct ForceFocus(pub bool);
 
-/// Set by the UI (`ui_blocking`, ruling R9): a menu is open, focus loss does not pause.
+/// A menu is open (`ui_blocking`, ruling R9): focus loss does not pause. A plain flag for code
+/// that owns it outright; nothing resets it. UI screens use [`UiBlockers`] instead.
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiBlocking(pub bool);
+
+/// Per-screen part of `ui_blocking()`: each screen writes its own flag every fixed step (so no
+/// system has to reset a shared flag, and order between screens does not matter);
+/// `focus_step` reads `UiBlocking.0 || UiBlockers::any()`.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct UiBlockers {
+    /// title, slots, settings/pause, logo screen, debug, intro (Task 18)
+    pub menus: bool,
+    /// the upgrade-tree screen (Task 19)
+    pub tree: bool,
+}
+
+impl UiBlockers {
+    pub fn any(&self) -> bool {
+        self.menus || self.tree
+    }
+}
 
 /// Per-step mouse capture by UI screens (`global.ui_capture_mouse`, recomputed every step,
 /// ui_4.lua:1051). Each screen writes its own flag every step; `step_sim` ORs them into
@@ -161,6 +179,7 @@ impl Plugin for SimBridgePlugin {
             .init_resource::<PendingInput>()
             .init_resource::<ForceFocus>()
             .init_resource::<UiBlocking>()
+            .init_resource::<UiBlockers>()
             .init_resource::<UiCapture>()
             .add_message::<SimEventMsg>()
             .configure_sets(
@@ -308,11 +327,17 @@ fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
     blocking: Res<UiBlocking>,
+    blockers: Res<UiBlockers>,
     sim: Res<SimRes>,
     mut pending: ResMut<PendingInput>,
 ) {
     let focused = windows.single().map(|w| w.focused).unwrap_or(true);
-    if focused || force.0 || myco_core::balance::vis("pause_on_focus_loss") <= 0.0 || blocking.0 {
+    if focused
+        || force.0
+        || myco_core::balance::vis("pause_on_focus_loss") <= 0.0
+        || blocking.0
+        || blockers.any()
+    {
         return;
     }
     if !sim.0.pause_open && !pending.commands.contains(&Command::SetPaused(true)) {

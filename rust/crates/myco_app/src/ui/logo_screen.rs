@@ -3,7 +3,7 @@
 //! through `TreeScreen::logo_requested`, which the menu step turns into
 //! [`crate::logo::LogoState::logo_open`].
 
-use super::draw::{hud_fit, strips_to_tris, DrawCmd, FontSel, TextMetrics};
+use super::draw::{hud_fit, hud_text_box_place, strips_to_tris, DrawCmd, FontSel, TextMetrics};
 use super::menu::*;
 use crate::logo::LogoPhase;
 use myco_core::locale::Locale;
@@ -87,10 +87,16 @@ impl Menus {
             };
         // hud_text_box(r, s, sc, pad): left-aligned, vertically centred, fitted into the box
         let text_box = |d: &mut Vec<DrawCmd>, r: R, s: &str, sc: f64, pad: f64| {
-            let k = hud_fit(m, f, s, sc, r.x2 - r.x1 - pad * 2.0, r.y2 - r.y1 - 6.0);
+            let (x, y, k) = hud_text_box_place(
+                m.width(f, s),
+                m.height(f, s),
+                (r.x1, r.y1, r.x2, r.y2),
+                sc,
+                pad,
+            );
             d.push(DrawCmd::Text {
-                x: r.x1 + pad,
-                y: r.cy(),
+                x,
+                y,
                 s: s.into(),
                 sc: k,
                 col: COLOR_INK,

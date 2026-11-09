@@ -6,7 +6,7 @@
 //! - fixed step, `SimSet::Prepare`, after the autopilot and before the tree: [`menu_step`] reads
 //!   the latched input, runs the menus (which may start, load or restart the game), applies their
 //!   effects, then sets `PendingInput.{debug,logo}_open/hud_hidden`, [`UiCapture::menus`] and
-//!   [`UiBlocking`];
+//!   [`UiBlockers::menus`];
 //! - `Update`: [`menu_draw`] paints into [`GuiDraw`] under [`MENU_DRAW_ORDER`] (over the tree);
 //! - `MYCO_LOGO=<text>` opens the logo generator with that text once a game runs (checks);
 //! - `Last`: [`save_on_exit`] runs obj_game Other_3 (`Sim::game_end`, a save) once when the app
@@ -107,7 +107,7 @@ use crate::audio::{Audio, AudioRequest, VolumeKind};
 use crate::autopilot::{run_script, seed_from_env};
 use crate::camera::Cameras;
 use crate::display::{CycleWindowSize, Display, DisplaySizes, SetFullscreen};
-use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlocking, UiCapture};
+use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlockers, UiCapture};
 use draw::{GmMetrics, MenuFonts};
 use gm_draw::GuiDraw;
 use menu::{MenuEffect, MenuEnv, MenuInput, Menus, UiFlags};
@@ -198,7 +198,7 @@ pub fn menu_step(
     mut flags: ResMut<UiFlags>,
     mut tree: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut ui: (ResMut<UiBlocking>, ResMut<UiCapture>),
+    mut ui: (ResMut<UiBlockers>, ResMut<UiCapture>),
     mut loc: ResMut<LocaleRes>,
     cams: Res<Cameras>,
     display: Res<Display>,
@@ -297,7 +297,8 @@ pub fn menu_step(
     pending.logo_open = menus.logo.open;
     // the tree adds its own flag and screen after this (it runs next)
     let menus_up = sim.0.title_open || sim.0.pause_open || menus.logo.open || flags.debug_open;
-    ui.0 .0 = menu::ui_blocking(&sim.0, &flags, menus.logo.open);
+    // the tree screen writes its own blocker (`UiBlockers::tree`)
+    ui.0.menus = menu::ui_blocking(&sim.0, &flags, menus.logo.open);
     ui.1.menus = menus_up || sim.0.intro_active;
 }
 

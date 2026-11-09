@@ -319,9 +319,8 @@ fn apply_cycle_size(
     display.0.window_h = h as _;
     if !display.0.fullscreen {
         if let Ok(mut win) = windows.single_mut() {
-            let sf = win.scale_factor().max(1.0) as f64;
-            win.resolution
-                .set((w as f64 / sf) as f32, (h as f64 / sf) as f32);
+            // settings sizes are logical points (ruling R23)
+            win.resolution.set(w as f32, h as f32);
             win.position = WindowPosition::Centered(MonitorSelection::Current);
         }
     }
@@ -335,15 +334,14 @@ fn apply_cycle_size(
 pub struct SetFullscreen(pub bool);
 
 /// The primary window for the given settings (`display.init`): fullscreen below the notch, or a
-/// window of `window_w×window_h` physical pixels, centred.
-pub fn primary_window(settings: &DisplaySettings, screen: Option<&ScreenInfo>) -> Window {
-    let sf = screen.map(|s| s.scale).unwrap_or(1.0).max(1.0);
+/// window of `window_w×window_h` logical points, centred. Ruling R23: LÖVE (highdpi, no DPI
+/// scaling) applies the settings.ini size as points (`gm/display.lua`), so a 1366×768 window is
+/// 2732×1536 pixels on Retina; the size is not divided by the scale factor. (Before the window
+/// exists Bevy's scale factor is 1, and winit creates it with this logical size.)
+pub fn primary_window(settings: &DisplaySettings, _screen: Option<&ScreenInfo>) -> Window {
     let mut w = Window {
         title: "Mycelarium".into(),
-        resolution: WindowResolution::new(
-            ((settings.window_w as f64 / sf).round() as u32).max(1),
-            ((settings.window_h as f64 / sf).round() as u32).max(1),
-        ),
+        resolution: WindowResolution::new(settings.window_w.max(1), settings.window_h.max(1)),
         position: WindowPosition::Centered(MonitorSelection::Primary),
         ..default()
     };
@@ -400,10 +398,9 @@ fn apply_set_fullscreen(
         win.mode = if on {
             WindowMode::BorderlessFullscreen(MonitorSelection::Current)
         } else {
+            // settings sizes are logical points (ruling R23)
             let (w, h) = (display.0.window_w, display.0.window_h);
-            let sf = win.scale_factor().max(1.0) as f64;
-            win.resolution
-                .set((w as f64 / sf) as f32, (h as f64 / sf) as f32);
+            win.resolution.set(w as f32, h as f32);
             WindowMode::Windowed
         };
     }

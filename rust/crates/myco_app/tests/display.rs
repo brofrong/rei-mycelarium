@@ -126,3 +126,35 @@ fn save_dir_honours_env_override() {
     );
     assert_eq!(display::save_dir_from(None), myco_core::save::save_dir());
 }
+
+/// Ruling R23: a settings.ini window size is logical points (LÖVE highdpi without DPI scaling),
+/// so 1366×768 opens a 1366×768-point window on any scale factor.
+#[test]
+fn settings_window_size_is_logical_points() {
+    let dir = std::env::temp_dir().join(format!("myco-t18-winsize-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("settings.ini"),
+        "[display]\r\nfullscreen=\"0.000000\"\r\nwindow_w=\"1366.000000\"\r\nwindow_h=\"768.000000\"\r\n",
+    )
+    .unwrap();
+    let settings = myco_core::save::read_settings(&dir);
+    assert_eq!(
+        (settings.window_w, settings.window_h, settings.fullscreen),
+        (1366, 768, false)
+    );
+    for scale in [1.0, 2.0, 3.0] {
+        let screen = display::ScreenInfo {
+            width_pt: 1512.0,
+            height_pt: 982.0,
+            scale,
+            inset_top_pt: 32.0,
+        };
+        let w = display::primary_window(&settings, Some(&screen));
+        assert_eq!(
+            (w.resolution.width(), w.resolution.height()),
+            (1366.0, 768.0),
+            "scale {scale}"
+        );
+    }
+}
