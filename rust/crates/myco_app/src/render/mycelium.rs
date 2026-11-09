@@ -338,8 +338,7 @@ pub fn tiles_clear(m: &mut MyceliumRt, b: &mut MycBake) {
 /// (`tiles_reset`, set by `on_load`) or a whole new `Sim` (restart to the title, a loaded slot),
 /// which shows as fewer growths or tiles than the bake state knows (both only grow in a game).
 pub fn sync_reset(m: &mut MyceliumRt, b: &mut MycBake) {
-    if !(m.tiles_reset || m.tile_list.len() < b.tiles.len() || m.growths.len() < b.growths.len())
-    {
+    if !(m.tiles_reset || m.tile_list.len() < b.tiles.len() || m.growths.len() < b.growths.len()) {
         return;
     }
     m.tiles_reset = false;
@@ -406,8 +405,7 @@ pub fn live_strands(m: &MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64))
                 let have = b.chunks.entry((gi, bi)).or_insert(0);
                 while *have < nfull {
                     let ci = *have;
-                    if let Some(v) = cells_buffer(cells, ci * CHUNK_CELLS, (ci + 1) * CHUNK_CELLS)
-                    {
+                    if let Some(v) = cells_buffer(cells, ci * CHUNK_CELLS, (ci + 1) * CHUNK_CELLS) {
                         b.ops.push(MeshOp::Set(MeshKey::Chunk(gi, bi, ci), v));
                     }
                     *have += 1;
@@ -537,7 +535,15 @@ pub fn spores_and_knots(m: &MyceliumRt, view: (f64, f64, f64, f64)) -> Vec<Vert>
         }
         rect_fill(&mut v, kx - k1, ky - k2, kx + k1, ky + k2, MYC_COL, 1.0);
         rect_fill(&mut v, kx - k2, ky - k1, kx + k2, ky + k1, MYC_COL, 1.0);
-        rect_fill(&mut v, kx - k3, ky - k3, kx + k3, ky + k3, MYC_COL_DARK, 1.0);
+        rect_fill(
+            &mut v,
+            kx - k3,
+            ky - k3,
+            kx + k3,
+            ky + k3,
+            MYC_COL_DARK,
+            1.0,
+        );
     }
     v
 }
@@ -768,7 +774,13 @@ pub fn draw_0_system(
             }
         } else {
             let e = commands
-                .spawn((Name::new("myc sprite"), sprite, anchor, tf, Visibility::Inherited))
+                .spawn((
+                    Name::new("myc sprite"),
+                    sprite,
+                    anchor,
+                    tf,
+                    Visibility::Inherited,
+                ))
                 .id();
             rend.sprites.push(e);
         }
@@ -798,10 +810,7 @@ impl Plugin for MyceliumRenderPlugin {
                     .in_set(SimSet::Prepare)
                     .before(crate::autopilot::run_script),
             )
-            .add_systems(
-                Update,
-                (draw_64_system, apply_mesh_ops).chain(),
-            )
+            .add_systems(Update, (draw_64_system, apply_mesh_ops).chain())
             .add_systems(Update, draw_0_system)
             .add_plugins((
                 crate::render::mycelium_glow::MyceliumGlowPlugin,

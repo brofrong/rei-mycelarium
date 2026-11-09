@@ -140,13 +140,7 @@ pub fn build_hint_rect(sim: &Sim, ctx: &PromptCtx) -> BtnRect {
     let m = &sim.mycelium;
     let label = (ctx.loc)(&m.build_hint);
     let n = m.build_options.len() as f64;
-    myc_button_rect(
-        ctx,
-        m.build_node_x,
-        m.build_node_y,
-        label,
-        n * -34.0 - 44.0,
-    )
+    myc_button_rect(ctx, m.build_node_x, m.build_node_y, label, n * -34.0 - 44.0)
 }
 
 // port: anon__7725__gml_Object_obj_mycelium_controller_Create_0
@@ -248,7 +242,11 @@ pub fn draw_aim(gm: &mut Gm, sim: &Sim, ctx: &PromptCtx, units_imperial: bool) {
         loc("hud_water")
     );
     if m.aim_food > 0.0 {
-        label.push_str(&format!("  -{} {}", gml_string(m.aim_food), loc("hud_food")));
+        label.push_str(&format!(
+            "  -{} {}",
+            gml_string(m.aim_food),
+            loc("hud_food")
+        ));
     }
     gm.text_transformed(tx, ty - 26.0 * ui, &label, 1.0, 1.0);
     gm.halign = FA_LEFT;
@@ -257,12 +255,22 @@ pub fn draw_aim(gm: &mut Gm, sim: &Sim, ctx: &PromptCtx, units_imperial: bool) {
 
 /// Draw_64's buttons: spore / regen prompt and the build menu with its hint. `mouse` is the GUI
 /// cursor for the hover look.
-pub fn draw_buttons(gm: &mut Gm, sim: &mut Sim, cams: &Cameras, loc: &dyn Fn(&str) -> String, mouse: (f64, f64)) {
+pub fn draw_buttons(
+    gm: &mut Gm,
+    sim: &mut Sim,
+    cams: &Cameras,
+    loc: &dyn Fn(&str) -> String,
+    mouse: (f64, f64),
+) {
     let m = &sim.mycelium;
     let (spore, regen, menu) = (m.spore_prompt, m.regen_prompt, m.mushroom_prompt);
     let mut rects: Vec<(BtnRect, bool, bool)> = Vec::new();
     {
-        let ctx = PromptCtx { gm: &*gm, cams, loc };
+        let ctx = PromptCtx {
+            gm: &*gm,
+            cams,
+            loc,
+        };
         if spore {
             let r = spore_button_rect(sim, &ctx);
             let hover = r.contains(mouse.0, mouse.1);
@@ -272,14 +280,17 @@ pub fn draw_buttons(gm: &mut Gm, sim: &mut Sim, cams: &Cameras, loc: &dyn Fn(&st
         if regen {
             let r = regen_button_rect(sim, &ctx);
             let hover = r.contains(mouse.0, mouse.1);
-            let ok = sim.state.state.food
-                >= myco_core::mushrooms::repeller_regen_price(&sim.state);
+            let ok = sim.state.state.food >= myco_core::mushrooms::repeller_regen_price(&sim.state);
             rects.push((r, hover, ok));
         }
     }
     if menu {
         let opts = sim.mycelium.build_options.clone();
-        let ctx = PromptCtx { gm: &*gm, cams, loc };
+        let ctx = PromptCtx {
+            gm: &*gm,
+            cams,
+            loc,
+        };
         let opt_rects: Vec<BtnRect> = opts
             .iter()
             .enumerate()

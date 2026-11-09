@@ -4,7 +4,7 @@
 
 use myco_app::render::mycelium::{
     cells_buffer, growth_bake, live_strands, span_quad, tiles_clear, tiles_step,
-    write_branch_spans, MeshKey, MeshOp, MycBake, Vbuf, V2, CHUNK_CELLS, TILE_BUFFER_MAX,
+    write_branch_spans, MeshKey, MeshOp, MycBake, Vbuf, CHUNK_CELLS, TILE_BUFFER_MAX, V2,
     VERTEX_BYTES,
 };
 use myco_app::render::mycelium_glow::glow_layout;
@@ -120,7 +120,10 @@ fn ribbon_mesh_follows_points() {
     for w in pts.windows(2) {
         for i in 0..=20 {
             let t = i as f64 / 20.0;
-            let (x, y) = (w[0].x + (w[1].x - w[0].x) * t, w[0].y + (w[1].y - w[0].y) * t);
+            let (x, y) = (
+                w[0].x + (w[1].x - w[0].x) * t,
+                w[0].y + (w[1].y - w[0].y) * t,
+            );
             let (px, py) = (x.floor() + 0.5, y.floor() + 0.5);
             let hit = qs
                 .iter()
@@ -151,9 +154,21 @@ fn span_quad_is_two_triangles() {
 fn overlapping_cells_merge_into_one_span_per_line() {
     // three 3-px cells in a row along x: per column (horiz = true) one span each
     let cells = [
-        myco_core::mycelium::Cell { x: 10.0, y: 10.0, w: 3.0 },
-        myco_core::mycelium::Cell { x: 11.0, y: 10.0, w: 3.0 },
-        myco_core::mycelium::Cell { x: 12.0, y: 10.0, w: 3.0 },
+        myco_core::mycelium::Cell {
+            x: 10.0,
+            y: 10.0,
+            w: 3.0,
+        },
+        myco_core::mycelium::Cell {
+            x: 11.0,
+            y: 10.0,
+            w: 3.0,
+        },
+        myco_core::mycelium::Cell {
+            x: 12.0,
+            y: 10.0,
+            w: 3.0,
+        },
     ];
     let mut v = Vec::new();
     assert!(write_branch_spans(&mut v, &cells, true));
@@ -172,12 +187,23 @@ fn overlapping_cells_merge_into_one_span_per_line() {
 #[test]
 fn cells_buffer_is_one_square_per_cell() {
     let cells = [
-        myco_core::mycelium::Cell { x: 10.0, y: 20.0, w: 4.0 },
-        myco_core::mycelium::Cell { x: 30.0, y: 40.0, w: 1.0 },
+        myco_core::mycelium::Cell {
+            x: 10.0,
+            y: 20.0,
+            w: 4.0,
+        },
+        myco_core::mycelium::Cell {
+            x: 30.0,
+            y: 40.0,
+            w: 1.0,
+        },
     ];
     assert!(cells_buffer(&cells, 1, 1).is_none());
     let v = cells_buffer(&cells, 0, 2).unwrap();
-    assert_eq!(quads(&v), vec![(8.0, 18.0, 12.0, 22.0), (30.0, 40.0, 31.0, 41.0)]);
+    assert_eq!(
+        quads(&v),
+        vec![(8.0, 18.0, 12.0, 22.0), (30.0, 40.0, 31.0, 41.0)]
+    );
 }
 
 fn growth(pts: &[Pt], width: f64, raster: bool) -> Growth {
@@ -207,7 +233,10 @@ fn growth(pts: &[Pt], width: f64, raster: bool) -> Growth {
 fn line(x0: f64, y0: f64, len: f64) -> Vec<Pt> {
     vec![
         Pt { x: x0, y: y0 },
-        Pt { x: x0 + len * 0.5, y: y0 + 3.0 },
+        Pt {
+            x: x0 + len * 0.5,
+            y: y0 + 3.0,
+        },
         Pt { x: x0 + len, y: y0 },
     ]
 }
@@ -255,7 +284,8 @@ fn baked_growth_is_filed_under_its_tile_and_merged_after_30_frames() {
 fn unrasterized_growth_is_rasterized_when_baked_and_empty_one_is_not_filed() {
     let mut m = MyceliumRt::default();
     // loaded growths come without cells
-    m.growths.push(growth(&line(5000.0, 3000.0, 80.0), 4.0, false));
+    m.growths
+        .push(growth(&line(5000.0, 3000.0, 80.0), 4.0, false));
     // a single-point strand rasterizes to nothing but its tip
     let mut empty = growth(&line(0.0, 0.0, 10.0), 4.0, false);
     empty.branches[0].points.truncate(1);
@@ -428,4 +458,102 @@ fn button_rect_is_centred_above_the_point_and_clamped() {
     assert_eq!((r.x1, r.y1), (8.0, 8.0));
     let r = button_rect(1920.0, 1080.0, 200.0, 0.0, 1920.0, 1080.0);
     assert_eq!((r.x2, r.y2), (1912.0, 1072.0));
+}
+
+fn real_assets() -> Option<myco_app::assets::GameAssets> {
+    use bevy::prelude::Handle;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../build/assets");
+    if !root.join("sprites.json").exists() {
+        eprintln!("skipped: no build/assets");
+        return None;
+    }
+    Some(
+        myco_app::assets::GameAssets::load(
+            &root,
+            |_| Handle::default(),
+            |_| Handle::default(),
+            |_| Handle::default(),
+        )
+        .unwrap(),
+    )
+}
+
+#[test]
+fn a_click_on_an_in_world_button_becomes_its_command() {
+    use myco_app::camera::Cameras;
+    use myco_app::display::SafeArea;
+    use myco_app::ui::gm_draw::Gm;
+    use myco_app::ui::myc_prompts::{
+        build_button_rect, button_click, spore_button_rect, PromptCtx,
+    };
+    use myco_core::mycelium::BuildOption;
+    use myco_core::sim::{Command, Sim};
+    use myco_core::state::GameMode;
+    let Some(assets) = real_assets() else { return };
+    let mut sim = Sim::new_game(GameMode::Exploration, "", Some(31607));
+    let mut cams = Cameras::new(
+        1920.0,
+        1080.0,
+        1.0,
+        SafeArea {
+            x: 0.0,
+            y: 0.0,
+            w: 1920.0,
+            h: 1080.0,
+        },
+    );
+    cams.set_game_view_center(1000.0, 800.0);
+    {
+        let m = &mut sim.mycelium;
+        m.mushroom_prompt = true;
+        m.build_options = vec![BuildOption::Node, BuildOption::Node];
+        m.build_node_x = 1000.0;
+        m.build_node_y = 800.0;
+        m.spore_prompt = true;
+        m.spore_prompt_x = 600.0;
+        m.spore_prompt_y = 700.0;
+    }
+    let gm = Gm::new(&assets);
+    let loc = |k: &str| k.to_string();
+    let ctx = PromptCtx {
+        gm: &gm,
+        cams: &cams,
+        loc: &loc,
+    };
+    let r0 = build_button_rect(&sim, &ctx, 0, &BuildOption::Node);
+    let r1 = build_button_rect(&sim, &ctx, 1, &BuildOption::Node);
+    // the node is at the GUI centre: option 0 is centred on it, 44 px up, option 1 34 px higher
+    assert!(((r0.x1 + r0.x2) * 0.5 - 960.0).abs() < 1e-9);
+    assert!((r0.y1 - (540.0 - 44.0)).abs() < 1e-9);
+    assert!((r1.y1 - (r0.y1 - 34.0)).abs() < 1e-9);
+    assert_eq!(r0.y2 - r0.y1, 28.0);
+    assert!(r0.label.starts_with("button_add_node  "));
+    assert_eq!(
+        r0.x2 - r0.x1,
+        (gm.string_width(&r0.label) + 18.0).max(110.0)
+    );
+    let mid = |r: &myco_app::ui::myc_prompts::BtnRect| ((r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5);
+    let (x, y) = mid(&r0);
+    assert_eq!(
+        button_click(&sim, &ctx, x, y),
+        Some(Command::MycBuildOption { index: 0 })
+    );
+    let (x, y) = mid(&r1);
+    assert_eq!(
+        button_click(&sim, &ctx, x, y),
+        Some(Command::MycBuildOption { index: 1 })
+    );
+    let rs = spore_button_rect(&sim, &ctx);
+    assert!((rs.y1 - (440.0 - 72.0)).abs() < 1e-9);
+    let (x, y) = mid(&rs);
+    assert_eq!(
+        button_click(&sim, &ctx, x, y),
+        Some(Command::MycReleaseSpores)
+    );
+    // elsewhere: nothing
+    assert_eq!(button_click(&sim, &ctx, 5.0, 1000.0), None);
+    // the menu closed: its buttons no longer catch clicks
+    sim.mycelium.mushroom_prompt = false;
+    let (x, y) = mid(&r0);
+    assert_eq!(button_click(&sim, &ctx, x, y), None);
 }

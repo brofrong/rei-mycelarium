@@ -31,8 +31,8 @@ use bevy::image::ImageSampler;
 use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::prelude::*;
 use bevy::render::render_resource::{
-    AsBindGroup, BlendComponent, BlendFactor, BlendOperation, BlendState,
-    RenderPipelineDescriptor, ShaderType, SpecializedMeshPipelineError, TextureFormat,
+    AsBindGroup, BlendComponent, BlendFactor, BlendOperation, BlendState, RenderPipelineDescriptor,
+    ShaderType, SpecializedMeshPipelineError, TextureFormat,
 };
 use bevy::shader::ShaderRef;
 use bevy::sprite_render::{
@@ -345,7 +345,12 @@ fn draw_glow_system(
     glow: Option<ResMut<MycGlow>>,
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<GlowMaterial>>,
-    mut cameras: Query<(&mut Camera, &mut RenderTarget, &mut Projection, &mut Transform)>,
+    mut cameras: Query<(
+        &mut Camera,
+        &mut RenderTarget,
+        &mut Projection,
+        &mut Transform,
+    )>,
     mut quads: Query<&mut Transform, Without<Camera>>,
 ) {
     let Some(mut glow) = glow else { return };
@@ -508,7 +513,8 @@ fn glow_composite_system(
         0.0
     };
     mat.params.glow = enc(vis("myc_glow_colour")).extend(gs as f32);
-    mat.params.pulse = enc(vis("myc_pulse_colour")).extend(vis("myc_pulse_strength").max(0.0) as f32);
+    mat.params.pulse =
+        enc(vis("myc_pulse_colour")).extend(vis("myc_pulse_strength").max(0.0) as f32);
     let n = rings.len().min(MAX_PULSES);
     mat.params.origin = Vec4::new(
         ox_px as f32,
@@ -517,11 +523,45 @@ fn glow_composite_system(
         n as f32,
     );
     for (i, slot) in mat.params.rings.iter_mut().enumerate() {
-        *slot = rings
-            .get(i)
-            .map_or(Vec4::ZERO, |&(r, a)| Vec4::new(r as f32, a as f32, 0.0, 0.0));
+        *slot = rings.get(i).map_or(Vec4::ZERO, |&(r, a)| {
+            Vec4::new(r as f32, a as f32, 0.0, 0.0)
+        });
     }
     mat.params.mode = Vec4::new(3.0, g.w as f32, g.h as f32, 0.0);
+}
+
+/// `MYCO_PERK=<frame>:<perk>` (development aid for render comparisons, like `MYCO_FORCE_RAIN`):
+/// grant a cave perk (e.g. `purple`, which unlocks the glow on F) before that autopilot frame;
+/// the LÖVE side does the same with `MYCO_PROBE="<frame>|global.cave_perks.<perk>=1"`.
+pub fn parse_perk_hook(s: &str) -> Option<(u64, String)> {
+    let (f, id) = s.split_once(':')?;
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    Some((f.trim().parse().ok()?, id.to_string()))
+}
+
+fn perk_hook(
+    mut sim: ResMut<SimRes>,
+    autopilot: Option<Res<crate::autopilot::Autopilot>>,
+    mut hook: Local<Option<Option<(u64, String)>>>,
+) {
+    let hook = hook.get_or_insert_with(|| {
+        std::env::var("MYCO_PERK")
+            .ok()
+            .and_then(|s| parse_perk_hook(&s))
+    });
+    let (Some((frame, id)), Some(ap)) = (hook.as_ref(), autopilot) else {
+        return;
+    };
+    if ap.frame == *frame {
+        sim.0
+            .state
+            .state
+            .cave_perks
+            .insert(id.clone(), serde_json::Value::from(1));
+    }
 }
 
 pub struct MyceliumGlowPlugin;
@@ -532,6 +572,12 @@ impl Plugin for MyceliumGlowPlugin {
         if !app.is_plugin_added::<Material2dPlugin<GlowMaterial>>() {
             app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
         }
+        app.add_systems(
+            FixedUpdate,
+            perk_hook
+                .in_set(crate::sim_bridge::SimSet::Prepare)
+                .after(crate::autopilot::run_script),
+        );
         app.add_systems(Startup, setup).add_systems(
             PostUpdate,
             (draw_glow_system, glow_composite_system)
@@ -544,6 +590,17 @@ impl Plugin for MyceliumGlowPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn perk_hook_parses_frame_and_perk() {
+        assert_eq!(
+            parse_perk_hook("1300:purple"),
+            Some((1300, "purple".into()))
+        );
+        assert_eq!(parse_perk_hook("x:purple"), None);
+        assert_eq!(parse_perk_hook("12:"), None);
+        assert_eq!(parse_perk_hook("purple"), None);
+    }
 
     #[test]
     fn pulse_ring_ramps_up_to_the_radius_and_down_past_it() {
