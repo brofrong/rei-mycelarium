@@ -35,8 +35,31 @@ function love.mousereleased(x, y, b) if gm then gm.mousereleased(x, y, b) end en
 function love.wheelmoved(x, y) if gm then gm.wheelmoved(x, y) end end
 function love.quit() if gm then return gm.quit() end end
 
+-- MYCO_INPUT="60:move:0.5,0.6;61:down:1;63:up:1;120:key:space" (frame:action:args; move takes
+-- fractions of the application surface rectangle) drives the game for automated checks.
+local script = {}
+for frame_s, action, args in (os.getenv("MYCO_INPUT") or ""):gmatch("(%d+):(%a+):([^;]*)") do
+  script[#script + 1] = { tonumber(frame_s), action, args }
+end
+local function run_script()
+  for _, s in ipairs(script) do
+    if s[1] == frame then
+      local display = require("gm.display")
+      if s[2] == "move" then
+        local fx, fy = s[3]:match("([%d.]+),([%d.]+)")
+        local f = display.fit
+        display.mouse_override = { f.x + f.w * tonumber(fx), f.y + f.h * tonumber(fy) }
+      elseif s[2] == "down" then gm.mousepressed(0, 0, tonumber(s[3]))
+      elseif s[2] == "up" then gm.mousereleased(0, 0, tonumber(s[3]))
+      elseif s[2] == "key" then gm.keypressed(s[3]); gm.keyreleased(s[3])
+      elseif s[2] == "text" then gm.textinput(s[3]) end
+    end
+  end
+end
+
 function love.draw()
   frame = frame + 1
+  if gm then run_script() end
   if demo then demo.draw() else gm.render() end
   if shot_frame and frame == shot_frame then
     love.graphics.captureScreenshot(function(img)

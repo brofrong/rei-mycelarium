@@ -71,7 +71,11 @@ function M.application_position()
   return f.x, f.y, f.x + f.w, f.y + f.h
 end
 
+-- Test autopilot can pin the cursor (window pixels) without moving the real mouse.
+M.mouse_override = nil
+
 local function mouse_px()
+  if M.mouse_override then return M.mouse_override[1], M.mouse_override[2] end
   local mx, my = love.mouse.getPosition()
   if love.graphics.getDimensions() ~= love.graphics.getPixelDimensions() then
     local k = love.window.getDPIScale()
