@@ -363,17 +363,21 @@ pub fn maze_dig_out(m: &mut Maze, dist: &[i64], mut lc: i64, mut lr: i64) {
 pub fn maze_cave_hollows(w: &mut WorldRt, m: &mut Maze, x1: f64, y1: f64, x2: f64, y2: f64) {
     caves::caves_extend(w, x1);
     caves::caves_extend(w, x2);
-    let rects = caves::world_cave_rects(w);
+    let rects: Vec<(f64, f64, f64, f64)> = w
+        .cave_rects()
+        .iter()
+        .map(|r| (r.x1, r.y1, r.x2, r.y2))
+        .collect();
     let pad = wld("caves_clearance_px") + 24.0;
     let (mw, mh) = (m.w, m.h);
-    for r in rects {
-        if r.x2 <= x1 || r.x1 >= x2 || r.y2 <= y1 || r.y1 >= y2 {
+    for (rx1, ry1, rx2, ry2) in rects {
+        if rx2 <= x1 || rx1 >= x2 || ry2 <= y1 || ry1 >= y2 {
             continue;
         }
-        let cx = (r.x1 + r.x2) * 0.5 / 48.0;
-        let cy = (r.y1 + r.y2) * 0.5 / 48.0;
-        let rx = ((r.x2 - r.x1) * 0.5 + pad) / 48.0;
-        let ry = ((r.y2 - r.y1) * 0.5 + pad) / 48.0;
+        let cx = (rx1 + rx2) * 0.5 / 48.0;
+        let cy = (ry1 + ry2) * 0.5 / 48.0;
+        let rx = ((rx2 - rx1) * 0.5 + pad) / 48.0;
+        let ry = ((ry2 - ry1) * 0.5 + pad) / 48.0;
         let phase = maze_rng(m) * stones::PHASE_RANGE;
         let mut mask = vec![false; (mw * mh) as usize];
         let mut yy = (cy - ry * 1.2).floor() - 1.0;

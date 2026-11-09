@@ -102,9 +102,6 @@ pub fn world_obstacles_reach(w: &mut WorldRt, dir: f64, target: f64) -> &[Obstac
 /// The obstacle bands overlapping the chunk (reaching that far on its side of the start).
 /// The copies leave out the cached maze data: `world_paint_maze_part` looks it up by key.
 pub fn world_obstacles_at_chunk(w: &mut WorldRt, ch: &WorldChunkSave) -> Vec<ObstacleSave> {
-    if stones::golden_neutral() {
-        return Vec::new();
-    }
     let cw = w.params.chunk_w as f64;
     let x1 = ch.cx as f64 * cw;
     let x2 = x1 + cw;
@@ -141,9 +138,6 @@ impl ObstacleSave {
 
 /// `world_paint_maze_part(chunk, obstacle)` for a maze obstacle (see `maze::paint_part`).
 pub fn world_paint_maze_part(w: &mut WorldRt, ch: &mut WorldChunkSave, obs: &ObstacleSave) {
-    if stones::golden_neutral() {
-        return;
-    }
     super::maze::paint_part(w, ch, super::maze::MazePart::Maze(obs.key));
 }
 
@@ -154,9 +148,6 @@ pub fn world_paint_maze_part(w: &mut WorldRt, ch: &mut WorldChunkSave, obs: &Obs
 /// none may come near the start.
 pub fn world_paint_surface_wall(w: &mut WorldRt, ch: &mut WorldChunkSave) {
     const SLOPES: [f64; 8] = [0.0, 0.0, -1.0, 1.0, -0.5, 0.5, -0.5, 0.5];
-    if stones::golden_neutral() {
-        return;
-    }
     let cx = ch.cx as f64;
     let cw = w.params.chunk_w as f64;
     let start_x = w.params.start_x;

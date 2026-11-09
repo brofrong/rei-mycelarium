@@ -10,6 +10,7 @@
 //! marks its chunk in `dirty_chunks` (ruling R9a) for the renderer to rebake and clear.
 
 pub mod art;
+pub mod bones;
 pub mod caves;
 pub mod food;
 pub mod gen;
@@ -17,6 +18,8 @@ pub mod hash;
 pub mod lakes;
 pub mod maze;
 pub mod obstacles;
+pub mod perks;
+pub mod relics;
 pub mod soil;
 pub mod stones;
 pub mod survival;
@@ -142,6 +145,8 @@ pub struct WorldRt {
     pub next_stone_uid: u64,
     /// `world_rock_clusters()`'s cache (with each cluster's built data)
     pub rock_clusters: Option<Vec<maze::RockCluster>>,
+    /// runtime cave globals and the cached cave/bone/relic layout (Task 6)
+    pub caves: caves::CaveRt,
 }
 
 impl WorldRt {
@@ -488,6 +493,7 @@ pub fn on_load(sim: &mut Sim) {
     for cx in lake_chunks {
         sim.world.get_chunk(cx);
     }
+    caves::on_load(sim);
 }
 
 /// `save_game`'s world part: the live world into `out.world` (`out.water` is the live

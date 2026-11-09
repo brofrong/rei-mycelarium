@@ -218,8 +218,8 @@ impl WorldRt {
                 continue;
             }
             self.get_chunk(cx);
-            let chunk = &self.chunks[&cx];
             let mut ok = !caves::world_cave_hits(self, x1, y1, x2, y2, None);
+            let chunk = &self.chunks[&cx];
             let mut i = 0;
             while i < chunk.lakes.len() && ok {
                 let l = &chunk.lakes[i];
@@ -380,7 +380,7 @@ impl WorldRt {
     fn paint_layer(&mut self, chunk: &mut WorldChunkSave, layer: i64) {
         caves::caves_extend(self, (chunk.cx as f64 + 0.5) * self.params.chunk_w as f64);
         self.paint_layer_content(chunk, layer);
-        caves::world_paint_bones(self, chunk, layer);
+        super::bones::world_paint_bones(self, chunk, layer);
         caves::world_clear_caves(self, chunk);
         self.survival_thin(chunk);
     }

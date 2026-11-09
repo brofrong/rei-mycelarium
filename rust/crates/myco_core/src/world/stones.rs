@@ -10,7 +10,6 @@ use crate::gml;
 use crate::sim::Sim;
 use crate::state::{StoneCellSave, StoneSave, WorldChunkSave};
 use serde::Deserialize;
-use std::cell::Cell;
 use std::collections::{BTreeMap, HashSet};
 use std::sync::OnceLock;
 
@@ -23,25 +22,6 @@ pub const PHASE_RANGE: f64 = 6.283;
 
 /// A set of stone cells by (col, row): the GML structs keyed by `stone_cell_key`.
 pub type CellSet = HashSet<(i64, i64)>;
-
-// ---------------------------------------------------------------------------------------------
-// golden neutrality (R19)
-
-thread_local! {
-    static GOLDEN_NEUTRAL: Cell<bool> = const { Cell::new(false) };
-}
-
-/// Make this thread's world generation stone-free, like `neutralize_stones()` in
-/// rust/golden/scripts/world_lib.lua: the shared `world_*` goldens were captured that way and
-/// stay so until they are re-captured after Tasks 6 and 7 merge (R19). Tests only.
-#[doc(hidden)]
-pub fn set_golden_neutral(on: bool) {
-    GOLDEN_NEUTRAL.with(|c| c.set(on));
-}
-
-pub(crate) fn golden_neutral() -> bool {
-    GOLDEN_NEUTRAL.with(|c| c.get())
-}
 
 // ---------------------------------------------------------------------------------------------
 // pixel-derived data
@@ -335,9 +315,6 @@ pub fn stones_step(sim: &mut Sim) {
 /// Scatter loose stones on a jittered grid through this layer of the chunk, away from the
 /// start column, water cells, caves, lakes and deposits.
 pub fn world_paint_stones(w: &mut WorldRt, chunk: &mut WorldChunkSave, layer: i64) {
-    if golden_neutral() {
-        return;
-    }
     let p = w.params.clone();
     let tile = p.tile as f64;
     let cw = p.chunk_w as f64;
@@ -481,9 +458,6 @@ pub fn stone_cell_at(chunk: &WorldChunkSave, x: f64, y: f64) -> Option<&StoneCel
 // port: stone_solid_at
 /// A deposit cell's tile is opaque at world (x, y).
 pub fn stone_solid_at(_w: &WorldRt, chunk: &WorldChunkSave, x: f64, y: f64) -> bool {
-    if golden_neutral() {
-        return false;
-    }
     let Some(c) = stone_cell_at(chunk, x, y) else {
         return false;
     };
@@ -498,9 +472,6 @@ pub fn stone_solid_at(_w: &WorldRt, chunk: &WorldChunkSave, x: f64, y: f64) -> b
 // port: world_stone_covers
 /// A deposit cell covers world (x, y) in this chunk.
 pub fn world_stone_covers(_w: &WorldRt, chunk: &WorldChunkSave, x: f64, y: f64) -> bool {
-    if golden_neutral() {
-        return false;
-    }
     stone_cell_at(chunk, x, y).is_some()
 }
 
@@ -1020,7 +991,7 @@ pub fn stone_cut_tunnel(
 /// Deposit blobs in this layer of the chunk: a few tries near the surface, many more (and
 /// bigger) below the deep line.
 pub fn world_paint_stone_deposits(w: &mut WorldRt, ch: &mut WorldChunkSave, layer: i64) {
-    if golden_neutral() || wld("stone_deposits_enabled") <= 0.0 {
+    if wld("stone_deposits_enabled") <= 0.0 {
         return;
     }
     let cw = w.params.chunk_w as f64;
@@ -1092,7 +1063,7 @@ pub fn world_paint_stone_deposits(w: &mut WorldRt, ch: &mut WorldChunkSave, laye
 // port: world_paint_stone_clusters
 /// Elliptic clusters of stone tiles for chunk `cx`, painted into `chunk` where they overlap it.
 pub fn world_paint_stone_clusters(w: &mut WorldRt, chunk: &mut WorldChunkSave, cx: i64) {
-    if golden_neutral() || wld("stones_enabled") <= 0.0 {
+    if wld("stones_enabled") <= 0.0 {
         return;
     }
     let cols = w.params.cols as f64;
@@ -1128,7 +1099,7 @@ pub fn world_paint_stone_clusters(w: &mut WorldRt, chunk: &mut WorldChunkSave, c
 // port: world_paint_stone_pillar
 /// Sometimes a 1-2 tile wide stone pillar down to the hard row in chunk `cx`.
 pub fn world_paint_stone_pillar(w: &mut WorldRt, chunk: &mut WorldChunkSave, cx: i64) {
-    if golden_neutral() || wld("stones_enabled") <= 0.0 {
+    if wld("stones_enabled") <= 0.0 {
         return;
     }
     let cxf = cx as f64;
@@ -1150,8 +1121,5 @@ pub fn world_paint_stone_pillar(w: &mut WorldRt, chunk: &mut WorldChunkSave, cx:
 // port: world_paint_clusters
 /// Rock clusters (`maze`) overlapping this layer of the chunk, each painted once per chunk.
 pub fn world_paint_clusters(w: &mut WorldRt, chunk: &mut WorldChunkSave, layer: i64) {
-    if golden_neutral() {
-        return;
-    }
     super::maze::paint_clusters_in_layer(w, chunk, layer);
 }
