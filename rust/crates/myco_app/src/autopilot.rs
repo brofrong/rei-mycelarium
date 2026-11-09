@@ -32,6 +32,8 @@ pub enum Action {
     KDown(String),
     KUp(String),
     Text(String),
+    /// Rust only: `zoom:<factor>` multiplies the zoom target at the cursor, like the wheel
+    Zoom(f64),
     Quit,
 }
 
@@ -60,6 +62,7 @@ pub fn parse_script(s: &str) -> Vec<(u64, Action)> {
             "kdown" => Some(Action::KDown(args.to_string())),
             "kup" => Some(Action::KUp(args.to_string())),
             "text" => Some(Action::Text(args.to_string())),
+            "zoom" => args.trim().parse().ok().map(Action::Zoom),
             "quit" => Some(Action::Quit),
             _ => None,
         };
@@ -192,6 +195,11 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
             }
         }
         Action::Text(t) => pending.text.push_str(t),
+        Action::Zoom(f) => {
+            if *f > 0.0 {
+                pending.zoom_log += f.ln();
+            }
+        }
         Action::Quit => return true,
     }
     false

@@ -23,6 +23,9 @@ pub struct CameraRt {
     /// step writes it)
     pub view_x: f64,
     pub view_y: f64,
+    /// this step's `boar_shake` offset (`view_x = floor(clamp(x + shake[0]))`); the app's zoomed
+    /// render camera uses the unfloored position
+    pub shake: [f64; 2],
     /// `global.camera_fly`: easing toward an animal marker (Task 21's `camera_fly_to_marker`
     /// starts it and keeps the target in sync with the marker; Task 5's forest step runs it)
     pub fly: Option<CameraFly>,
@@ -47,6 +50,7 @@ impl Default for CameraRt {
             height: 1080.0,
             view_x: 0.0,
             view_y: 0.0,
+            shake: [0.0, 0.0],
             fly: None,
         }
     }

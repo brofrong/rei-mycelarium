@@ -126,7 +126,8 @@ fn zoom_keeps_point_under_cursor() {
 #[test]
 fn zoom_clamped_to_world_bounds() {
     let mut sim = big_colony();
-    // the knots reach the world bottom
+    // a shallow world (the generated one is a million tiles deep) the knots reach the bottom of
+    sim.world.params.bottom_y = sim.world.params.surface_y + 6000.0;
     let bottom = sim.world.params.bottom_y;
     let surface = sim.world.params.surface_y;
     let x = sim.mycelium.x;

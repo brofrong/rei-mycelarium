@@ -817,6 +817,7 @@ pub fn step(sim: &mut Sim, input: &StepInput) {
     let blocking_now = ui_blocking(sim, input);
     let shake = camera::boar_shake(sim, cam_x, cw, blocking_now);
     let cam = &mut sim.camera;
+    cam.shake = shake;
     cam.view_x = gml::clamp(cam.x + shake[0], b.x1, b.x2).floor();
     cam.view_y = gml::clamp(cam.y + shake[1], b.y1, b.y2).floor();
     let (x, y, view_x) = (cam.x, cam.y, cam.view_x);
