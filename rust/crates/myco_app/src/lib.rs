@@ -7,3 +7,4 @@ pub mod camera;
 pub mod display;
 pub mod render;
 pub mod sim_bridge;
+pub mod ui;
