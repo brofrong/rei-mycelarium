@@ -1,49 +1,13 @@
--- Shared helpers for the Task 6 cave golden scripts (not a topic itself). Per ruling R19 the
--- cave references are captured with only the stone entry points neutralized
--- (world_lib.lua neutralize_stones()); world_obstacles_reach and world_rock_clusters stay
--- real, as caves place themselves on mazes and rock clusters.
+-- Shared helpers for the Task 6 cave golden scripts (not a topic itself). Everything is live
+-- (ruling R19 re-capture): caves sit on real mazes and rock clusters.
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
 local C = { L = L }
 
--- the file-local caches (statics) of the cave/bone/relic/cluster functions, emptied so a new
--- world computes them afresh like a new process (the boot world may share the seed)
-local function reset_static(fn, name, fields)
-  local i = 1
-  while true do
-    local n, v = debug.getupvalue(fn, i)
-    if n == nil then error("no upvalue " .. name) end
-    if n == name then
-      for k, x in pairs(fields) do v[k] = x end
-      return
-    end
-    i = i + 1
-  end
-end
-
-function C.reset()
-  reset_static(world_cave_rects, "world_cave_rects_static", { _cache = gm.undefined })
-  reset_static(world_big_bones, "world_big_bones_static", { _cache = gm.undefined, _key = "" })
-  reset_static(world_clear_zones, "world_clear_zones_static", { _cache = gm.undefined, _key = "" })
-  reset_static(world_relics, "world_relics_static", { _for = gm.undefined, _out = gm.array() })
-  reset_static(world_rock_clusters, "world_rock_clusters_static", { _init = false })
-  global.cave_yellow = gm.undefined
-  global.cave_blue_state = gm.undefined
-  global.cave_perks = gm.struct({})
-  global.cave_taken = gm.struct({})
-  global.relic_taken = gm.struct({})
-  global.cave_flash = gm.struct({})
-  global.cave_wrap = gm.struct({})
-  global.cave_popups = gm.array()
-  global.cave_burst_pending = false
-  global.play_frames = 0
-end
+C.reset = L.reset
 
 function C.setup()
-  L.neutralize_stones()
   L.preload()
-  caves_mask_init(global, global)
-  C.reset()
 end
 
 function C.rect(r)

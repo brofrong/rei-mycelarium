@@ -15,48 +15,27 @@
 //! * **Rewards.** Touching a cave grants its perk (`state.cave_perks`, `state.cave_taken`) and
 //!   leaves the runtime flash/wrap/popup/burst globals in [`CaveRt`]; popups hold the text key
 //!   (`perk_<id>`), the app localizes. Caves give perks, not resources, so no
-//!   `SimEvent::Resource` is emitted; the touch sound is `SimEvent::Sound("water_touch")`.
+//!   `SimEvent::Resource` is emitted; the touch sound is `AudioCall::WaterTouch` (cooldown in the
+//!   audio port).
 //! * **Time.** `current_time` (ms) is the sim clock `frame * 1000 / 60`.
 
 // `!(a >= b)` and friends are kept as the original writes them (same result for NaN).
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 
 use super::bones;
+use super::maze;
 use super::obstacles;
-use super::stones::{self, ClusterTier};
+use super::stones::{self, CellSet};
 use super::WorldRt;
 use crate::balance::{gml_truthy, vis, wld, wld_arr};
-use crate::events::{SimEvent, SoundCue};
 use crate::gml;
 use crate::sim::Sim;
 use crate::state::{
     BoneSave, FoodSave, GameState, LakeSave, StoneCellSave, StoneSave, WorldChunkSave,
 };
 use serde::Deserialize;
-use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::OnceLock;
-
-// ---------------------------------------------------------------------------------------------
-// R19: the shared world_* goldens were captured with caves neutralized
-
-thread_local! {
-    static NEUTRAL: Cell<bool> = const { Cell::new(false) };
-}
-
-/// Test hook for ruling R19: on this thread the five cave entry points world generation calls
-/// (`caves_extend`, `world_paint_bones`, `world_clear_caves`, `world_cave_hits`,
-/// `world_cave_solid_any`) behave like `world_lib.lua`'s `neutralize_caves()`, so the Task 5
-/// world references (captured that way) still apply. Removed when the world goldens are
-/// re-captured with everything enabled.
-#[doc(hidden)]
-pub fn neutralize_caves(on: bool) {
-    NEUTRAL.with(|n| n.set(on));
-}
-
-pub(crate) fn neutral() -> bool {
-    NEUTRAL.with(|n| n.get())
-}
 
 // ---------------------------------------------------------------------------------------------
 // definitions
@@ -832,7 +811,7 @@ pub fn world_cave_rects(w: &mut WorldRt) {
         }
     }
     let mut clay = Vec::new();
-    for c in stones::world_rock_clusters(w) {
+    for c in maze::world_rock_clusters(w) {
         let r = CaveHost {
             key: HostKey::Cluster(c.id.clone()),
             x1: c.x1,
@@ -840,11 +819,11 @@ pub fn world_cave_rects(w: &mut WorldRt) {
             x2: c.x2,
             y2: c.y2,
             used: false,
-            cx: (c.col as f64 + 0.5) * cell,
-            cy: (c.row as f64 + 0.5) * cell,
-            r: c.r as f64,
+            cx: (c.col + 0.5) * cell,
+            cy: (c.row + 0.5) * cell,
+            r: c.r,
         };
-        if c.tier == ClusterTier::Clay {
+        if c.tier == "clay" {
             clay.push(r);
         }
     }
@@ -966,7 +945,7 @@ pub fn cave_blue_place(
 /// `caves_extend(x)`: with `caves_blue_more`, add blue caves along the lane toward `x` until it
 /// is `caves_extend_ahead_screens` ahead (world generation calls it for every chunk layer).
 pub fn caves_extend(w: &mut WorldRt, x: f64) {
-    if neutral() || wld("caves_blue_more") <= 0.0 {
+    if wld("caves_blue_more") <= 0.0 {
         return;
     }
     world_cave_rects(w);
@@ -1050,9 +1029,6 @@ pub fn world_cave_hits(
     y2: f64,
     pad: Option<f64>,
 ) -> bool {
-    if neutral() {
-        return false;
-    }
     let m = wld("caves_clearance_px") + pad.unwrap_or(0.0);
     world_clear_zones(w)
         .iter()
@@ -1062,9 +1038,6 @@ pub fn world_cave_hits(
 // port: world_cave_solid_any
 /// `world_cave_solid_any(x, y)`: a cave wall is at this point (tile queries then say stone).
 pub fn world_cave_solid_any(w: &mut WorldRt, x: f64, y: f64) -> bool {
-    if neutral() {
-        return false;
-    }
     world_cave_rects(w);
     w.caves
         .rects
@@ -1095,19 +1068,11 @@ fn bone_outside(r: &[f64; 4], o: &BoneSave) -> bool {
     o.x + o.w <= r[0] || o.x >= r[2] || o.y + o.h <= r[1] || o.y >= r[3]
 }
 
-/// `stone_cell_key(col, row)` (Task 7's; "col:row").
-fn cell_key(col: i64, row: i64) -> String {
-    format!("{col}:{row}")
-}
-
 // port: world_clear_caves
 /// `world_clear_caves(chunk)`: inside every zone (+ clearance) touching the chunk, drop lakes,
 /// foods, stones and bones, turn stone tiles into soil and cut out the stone deposits there
 /// (whole deposits up to `caves_clear_deposit_max_cells`, else just the cell).
 pub fn world_clear_caves(w: &mut WorldRt, ch: &mut WorldChunkSave) {
-    if neutral() {
-        return;
-    }
     let zones = world_clear_zones(w).to_vec();
     let p = &w.params;
     let (tile, sy, cols) = (p.tile as f64, p.surface_y, p.cols);
@@ -1138,15 +1103,15 @@ pub fn world_clear_caves(w: &mut WorldRt, ch: &mut WorldChunkSave) {
                 }
             }
         }
-        let mut cut: BTreeSet<String> = BTreeSet::new();
+        let mut cut = CellSet::new();
         let cells = ch.stone_cells.clone();
         for s in &cells {
             let (sx, syy) = (s.col as f64 * 48.0, s.row as f64 * 48.0);
             if sx + 48.0 <= zx1 || sx >= zx2 || syy + 48.0 <= zy1 || syy >= zy2 {
                 continue;
             }
-            let key = cell_key(s.col, s.row);
-            if cut.contains(&key) {
+            let key = stones::stone_cell_key(s.col, s.row);
+            if cut.contains(&(s.col, s.row)) {
                 continue;
             }
             let mut dep: Vec<StoneCellSave> = vec![s.clone()];
@@ -1155,7 +1120,7 @@ pub fn world_clear_caves(w: &mut WorldRt, ch: &mut WorldChunkSave) {
             while !q.is_empty() && dep.len() as f64 <= max_cells {
                 let cur = q.pop().unwrap();
                 for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let nk = cell_key(cur.col + dx, cur.row + dy);
+                    let nk = stones::stone_cell_key(cur.col + dx, cur.row + dy);
                     let Some(nb) = ch.stone_map.get(&nk) else {
                         continue;
                     };
@@ -1171,19 +1136,19 @@ pub fn world_clear_caves(w: &mut WorldRt, ch: &mut WorldChunkSave) {
                 dep = vec![s.clone()];
             }
             for d in &dep {
-                cut.insert(cell_key(d.col, d.row));
+                cut.insert((d.col, d.row));
             }
         }
         if !cut.is_empty() {
             let keep: Vec<StoneCellSave> = cells
                 .into_iter()
-                .filter(|c| !cut.contains(&cell_key(c.col, c.row)))
+                .filter(|c| !cut.contains(&(c.col, c.row)))
                 .collect();
-            for k in &cut {
-                ch.stone_map.remove(k);
+            for &(c, r) in &cut {
+                ch.stone_map.remove(&stones::stone_cell_key(c, r));
             }
             ch.stone_cells = keep;
-            stones::stone_redress_after_cut(w, ch, &cut);
+            stones::stone_redress_after_cut(w, ch, &mut cut);
         }
     }
 }
@@ -1226,7 +1191,7 @@ pub fn world_area_untouched(w: &WorldRt, x1: f64, y1: f64, x2: f64, _y2: f64, pa
 /// `cave_yellow_pick()` with the mycelium's extreme tips given by `tip(dir)` (what
 /// `mycelium_extreme_tip(dir)` returns).
 pub fn cave_yellow_pick_with(
-    w: &WorldRt,
+    w: &mut WorldRt,
     tip: impl Fn(f64) -> Option<(f64, f64)>,
 ) -> Option<YellowSpot> {
     let sx = w.params.start_x;
@@ -1238,14 +1203,16 @@ pub fn cave_yellow_pick_with(
     } else {
         1.0
     };
-    let clusters = stones::world_rock_clusters(w);
+    maze::world_rock_clusters(w);
+    let w: &WorldRt = w;
+    let clusters = w.rock_clusters.as_deref().unwrap_or_default();
     let mut best = None;
     for t in 0..2 {
         let s = if t == 0 { dir } else { -dir };
         let tx = tip(s).map_or(sx, |p| p.0);
         let need = 0f64.max((tx - sx) * s) + beyond;
         let mut best_d = f64::INFINITY;
-        for c in clusters.iter().filter(|c| c.tier == ClusterTier::Deep) {
+        for c in clusters.iter().filter(|c| c.tier == "deep") {
             let d = ((c.x1 + c.x2) * 0.5 - sx) * s;
             if d >= need
                 && !(d - need >= best_d)
@@ -1261,10 +1228,8 @@ pub fn cave_yellow_pick_with(
     }
     let best = best?;
     Some(YellowSpot {
-        x: (best.col as f64 + 0.5) * 48.0
-            + (w.hash01(5.0, 4.0, 305.0) - 0.5) * best.r as f64 * 48.0 * 0.4,
-        y: (best.row as f64 + 0.5) * 48.0
-            + (w.hash01(5.0, 3.0, 305.0) - 0.5) * best.r as f64 * 48.0 * 0.3,
+        x: (best.col + 0.5) * 48.0 + (w.hash01(5.0, 4.0, 305.0) - 0.5) * best.r * 48.0 * 0.4,
+        y: (best.row + 0.5) * 48.0 + (w.hash01(5.0, 3.0, 305.0) - 0.5) * best.r * 48.0 * 0.3,
         top: best.y1,
         bottom: best.y2,
         cluster: best.id.clone(),
@@ -1279,7 +1244,10 @@ pub fn cave_yellow_pick(sim: &mut Sim) -> Option<YellowSpot> {
         crate::mycelium::mycelium_extreme_tip(sim, -1.0),
         crate::mycelium::mycelium_extreme_tip(sim, 1.0),
     ];
-    cave_yellow_pick_with(&sim.world, |dir| if dir < 0.0 { tips[0] } else { tips[1] })
+    cave_yellow_pick_with(
+        &mut sim.world,
+        |dir| if dir < 0.0 { tips[0] } else { tips[1] },
+    )
 }
 
 // port: cave_yellow_step
@@ -1324,16 +1292,11 @@ pub fn on_load(sim: &mut Sim) {
 // ---------------------------------------------------------------------------------------------
 // rewards
 
-/// `current_time` on the sim clock (ms since the Sim was created).
-pub fn now_ms(sim: &Sim) -> f64 {
-    (sim.frame as f64 * 1000.0 / 60.0).floor()
-}
-
-/// `water_touch_sound(x, y)` (Task 20 owns the cooldown): the touch sound at the point.
+/// `water_touch_sound(x, y)`: the touch sound at the point, as `AudioCall::WaterTouch` so the
+/// audio port applies `water_touch_cooldown_frames` (a cave and a relic touched in one frame
+/// sound once, as in the original).
 pub(crate) fn water_touch_sound(sim: &mut Sim, x: f64, y: f64) {
-    let mut cue = SoundCue::new("water_touch").at(x, y);
-    cue.gain = vis("water_touch_volume");
-    sim.emit(SimEvent::Sound(cue));
+    sim.emit(crate::audio::water_touch(Some((x, y))));
 }
 
 // port: cave_taken
@@ -1402,7 +1365,7 @@ pub fn cave_take(sim: &mut Sim, r: &Cave, x: Option<f64>, y: Option<f64>) {
             m.timer *= k;
         }
     }
-    let now = now_ms(sim);
+    let now = sim.now_ms();
     let c = &mut sim.world.caves;
     c.flash.insert(r.id.clone(), now);
     let fx = x.unwrap_or((r.x1 + r.x2) * 0.5);
@@ -1453,7 +1416,7 @@ pub fn caves_wrap_hit(sim: &mut Sim, x: f64, y: f64, maxd: f64) -> WrapHit {
     };
     let rects = sim.world.cave_rects().to_vec();
     let pad = maxd + vis("cave_branch_max_px") + 8.0;
-    let now = now_ms(sim);
+    let now = sim.now_ms();
     for r in &rects {
         if !(cave_taken(&sim.state, &r.id)
             && !(x < r.x1 - pad)

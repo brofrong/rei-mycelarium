@@ -557,3 +557,54 @@ fn music_volume_change_reaches_the_playing_track() {
     a.audio_set_volume(&mut out, VolumeKind::Music, 0.4);
     assert!(out.take().as_array().unwrap().is_empty());
 }
+
+/// A cave and a relic touched in the same frame: both emit `water_touch`, and the audio port's
+/// `water_touch_cooldown_frames` lets only the first one play (as `water_touch_sound` does).
+#[test]
+fn cave_and_relic_touched_in_one_frame_sound_once() {
+    use myco_core::events::SimEvent;
+    use myco_core::sim::Sim;
+    use myco_core::world::{caves, relics};
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../myco_core/tests/fixtures/exploration.json");
+    let text = std::fs::read_to_string(path).unwrap();
+    let st = serde_json::from_str(text.trim_end_matches('\0')).unwrap();
+    let mut sim = Sim::from_save(st).unwrap();
+    let c = sim.world.cave_rects()[0].clone();
+    let r = relics::world_relics(&mut sim.world)[0].clone();
+    sim.drain_events();
+    let cave = caves::caves_touch_at(&mut sim, (c.x1 + c.x2) * 0.5, (c.y1 + c.y2) * 0.5 + 0.5);
+    let relic = relics::relics_touch_at(&mut sim, (r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5 + 0.5);
+    assert_eq!((cave.len(), relic.len()), (1, 1), "both taken");
+    let events = sim.drain_events();
+    let touches = events
+        .iter()
+        .filter(|e| matches!(e, SimEvent::Audio(AudioCall::WaterTouch { .. })))
+        .count();
+    assert_eq!(touches, 2);
+    let (mut a, mut out) = reset();
+    // the view between the two touches, so neither is culled as off-screen
+    let (mx, my) = (
+        (c.x1 + c.x2 + r.x1 + r.x2) * 0.25,
+        (c.y1 + c.y2 + r.y1 + r.y2) * 0.25,
+    );
+    let span = ((c.x1 - r.x1).abs() + 4000.0).max(1920.0);
+    a.view = Some(ViewRect {
+        x: mx - span * 0.5,
+        y: my - span * 0.5,
+        w: span,
+        h: span,
+    });
+    out.take();
+    for e in &events {
+        a.sim_event(&mut out, e);
+    }
+    let plays = out
+        .take()
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|l| l[0] == "play" && l[2] == "water_touch")
+        .count();
+    assert_eq!(plays, 1, "the second touch falls in the cooldown");
+}
