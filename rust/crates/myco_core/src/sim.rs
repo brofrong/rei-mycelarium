@@ -105,6 +105,14 @@ pub struct StepInput {
     pub tasks_panel_open: bool,
     /// a tasks popup is open (`tasks_popup_open`, app state; ruling R12)
     pub tasks_popup_open: bool,
+    /// the upgrade tree screen is open (`global.menu_open`, HUD state; read by `tutorial_step`)
+    pub menu_open: bool,
+    /// the debug overlay is open (`global.debug_open`, HUD state)
+    pub debug_open: bool,
+    /// the logo screen is shown (`global.logo_open`, app state)
+    pub logo_open: bool,
+    /// the HUD is hidden (`global.hud_hidden`, HUD state; read by `tasks_visible`)
+    pub hud_hidden: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
