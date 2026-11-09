@@ -1,0 +1,17 @@
+[package]
+name = "myco_app"
+description = "Mycelarium Bevy shell: assets, display, cameras, fixed-step simulation bridge"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+bevy = "0.20.1"
+myco_core = { path = "../myco_core" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSScreen", "objc2-core-foundation"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSGeometry"] }
