@@ -1176,7 +1176,7 @@ pub fn backdrop_leaves_step(sim: &mut Sim, cam_x: f64, w: f64) {
             }
             l.drift += (force * push - l.drift) * wind_ease;
             l.phase += 2.4;
-            let spin = gml::degtorad(l.phase).sin() * vis("leaf_spin_degrees");
+            let spin = gml::sin(gml::degtorad(l.phase)) * vis("leaf_spin_degrees");
             let target = if l.change_from >= 0.0 {
                 l.hold_angle
             } else {

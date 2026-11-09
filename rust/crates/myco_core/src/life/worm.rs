@@ -179,7 +179,7 @@ pub fn worm_move(sim: &mut Sim, wi: usize) {
         }
     }
     let phase = sim.life.worms[wi].phase;
-    let mut spd = sim.bal("worm_speed") * (0.3 + 0.7 * 0f64.max(phase.sin()));
+    let mut spd = sim.bal("worm_speed") * (0.3 + 0.7 * 0f64.max(gml::sin(phase)));
     if sim.world.tile_at(head.x, head.y) == Tile::HardSoil {
         spd *= sim.bal("worm_hardsoil_speed");
     }
@@ -217,7 +217,7 @@ pub fn worm_move(sim: &mut Sim, wi: usize) {
     for i in 1..w.body.len() {
         let a = w.body[i - 1];
         let b = w.body[i];
-        let d = seg * (1.0 + st * (w.phase - i as f64 * 0.5).sin());
+        let d = seg * (1.0 + st * gml::sin(w.phase - i as f64 * 0.5));
         let ang = gml::point_direction(a.x, a.y, b.x, b.y);
         w.body[i] = Pt {
             x: a.x + gml::lengthdir_x(d, ang),
@@ -306,7 +306,7 @@ pub fn worm_tendril_make(sim: &mut Sim, wi: usize, hx: f64, hy: f64) -> Vec<Cell
             bestf + s
         };
         let p = worm_body_at(w, idx);
-        let r = (s / span * std::f64::consts::PI * 2.0 * wraps).sin() * th;
+        let r = gml::sin(s / span * std::f64::consts::PI * 2.0 * wraps) * th;
         path.push(Pt {
             x: p.x + gml::lengthdir_x(r, p.dir + 90.0),
             y: p.y + gml::lengthdir_y(r, p.dir + 90.0),

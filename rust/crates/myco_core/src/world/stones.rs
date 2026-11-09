@@ -938,7 +938,7 @@ pub fn stone_cut_round(
             let dx = (c + 0.5 - cx) / rx;
             let dy = (r + 0.5 - cy) / ry;
             let a = dy.atan2(dx);
-            let k = 1.0 + (3.0 * a + p1).sin() * 0.16 + (5.0 * a + p2).sin() * 0.09;
+            let k = 1.0 + gml::sin(3.0 * a + p1) * 0.16 + gml::sin(5.0 * a + p2) * 0.09;
             if dx * dx + dy * dy <= k * k {
                 keys.remove(&(c as i64, r as i64));
             }
@@ -969,10 +969,10 @@ pub fn stone_cut_tunnel(
     let mut i = 0.0;
     while i <= steps {
         let t = i / steps;
-        let wob = (t * PI).sin() * (t * PI * 2.0 + ph).sin() * 0.9;
+        let wob = gml::sin(t * PI) * gml::sin(t * PI * 2.0 + ph) * 0.9;
         let px = gml::lerp(x0, x1, t) + gml::lengthdir_x(wob, dir + 90.0);
         let py = gml::lerp(y0, y1, t) + gml::lengthdir_y(wob, dir + 90.0);
-        let rr = rad * ((t * 9.0 + ph).sin() * 0.5 * 0.35 + 0.9750000000000001);
+        let rr = rad * (gml::sin(t * 9.0 + ph) * 0.5 * 0.35 + 0.9750000000000001);
         let mut r = (py - rr).floor() - 1.0;
         while r <= (py + rr).ceil() + 1.0 {
             let mut c = (px - rr).floor() - 1.0;

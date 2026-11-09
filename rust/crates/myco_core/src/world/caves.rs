@@ -368,7 +368,7 @@ pub fn cave_outline_build(m: &mut CaveMask, id: &str, feet: &[[f64; 2]]) {
             + radii[(a + 2) % 360])
             / 6.0;
         let af = a as f64;
-        rs += out + wob * ((af * 0.13 + 1.7).sin() * 0.4 + (af * 0.37).sin() * 0.6);
+        rs += out + wob * (gml::sin(af * 0.13 + 1.7) * 0.4 + gml::sin(af * 0.37) * 0.6);
         m.outline
             .push([cx + gml::dcos(af) * rs, cy - gml::dsin(af) * rs]);
     }
@@ -431,8 +431,8 @@ pub fn cave_outline_build(m: &mut CaveMask, id: &str, feet: &[[f64; 2]]) {
         while j <= steps {
             let t = j / steps;
             let sway = vis("cave_stem_sway_px")
-                * (t * std::f64::consts::PI * 2.5 + ph).sin()
-                * (t * std::f64::consts::PI).sin();
+                * gml::sin(t * std::f64::consts::PI * 2.5 + ph)
+                * gml::sin(t * std::f64::consts::PI);
             stem.push([
                 gml::lerp(best[0], ft[0], t) + sway,
                 gml::lerp(best[1], ft[1], t),

@@ -205,7 +205,7 @@ pub fn leaves_step(sim: &mut Sim) {
             let push = wind_dir * wind_speed * vis("leaf_wind_push");
             leaf.drift += (push - leaf.drift) * gml::clamp(vis("leaf_wind_ease"), 0.0, 1.0);
             leaf.phase += vis("leaf_sway_speed");
-            let spin = gml::degtorad(leaf.phase).sin() * vis("leaf_spin_degrees");
+            let spin = gml::sin(gml::degtorad(leaf.phase)) * vis("leaf_spin_degrees");
             let target = if leaf.turn >= 0.0 {
                 leaf.hold_angle
             } else {

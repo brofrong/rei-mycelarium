@@ -296,5 +296,5 @@ pub fn experience_price_mult(state: &GameState) -> f64 {
         .iter()
         .filter(|m| m.kind == 6 && !m.stolen)
         .count();
-    bal(game_mode(state), "experience_cost_growth").powf(n as f64)
+    crate::gml::power(bal(game_mode(state), "experience_cost_growth"), n as f64)
 }

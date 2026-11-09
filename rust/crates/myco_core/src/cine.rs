@@ -341,8 +341,8 @@ pub fn cine_shake(sim: &Sim) -> Option<[f64; 2]> {
     let amp = vis("boar_shake_px") * mult * k;
     let t = sim.now_ms();
     let ax = amp * 0.45;
-    let dx = ax * ((t * 0.057 + 1.3).sin() * 0.4 + (t * 0.031).sin() * 0.6);
-    let dy = amp * ((t * 0.089 + 2.1).sin() * 0.4 + (t * 0.043 + 0.7).sin() * 0.6);
+    let dx = ax * (gml::sin(t * 0.057 + 1.3) * 0.4 + gml::sin(t * 0.031) * 0.6);
+    let dy = amp * (gml::sin(t * 0.089 + 2.1) * 0.4 + gml::sin(t * 0.043 + 0.7) * 0.6);
     Some([dx, dy])
 }
 
@@ -462,7 +462,10 @@ fn cine_step_inner(sim: &mut Sim, c: &mut Cine) -> bool {
     c.shake_k = Some(
         1.0 + (vis("migration_mega_shake_max") - 1.0) * cine_span(since, 0.0, seconds - delay),
     );
-    c.white = Some(cine_span(since, vis("migration_white_from"), seconds - delay).powf(1.6));
+    c.white = Some(gml::power(
+        cine_span(since, vis("migration_white_from"), seconds - delay),
+        1.6,
+    ));
     true
 }
 
