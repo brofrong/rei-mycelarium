@@ -300,7 +300,7 @@ fn init_menus(
 
 /// The menu input of this fixed step, from the latched pending input.
 pub fn menu_input(pending: &PendingInput, cams: &Cameras) -> MenuInput {
-    let screen = pending.cursor_override.or(pending.cursor);
+    let screen = pending.screen_cursor();
     let g = screen.map(|p| cams.screen_to_gui(p)).unwrap_or_default();
     MenuInput {
         mx: if screen.is_some() { g.x } else { -1e9 },

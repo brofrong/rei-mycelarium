@@ -654,7 +654,7 @@ fn upgrade_click_marks_the_menu_open_in_the_same_step() {
     let cams = Cameras::default();
     let p = cams.gui_to_screen(DVec2::new((r.x1 + r.x2) / 2.0, (r.y1 + r.y2) / 2.0));
     let mut pending = PendingInput {
-        cursor_override: Some(p.as_vec2()),
+        cursor_override: Some(p),
         ..Default::default()
     };
     pending.mouse_event(MouseButton::Left, true);

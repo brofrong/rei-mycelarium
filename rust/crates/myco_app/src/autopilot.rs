@@ -329,16 +329,13 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
     match a {
         Action::Move(fx, fy) => {
             let p = DVec2::new(pic.x + pic.w * fx, pic.y + pic.h * fy) / sf;
-            pending.cursor_override = Some(p.as_vec2());
+            pending.cursor_override = Some(p);
         }
         Action::GMove(gx, gy) => {
-            pending.cursor_override = Some(cams.gui_to_screen(DVec2::new(*gx, *gy)).as_vec2())
+            pending.cursor_override = Some(cams.gui_to_screen(DVec2::new(*gx, *gy)))
         }
         Action::WMove(dx, dy) => {
-            pending.cursor_override = Some(
-                cams.world_to_screen(anchor + DVec2::new(*dx, *dy))
-                    .as_vec2(),
-            )
+            pending.cursor_override = Some(cams.world_to_screen(anchor + DVec2::new(*dx, *dy)))
         }
         Action::Down(b) | Action::Up(b) => {
             if let Some(mb) = mouse_button(*b) {

@@ -619,7 +619,7 @@ pub struct StepIn {
 
 impl StepIn {
     pub fn from_pending(p: &PendingInput, cams: &Cameras) -> StepIn {
-        let screen = p.cursor_override.or(p.cursor);
+        let screen = p.screen_cursor();
         let (mx, my) = screen.map_or((-1.0, -1.0), |s| cams.screen_to_gui(s).into());
         StepIn {
             mx,

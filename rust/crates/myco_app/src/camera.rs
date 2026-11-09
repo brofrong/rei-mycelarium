@@ -65,6 +65,22 @@ impl Default for Cameras {
     }
 }
 
+/// A screen position (logical window px): Bevy's `Vec2` cursor, or a `DVec2` (the autopilot
+/// keeps its positions in f64, as LÖVE does, so scripted clicks land on the same world point).
+pub trait ScreenPoint {
+    fn screen_dvec2(self) -> DVec2;
+}
+impl ScreenPoint for Vec2 {
+    fn screen_dvec2(self) -> DVec2 {
+        self.as_dvec2()
+    }
+}
+impl ScreenPoint for DVec2 {
+    fn screen_dvec2(self) -> DVec2 {
+        self
+    }
+}
+
 impl Cameras {
     pub fn new(win_w: f64, win_h: f64, scale_factor: f64, safe: SafeArea) -> Cameras {
         let mut c = Cameras {
@@ -201,11 +217,11 @@ impl Cameras {
 
     /// Screen (logical px) → GUI / game view units (`display.mouse_gui`). A degenerate window
     /// maps everything to (-1, -1) like `screen_to_game`.
-    pub fn screen_to_gui(&self, p: Vec2) -> DVec2 {
+    pub fn screen_to_gui(&self, p: impl ScreenPoint) -> DVec2 {
         if self.degenerate() {
             return DVec2::new(-1.0, -1.0);
         }
-        let px = p.as_dvec2() * self.scale_factor;
+        let px = p.screen_dvec2() * self.scale_factor;
         DVec2::new(
             (px.x - self.picture.x) / self.picture.w * self.layout.view_w,
             (px.y - self.picture.y) / self.picture.h * self.layout.view_h,
@@ -221,7 +237,7 @@ impl Cameras {
     }
 
     /// Screen (logical px) → world px through the zoomed render camera.
-    pub fn screen_to_world(&self, p: Vec2) -> DVec2 {
+    pub fn screen_to_world(&self, p: impl ScreenPoint) -> DVec2 {
         self.gui_to_world(self.screen_to_gui(p))
     }
 
@@ -663,7 +679,10 @@ fn zoom_system(
         ((pic.x + pic.w / 2.0) / cams.scale_factor) as f32,
         ((pic.y + pic.h / 2.0) / cams.scale_factor) as f32,
     );
-    let anchor = pending.cursor_override.or(pending.cursor).unwrap_or(centre);
+    let anchor = pending
+        .screen_cursor()
+        .map(|p| p.as_vec2())
+        .unwrap_or(centre);
     let dt = time.delta_secs_f64();
     let base = pending
         .camera_pan

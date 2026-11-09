@@ -1682,7 +1682,7 @@ pub fn tree_step_system(
         capture.tree = false;
         return;
     }
-    let cursor = pending.cursor_override.or(pending.cursor);
+    let cursor = pending.screen_cursor();
     let (mx, my) = cursor
         .map(|p| cams.screen_to_gui(p))
         .map(|g| (g.x, g.y))
@@ -1735,8 +1735,7 @@ fn tree_draw_system(
         screen.view.fit();
     }
     let mouse = pending
-        .cursor_override
-        .or(pending.cursor)
+        .screen_cursor()
         .map(|p| cams.screen_to_gui(p))
         .map(|g| (g.x, g.y))
         .unwrap_or((-1.0, -1.0));

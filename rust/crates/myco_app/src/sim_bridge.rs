@@ -28,8 +28,8 @@ pub struct SimEventMsg(pub SimEvent);
 pub struct PendingInput {
     /// cursor in screen coordinates (logical window px); `None` outside the window
     pub cursor: Option<Vec2>,
-    /// autopilot cursor (screen px) used instead of the real mouse
-    pub cursor_override: Option<Vec2>,
+    /// autopilot cursor (screen px, f64 like LÖVE's) used instead of the real mouse
+    pub cursor_override: Option<bevy::math::DVec2>,
     pub lmb: ButtonState,
     pub rmb: ButtonState,
     pub keys_pressed: Vec<Key>,
@@ -56,6 +56,11 @@ pub struct PendingInput {
 }
 
 impl PendingInput {
+    /// The cursor the step sees (screen px): the autopilot's, else the real mouse.
+    pub fn screen_cursor(&self) -> Option<bevy::math::DVec2> {
+        self.cursor_override.or(self.cursor.map(|p| p.as_dvec2()))
+    }
+
     pub fn button(&mut self, b: MouseButton) -> Option<&mut ButtonState> {
         match b {
             MouseButton::Left => Some(&mut self.lmb),
@@ -98,7 +103,7 @@ impl PendingInput {
             // first, so the logic camera has moved before anything in the step reads it
             self.commands.insert(0, Command::CameraPan { x, y });
         }
-        let screen = self.cursor_override.or(self.cursor);
+        let screen = self.screen_cursor();
         let input = StepInput {
             cursor: screen.map(|p| cams.screen_to_world(p).into()),
             cursor_gui: screen.map(|p| cams.screen_to_gui(p).into()),

@@ -340,8 +340,7 @@ pub fn button_click(sim: &Sim, ctx: &PromptCtx, gx: f64, gy: f64) -> Option<Comm
 
 fn gui_mouse(pending: &PendingInput, cams: &Cameras) -> Option<(f64, f64)> {
     pending
-        .cursor_override
-        .or(pending.cursor)
+        .screen_cursor()
         .map(|p| cams.screen_to_gui(p))
         .map(|g| (g.x, g.y))
 }
