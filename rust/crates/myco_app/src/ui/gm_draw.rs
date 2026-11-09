@@ -105,20 +105,6 @@ pub enum DrawItem {
     },
 }
 
-/// Bevy blends in linear light, GameMaker/LÖVE in sRGB: a translucent black veil (the tree
-/// screen's 0.86 backdrop) looks much lighter in linear space. For pure black the sRGB result
-/// `dst·(1 − a)` is reproduced exactly by `a' = 1 − (1 − a)^2.2`; other colours keep `a`.
-///
-/// TODO(R21): only corrects `col == 0`. T13 switches blending to sRGB space (ruling R21); once
-/// that lands, remove `gamma_alpha` (it would double-correct the veil).
-pub fn gamma_alpha(col: f64, alpha: f64) -> f64 {
-    if col == 0.0 {
-        1.0 - (1.0 - alpha.clamp(0.0, 1.0)).powf(2.2)
-    } else {
-        alpha
-    }
-}
-
 /// Painter state and output for one frame.
 pub struct Gm<'a> {
     pub assets: &'a GameAssets,
@@ -171,12 +157,8 @@ impl<'a> Gm<'a> {
             .iter()
             .map(|&(x, y, col, alpha)| {
                 let (x, y) = self.tf(x, y);
-                Vert {
-                    x,
-                    y,
-                    col,
-                    alpha: gamma_alpha(col, alpha),
-                }
+                // blending is in sRGB space (camera::COMPOSITING), so alpha is used as is
+                Vert { x, y, col, alpha }
             })
             .collect();
         match self.items.last_mut() {
@@ -564,10 +546,32 @@ struct GuiTextSlot;
 
 #[derive(Resource, Default)]
 struct GuiPools {
-    meshes: Vec<(Entity, Handle<Mesh>)>,
+    meshes: Vec<GuiMeshPoolSlot>,
     quads: Vec<Entity>,
     texts: Vec<Entity>,
     material: Option<Handle<GmBlend>>,
+}
+
+/// A pooled GUI mesh entity, its mesh, and whether the mesh holds only the invisible
+/// placeholder (`empty_colour_mesh`). The flag is explicit: a real single triangle also has
+/// three vertices.
+#[derive(Clone, Debug)]
+pub struct GuiMeshPoolSlot {
+    pub entity: Entity,
+    pub mesh: Handle<Mesh>,
+    pub empty: bool,
+}
+
+/// Give every spare slot the placeholder geometry once (spares stay visible and draw nothing).
+pub fn reset_spare_gui_meshes(spares: &mut [GuiMeshPoolSlot], meshes: &mut Assets<Mesh>) {
+    for slot in spares {
+        if !slot.empty {
+            if let Some(mut m) = meshes.get_mut(&slot.mesh) {
+                *m = empty_colour_mesh();
+            }
+            slot.empty = true;
+        }
+    }
 }
 
 pub struct GuiDrawPlugin;
@@ -596,7 +600,7 @@ fn paint_gui(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GmBlend>>,
     mut q_mesh: Query<
-        (&mut Transform, &mut Visibility),
+        &mut Transform,
         (
             With<GuiMeshSlot>,
             Without<GuiQuadSlot>,
@@ -604,7 +608,7 @@ fn paint_gui(
         ),
     >,
     mut q_quad: Query<
-        (&mut Sprite, &mut Transform, &mut Visibility),
+        (&mut Sprite, &mut Transform),
         (
             With<GuiQuadSlot>,
             Without<GuiMeshSlot>,
@@ -612,13 +616,7 @@ fn paint_gui(
         ),
     >,
     mut q_text: Query<
-        (
-            &mut Text2d,
-            &mut TextFont,
-            &mut TextColor,
-            &mut Transform,
-            &mut Visibility,
-        ),
+        (&mut Text2d, &mut TextFont, &mut TextColor, &mut Transform),
         (
             With<GuiTextSlot>,
             Without<GuiMeshSlot>,
@@ -649,15 +647,22 @@ fn paint_gui(
                             GuiMeshSlot,
                         ))
                         .id();
-                    pools.meshes.push((e, h));
+                    pools.meshes.push(GuiMeshPoolSlot {
+                        entity: e,
+                        mesh: h,
+                        empty: true,
+                    });
                 }
-                let (e, h) = pools.meshes[mi].clone();
-                if let Some(m) = meshes.get_mut(&h) {
+                let slot = &mut pools.meshes[mi];
+                if let Some(m) = meshes.get_mut(&slot.mesh) {
                     colour_mesh(m.into_inner(), verts);
                 }
-                if let Ok((mut tf, mut vis)) = q_mesh.get_mut(e) {
-                    tf.translation.z = z;
-                    vis.set_if_neq(Visibility::Visible);
+                slot.empty = false;
+                let e = slot.entity;
+                if let Ok(mut tf) = q_mesh.get_mut(e) {
+                    if tf.translation.z != z {
+                        tf.translation.z = z;
+                    }
                 }
                 mi += 1;
             }
@@ -693,11 +698,10 @@ fn paint_gui(
                         ))
                         .id();
                     pools.quads.push(e);
-                } else if let Ok((mut s, mut tf, mut vis)) = q_quad.get_mut(pools.quads[qi]) {
+                } else if let Ok((mut s, mut tf)) = q_quad.get_mut(pools.quads[qi]) {
                     s.set_if_neq(sprite);
                     let t = Transform::from_translation(pos);
                     tf.set_if_neq(t);
-                    vis.set_if_neq(Visibility::Visible);
                 }
                 qi += 1;
             }
@@ -734,9 +738,7 @@ fn paint_gui(
                         ))
                         .id();
                     pools.texts.push(e);
-                } else if let Ok((mut t, mut f, mut c, mut tf, mut vis)) =
-                    q_text.get_mut(pools.texts[ti])
-                {
+                } else if let Ok((mut t, mut f, mut c, mut tf)) = q_text.get_mut(pools.texts[ti]) {
                     if t.0 != *text {
                         t.0 = text.clone();
                     }
@@ -745,25 +747,64 @@ fn paint_gui(
                     }
                     c.set_if_neq(tcol);
                     tf.set_if_neq(pos);
-                    vis.set_if_neq(Visibility::Visible);
                 }
                 ti += 1;
             }
         }
     }
-    for (e, _) in &pools.meshes[mi..] {
-        if let Ok((_, mut vis)) = q_mesh.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
-        }
-    }
+    // Spare slots stay visible and draw nothing (empty geometry, transparent sprite, empty
+    // text): no Visibility churn on pooled entities.
+    reset_spare_gui_meshes(&mut pools.meshes[mi..], &mut meshes);
     for e in &pools.quads[qi..] {
-        if let Ok((_, _, mut vis)) = q_quad.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
+        if let Ok((mut s, _)) = q_quad.get_mut(*e) {
+            if s.color != Color::NONE {
+                s.color = Color::NONE;
+            }
         }
     }
     for e in &pools.texts[ti..] {
-        if let Ok((_, _, _, _, mut vis)) = q_text.get_mut(*e) {
-            vis.set_if_neq(Visibility::Hidden);
+        if let Ok((mut t, _, _, _)) = q_text.get_mut(*e) {
+            if !t.0.is_empty() {
+                t.0.clear();
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A slot that drew one real triangle (three vertices, like the tasks-panel arrow) and then
+    /// becomes spare must get the placeholder geometry, not keep its stale triangle.
+    #[test]
+    fn spare_slot_after_a_single_triangle_gets_the_placeholder() {
+        let mut meshes = Assets::<Mesh>::default();
+        let mut m = empty_colour_mesh();
+        let v = |x, y| Vert {
+            x,
+            y,
+            col: 16777215.0,
+            alpha: 1.0,
+        };
+        colour_mesh(&mut m, &[v(10.0, 10.0), v(30.0, 10.0), v(20.0, 30.0)]);
+        assert_eq!(m.count_vertices(), 3);
+        let mut slots = vec![GuiMeshPoolSlot {
+            entity: Entity::PLACEHOLDER,
+            mesh: meshes.add(m),
+            empty: false,
+        }];
+        reset_spare_gui_meshes(&mut slots, &mut meshes);
+        assert!(slots[0].empty);
+        let got = meshes.get(&slots[0].mesh).unwrap();
+        let want = empty_colour_mesh();
+        assert_eq!(
+            format!("{:?}", got.attribute(Mesh::ATTRIBUTE_POSITION)),
+            format!("{:?}", want.attribute(Mesh::ATTRIBUTE_POSITION))
+        );
+        assert_eq!(
+            format!("{:?}", got.attribute(Mesh::ATTRIBUTE_COLOR)),
+            format!("{:?}", want.attribute(Mesh::ATTRIBUTE_COLOR))
+        );
     }
 }

@@ -22,7 +22,7 @@ pub fn length_text(units_imperial: bool, cm: f64, loc: &dyn Fn(&str) -> String) 
 }
 
 /// `string(x)` of a whole number (GML prints integers without decimals).
-pub(crate) fn gml_string(x: f64) -> String {
+pub fn gml_string(x: f64) -> String {
     if x == x.trunc() && x.abs() < 1e15 {
         format!("{}", x as i64)
     } else {

@@ -45,6 +45,12 @@ pub const Z_WEATHER_FRONT: f32 = 880.0;
 pub const Z_WEATHER_SPLASHES: f32 = 900.0;
 /// obj_game Draw_77 (post) and later world-space effects
 pub const Z_POST: f32 = 920.0;
+/// Task 14, obj_mycelium_controller Draw_64 drawn in world space (so the zoom applies): the
+/// original draws the hyphae, spores and knots on the GUI surface, over the whole world, and
+/// composites the glow (`myc_glow_composite`, obj_game Draw_75) just below that surface.
+pub const Z_MYC_GLOW: f32 = 940.0;
+pub const Z_MYC_STRANDS: f32 = 950.0;
+pub const Z_MYC_KNOTS: f32 = 960.0;
 
 /// z of the `i`-th item drawn in the layer starting at `base`.
 pub fn z_at(base: f32, i: usize) -> f32 {

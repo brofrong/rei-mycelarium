@@ -241,9 +241,9 @@ fn spawn_weather_meshes(
         let mut e = commands.spawn((
             Mesh2d(meshes.add(empty_colour_mesh())),
             Transform::from_xyz(0.0, 0.0, z),
-            Visibility::Hidden,
             NoFrustumCulling,
             kind,
+            WeatherEmpty(true),
         ));
         if kind == WeatherMesh::Gloom {
             e.insert(MeshMaterial2d(mul.clone()));
@@ -260,7 +260,7 @@ pub fn weather_draw(
     sim: Res<SimRes>,
     cams: Res<Cameras>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut q: Query<(&WeatherMesh, &Mesh2d, &mut Visibility)>,
+    mut q: Query<(&WeatherMesh, &Mesh2d, &mut WeatherEmpty)>,
 ) {
     let w = &sim.0.weather;
     let rv = cams.render_view();
@@ -279,28 +279,34 @@ pub fn weather_draw(
             p(x1, y2),
         ]
     });
-    for (kind, mesh, mut vis) in &mut q {
+    for (kind, mesh, mut empty) in &mut q {
         let verts = match kind {
             WeatherMesh::Back => &back,
             WeatherMesh::Gloom => &gloom,
             WeatherMesh::Front => &front.bands,
             WeatherMesh::Splashes => &front.splashes,
         };
-        let want = if verts.is_empty() {
-            Visibility::Hidden
+        // the entities stay visible: an empty layer gets the invisible degenerate triangle once
+        // (no Visibility churn on pooled meshes)
+        if verts.is_empty() {
+            if !empty.0 {
+                if let Some(mut m) = meshes.get_mut(&mesh.0) {
+                    *m = empty_colour_mesh();
+                }
+                empty.0 = true;
+            }
         } else {
-            Visibility::Inherited
-        };
-        if *vis != want {
-            *vis = want;
-        }
-        if !verts.is_empty() {
             if let Some(mut m) = meshes.get_mut(&mesh.0) {
                 colour_mesh(&mut m, verts);
             }
+            empty.0 = false;
         }
     }
 }
+
+/// The mesh holds only the degenerate triangle.
+#[derive(Component)]
+pub struct WeatherEmpty(pub bool);
 
 /// Weather rendering: blend materials, the four meshes, the per-frame rebuild.
 pub struct WeatherRenderPlugin;

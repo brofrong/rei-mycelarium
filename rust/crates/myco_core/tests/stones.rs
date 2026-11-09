@@ -709,6 +709,24 @@ fn stone_cell_band_is_optional() {
 }
 
 #[test]
+fn stone_cell_deep_is_optional() {
+    // an old cell without "deep" stays without it (the renderer falls back to the cell's row);
+    // a present value round-trips byte for byte
+    let old = r#"{"col":3,"row":20,"tc":3,"tr":3}"#;
+    let c: myco_core::state::StoneCellSave = serde_json::from_str(old).unwrap();
+    assert_eq!(c.deep, None);
+    assert_eq!(serde_json::to_string(&c).unwrap(), old);
+    for text in [
+        r#"{"band":1,"col":3,"deep":false,"row":20,"tc":3,"tr":3}"#,
+        r#"{"band":0,"col":3,"deep":true,"row":20,"tc":3,"tr":3}"#,
+    ] {
+        let c: myco_core::state::StoneCellSave = serde_json::from_str(text).unwrap();
+        assert!(c.deep.is_some());
+        assert_eq!(serde_json::to_string(&c).unwrap(), text);
+    }
+}
+
+#[test]
 fn loading_stops_moving_stones() {
     let mut sim = new_world(31607);
     let s = sim.world.get_chunk(0).stones[0].clone();

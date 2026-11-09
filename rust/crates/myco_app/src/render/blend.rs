@@ -4,7 +4,8 @@
 //! [`GmBlend`] uses Bevy's default mesh2d shaders (vertex colour out), sorted with sprites by z in
 //! the transparent 2D phase; only the blend state differs per [`GmBlendMode`].
 //!
-//! Vertex colours go in through [`colour_mesh`] (GameMaker BGR + alpha, sRGB).
+//! Vertex colours go in through [`colour_mesh`] (GameMaker BGR + alpha, sRGB). Blending happens
+//! in sRGB space (`camera::COMPOSITING`), as in GameMaker.
 
 use crate::render::sprite::gm_colour_f;
 use bevy::asset::RenderAssetUsages;
@@ -43,6 +44,9 @@ pub enum GmBlendMode {
     Multiply,
     /// `bm_normal`: `dst = src·a + dst·(1 − a)` (GUI primitives, Task 19)
     Alpha,
+    /// opaque geometry that also writes its alpha (Task 14: the hyphae, which the glow buffer
+    /// reads by alpha): `dst = src`
+    Opaque,
 }
 
 impl GmBlendMode {
@@ -63,6 +67,12 @@ impl GmBlendMode {
                 dst_factor: BlendFactor::OneMinusSrcAlpha,
                 operation: BlendOperation::Add,
             },
+            GmBlendMode::Opaque => {
+                return BlendState {
+                    color: BlendComponent::REPLACE,
+                    alpha: BlendComponent::REPLACE,
+                }
+            }
         };
         BlendState {
             color,
@@ -86,9 +96,10 @@ impl From<&GmBlend> for GmBlendKey {
 
 /// Vertex-coloured mesh material with a GameMaker blend mode.
 ///
-/// ONE material type on purpose: with two custom `Material2dPlugin`s registered, Bevy 0.20 stops
-/// drawing sprites whose `Sprite` component is written every frame (reproduced in Task 16).
-/// Render tasks needing another blend mode should add a [`GmBlendMode`] variant, not a material.
+/// Other render tasks may register their own `Material2d` types: the Task 16 "two materials stop
+/// sprites drawing" symptom was the world camera's stale projection area (fixed in
+/// `camera::apply_cameras`, R21a; `tests/render_pipeline.rs` checks two custom materials).
+/// Custom fragment shaders must encode their output under `SRGB_OUTPUT` (see `camera::COMPOSITING`).
 #[derive(Asset, TypePath, AsBindGroup, Clone, Debug, Default)]
 #[bind_group_data(GmBlendKey)]
 pub struct GmBlend {

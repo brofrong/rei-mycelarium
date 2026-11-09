@@ -6,7 +6,12 @@
 //!   1 left, 2 right), `key name` (press and release), `kdown name`, `kup name`, `text s`, `quit`.
 //! - `MYCO_DUMP=<frame>:<file.json>` writes what a save would contain (`Sim::to_save`, the save
 //!   JSON text without the trailing NUL) and quits.
-//! - `MYCO_SHOT=<file.png>:<frame>` saves a screenshot at that frame and quits.
+//! - `MYCO_SHOT=<file.png>:<frame>` saves a screenshot at that frame and quits. A frame macOS
+//!   did not let us render (window occluded: no swap-chain texture, so Bevy's capture comes back
+//!   all zeros, alpha included) is never written; the shot waits for the next rendered frame,
+//!   prints which frame it took, and fails after [`SHOT_GIVE_UP_FRAMES`]. With
+//!   `MYCO_SHOT_EXACT=1` a late capture is not written and the app exits with an error, so
+//!   comparison runs never compare different frames.
 //! - `MYCO_SEED=<int>` fixes the world seed (read in `main`, see [`seed_from_env`]).
 //! - `MYCO_FOCUS` treats the window as focused (no pause on focus loss).
 //!
@@ -115,6 +120,30 @@ pub struct Autopilot {
     pub dump: Option<(u64, PathBuf)>,
     pub shot: Option<(PathBuf, u64)>,
     shot_requested: bool,
+    /// the window is occluded (`WindowOccluded`): frames are not rendered
+    occluded: bool,
+    occluded_logged: bool,
+    /// `MYCO_SHOT_EXACT=1`: only the requested frame is acceptable
+    pub shot_exact: bool,
+}
+
+/// How many frames past the requested one a screenshot may wait for a rendered frame.
+pub const SHOT_GIVE_UP_FRAMES: u64 = 600;
+
+/// Whether a capture taken at frame `at` may stand for the requested `frame`: always by default,
+/// only the exact frame with `MYCO_SHOT_EXACT=1`.
+pub fn shot_frame_acceptable(exact: bool, at: u64, frame: u64) -> bool {
+    !exact || at == frame
+}
+
+/// Whether a window capture holds a rendered frame. Every camera on the window clears or
+/// draws opaque pixels; an all-transparent capture means the frame was never rendered (Bevy
+/// skips the swap-chain texture of an occluded window, `CurrentSurfaceTexture::Occluded`, yet
+/// still delivers the untouched capture buffer).
+pub fn capture_rendered(img: &Image) -> bool {
+    img.data
+        .as_ref()
+        .is_some_and(|d| d.as_chunks::<4>().0.iter().any(|p| p[3] != 0))
 }
 
 impl Autopilot {
@@ -128,6 +157,9 @@ impl Autopilot {
             dump: var("MYCO_DUMP").and_then(|s| parse_dump(&s)),
             shot: var("MYCO_SHOT").and_then(|s| parse_shot(&s)),
             shot_requested: false,
+            occluded: false,
+            occluded_logged: false,
+            shot_exact: var("MYCO_SHOT_EXACT").is_some_and(|v| v == "1"),
         }
     }
 }
@@ -147,7 +179,7 @@ impl Plugin for AutopilotPlugin {
                     dump_state.in_set(SimSet::After),
                 ),
             )
-            .add_systems(Update, take_screenshot);
+            .add_systems(Update, (track_occlusion, take_screenshot).chain());
     }
 }
 
@@ -242,6 +274,15 @@ fn dump_state(ap: Res<Autopilot>, sim: Res<SimRes>, mut exit: MessageWriter<AppE
     exit.write(AppExit::Success);
 }
 
+fn track_occlusion(
+    mut msgs: MessageReader<bevy::window::WindowOccluded>,
+    mut ap: ResMut<Autopilot>,
+) {
+    for m in msgs.read() {
+        ap.occluded = m.occluded;
+    }
+}
+
 fn take_screenshot(mut ap: ResMut<Autopilot>, mut commands: Commands) {
     let Some((path, frame)) = ap.shot.clone() else {
         return;
@@ -249,22 +290,98 @@ fn take_screenshot(mut ap: ResMut<Autopilot>, mut commands: Commands) {
     if ap.shot_requested || ap.frame < frame {
         return;
     }
-    ap.shot_requested = true;
-    commands
-        .spawn(Screenshot::primary_window())
-        .observe(save_to_disk(path.clone()))
-        .observe(
-            move |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
-                println!("SHOT wrote {}", path.display());
-                exit.write(AppExit::Success);
-            },
+    if ap.frame > frame + SHOT_GIVE_UP_FRAMES {
+        eprintln!(
+            "SHOT failed: no rendered frame between {frame} and {} (window occluded)",
+            ap.frame
         );
+        commands.write_message(AppExit::error());
+        ap.shot = None;
+        return;
+    }
+    if ap.occluded {
+        if !ap.occluded_logged {
+            eprintln!("SHOT waiting: window occluded at frame {}", ap.frame);
+            ap.occluded_logged = true;
+        }
+        return;
+    }
+    ap.shot_requested = true;
+    // the capture is of this frame; the observer runs a few frames later (async readback)
+    let at = ap.frame;
+    let exact = ap.shot_exact;
+    let mut save = save_to_disk(path.clone());
+    commands.spawn(Screenshot::primary_window()).observe(
+        move |ev: On<ScreenshotCaptured>,
+              mut ap: ResMut<Autopilot>,
+              mut exit: MessageWriter<AppExit>| {
+            if !capture_rendered(&ev.image) {
+                eprintln!(
+                    "SHOT discarded: frame {at} was not rendered (window occluded), retrying"
+                );
+                ap.shot_requested = false;
+                return;
+            }
+            if !shot_frame_acceptable(exact, at, frame) {
+                eprintln!(
+                    "SHOT failed: frame {frame} was not rendered (window occluded); the first \
+                     rendered frame is {at} and MYCO_SHOT_EXACT=1 forbids a late capture"
+                );
+                exit.write(AppExit::error());
+                return;
+            }
+            save(ev);
+            if at == frame {
+                println!("SHOT wrote {}", path.display());
+            } else {
+                println!(
+                    "SHOT wrote {} (frame {at}, requested {frame})",
+                    path.display()
+                );
+            }
+            exit.write(AppExit::Success);
+        },
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::display::SafeArea;
+
+    #[test]
+    fn exact_shots_refuse_a_later_frame() {
+        assert!(
+            shot_frame_acceptable(false, 605, 600),
+            "default: a late capture is kept"
+        );
+        assert!(shot_frame_acceptable(true, 600, 600));
+        assert!(
+            !shot_frame_acceptable(true, 605, 600),
+            "MYCO_SHOT_EXACT=1: late fails"
+        );
+    }
+
+    #[test]
+    fn unrendered_capture_is_detected() {
+        use bevy::asset::RenderAssetUsages;
+        use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+        let img = |px: [u8; 4]| {
+            Image::new_fill(
+                Extent3d {
+                    width: 4,
+                    height: 2,
+                    depth_or_array_layers: 1,
+                },
+                TextureDimension::D2,
+                &px,
+                TextureFormat::Bgra8UnormSrgb,
+                RenderAssetUsages::MAIN_WORLD,
+            )
+        };
+        assert!(!capture_rendered(&img([0, 0, 0, 0])), "never rendered");
+        assert!(capture_rendered(&img([0, 0, 0, 255])), "rendered black");
+    }
 
     #[test]
     fn parses_main_lua_format() {

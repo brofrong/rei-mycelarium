@@ -57,6 +57,25 @@ impl PagePixels {
         Ok(PagePixels { pages })
     }
 
+    /// RGBA of pixel (x, y) of a sprite frame in untrimmed coordinates (transparent outside the
+    /// trimmed rectangle).
+    pub fn sprite_rgba(&self, def: &SpriteDef, frame: usize, x: i64, y: i64) -> [u8; 4] {
+        let Some(fr) = def.frames.get(frame) else {
+            return [0; 4];
+        };
+        let (tx, ty) = (x - fr.trim_offset.x as i64, y - fr.trim_offset.y as i64);
+        let size = fr.rect.size();
+        if tx < 0 || ty < 0 || tx >= size.x as i64 || ty >= size.y as i64 {
+            return [0; 4];
+        }
+        let Some((w, _h, data)) = self.pages.get(&fr.page_index) else {
+            return [0; 4];
+        };
+        let o =
+            (((fr.rect.min.y as i64 + ty) * *w as i64 + fr.rect.min.x as i64 + tx) * 4) as usize;
+        [data[o], data[o + 1], data[o + 2], data[o + 3]]
+    }
+
     /// Alpha (0..255) of pixel (x, y) of a sprite frame in untrimmed coordinates; 0 outside the
     /// trimmed rectangle (what drawing the sprite onto a cleared surface leaves).
     pub fn sprite_alpha(&self, def: &SpriteDef, frame: usize, x: i64, y: i64) -> u8 {
