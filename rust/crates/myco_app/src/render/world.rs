@@ -1633,9 +1633,7 @@ pub fn cave_popups_draw(
     caves: &mut CaveRt,
     loc: &dyn Fn(&str) -> String,
     now: f64,
-    vx: f64,
-    vy: f64,
-    gui_scale: f64,
+    to_gui: &dyn Fn(f64, f64) -> (f64, f64),
     gui_w: f64,
 ) {
     let ms = vis("cave_popup_ms");
@@ -1648,8 +1646,9 @@ pub fn cave_popups_draw(
             continue;
         }
         let a = (k * 6.0).min(1.0) * ((1.0 - k) * 3.0).min(1.0);
-        let px = (p.x - vx) * gui_scale;
-        let py = (p.y - vy - vis("cave_popup_rise_px") * k) * gui_scale;
+        // the original: (x - camera_view_x, y - camera_view_y - rise) at 1×; zoomed, through
+        // the render camera
+        let (px, py) = to_gui(p.x, p.y - vis("cave_popup_rise_px") * k);
         let text = loc(&p.text);
         let sc = goal_fit(
             &Measure(g),
@@ -2242,7 +2241,7 @@ fn draw_world_gui(
     g.font = fonts
         .map(|f| f.font.clone())
         .unwrap_or_else(|| UiFont::Gm("Font1".into()));
-    let (vx, vy) = crate::ui::hud::view_xy(&cams);
+    let to_gui = crate::ui::hud::world_to_gui_fn(&cams);
     let loc = |k: &str| -> String {
         locale
             .as_ref()
@@ -2254,9 +2253,7 @@ fn draw_world_gui(
         &mut sim.world.caves,
         &loc,
         now,
-        vx,
-        vy,
-        1.0,
+        &to_gui,
         cams.layout.view_w,
     );
     draw.lists

@@ -1478,6 +1478,20 @@ pub fn cave_hover_tip(
     vx: f64,
     vy: f64,
 ) -> String {
+    cave_hover_tip_world(sim, mx, my, ix, iy, mx + vx, my + vy)
+}
+
+/// [`cave_hover_tip`] with the cursor's world point given directly (the app's zoomed render
+/// camera maps GUI to world with a scale; at 1× it is `(mx + vx, my + vy)`).
+pub fn cave_hover_tip_world(
+    sim: &mut Sim,
+    mx: f64,
+    my: f64,
+    ix: f64,
+    iy: f64,
+    wx: f64,
+    wy: f64,
+) -> String {
     let px = vis("cave_icon_px");
     let gap = vis("cave_icon_gap_px");
     let mut x = ix;
@@ -1489,7 +1503,6 @@ pub fn cave_hover_tip(
             x += px + gap;
         }
     }
-    let (wx, wy) = (mx + vx, my + vy);
     let rects = sim.world.cave_rects().to_vec();
     for r in &rects {
         if cave_taken(&sim.state, &r.id)
