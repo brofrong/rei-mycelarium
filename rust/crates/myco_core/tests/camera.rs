@@ -61,9 +61,17 @@ fn boar_shake_matches_love() {
         let s = camera::boar_shake(&mut sim, 3800.0, 1920.0, blocking);
         close(s[0], f(&row[1]), &format!("frame {fr} dx"));
         close(s[1], f(&row[2]), &format!("frame {fr} dy"));
-        close(sim.mushrooms.repel_kick, f(&row[3]), &format!("frame {fr} kick"));
+        close(
+            sim.mushrooms.repel_kick,
+            f(&row[3]),
+            &format!("frame {fr} kick"),
+        );
     }
-    close(sim.rng.random(1.0), f(&g["boar_shake"]["rng_after"]), "rng after");
+    close(
+        sim.rng.random(1.0),
+        f(&g["boar_shake"]["rng_after"]),
+        "rng after",
+    );
 }
 
 fn shroom(kind: i64, x: f64, stolen: bool, carried_by: i64) -> MushroomSave {
@@ -140,16 +148,32 @@ fn migration_cutscene_matches_love() {
         cine::cine_step(&mut sim);
         let c = sim.progress.tasks.cine.as_ref().unwrap();
         let what = format!("frame {fr}");
-        assert_eq!((c.phase == CinePhase::Show) as i64, i(&row[1]), "{what} phase");
+        assert_eq!(
+            (c.phase == CinePhase::Show) as i64,
+            i(&row[1]),
+            "{what} phase"
+        );
         assert_eq!(c.stop, i(&row[2]), "{what} stop");
         close(c.t, f(&row[3]), &format!("{what} t"));
         close(sim.camera.x, f(&row[4]), &format!("{what} cam x"));
         close(sim.camera.y, f(&row[5]), &format!("{what} cam y"));
         close(sim.camera.vx, f(&row[6]), &format!("{what} cam vx"));
         close(sim.camera.vy, f(&row[7]), &format!("{what} cam vy"));
-        close(c.shake_k.unwrap_or(-1.0), f(&row[8]), &format!("{what} shake_k"));
-        close(c.white.unwrap_or(-1.0), f(&row[9]), &format!("{what} white"));
-        assert_eq!(sim.mycelium.spores.len() as i64, i(&row[10]), "{what} spores");
+        close(
+            c.shake_k.unwrap_or(-1.0),
+            f(&row[8]),
+            &format!("{what} shake_k"),
+        );
+        close(
+            c.white.unwrap_or(-1.0),
+            f(&row[9]),
+            &format!("{what} white"),
+        );
+        assert_eq!(
+            sim.mycelium.spores.len() as i64,
+            i(&row[10]),
+            "{what} spores"
+        );
         let sh = cine::cine_shake(&sim).unwrap_or([-999.0, -999.0]);
         close(sh[0], f(&row[11]), &format!("{what} shake dx"));
         close(sh[1], f(&row[12]), &format!("{what} shake dy"));
@@ -193,7 +217,11 @@ fn migration_cutscene_matches_love() {
             }
         }
     }
-    close(sim.rng.random(1.0), f(&gp["rng_probe_state"]), "rng after planet");
+    close(
+        sim.rng.random(1.0),
+        f(&gp["rng_probe_state"]),
+        "rng after planet",
+    );
 
     // play until the hold
     let mut play = 0;
@@ -338,14 +366,23 @@ fn hud_camera_commands_wait_for_the_gates() {
     sim.mycelium.growths.clear();
     sim.mycelium.x = 3000.0;
     let input = StepInput {
-        commands: vec![Command::CameraJumpOrigin, Command::CameraFlyTo { x: 1.0, y: 2.0 }],
+        commands: vec![
+            Command::CameraJumpOrigin,
+            Command::CameraFlyTo { x: 1.0, y: 2.0 },
+        ],
         ..Default::default()
     };
     sim.camera.x = 0.0;
     sim.pause_open = true;
     progress::hud_begin_step(&mut sim, &input);
-    assert_eq!(sim.camera.x, 0.0, "the pause returns before the camera buttons");
-    assert!(sim.camera.fly.is_some(), "the marker click runs before the gates");
+    assert_eq!(
+        sim.camera.x, 0.0,
+        "the pause returns before the camera buttons"
+    );
+    assert!(
+        sim.camera.fly.is_some(),
+        "the marker click runs before the gates"
+    );
     sim.pause_open = false;
     cine::cine_show_start(&mut sim);
     sim.camera.fly = None;

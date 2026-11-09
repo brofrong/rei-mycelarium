@@ -146,8 +146,16 @@ fn zoom_clamped_to_world_bounds() {
     // the sky top, but not above y = 0 where the backdrop starts
     let sky_top = (surface - cams.game_view.h).max(0.0);
     let rv = cams.render_view();
-    assert!(rv.y >= sky_top - 1e-6, "{} above the sky top {sky_top}", rv.y);
-    assert!(rv.y + rv.h <= bottom + 1e-6, "{} below the bottom {bottom}", rv.y + rv.h);
+    assert!(
+        rv.y >= sky_top - 1e-6,
+        "{} above the sky top {sky_top}",
+        rv.y
+    );
+    assert!(
+        rv.y + rv.h <= bottom + 1e-6,
+        "{} below the bottom {bottom}",
+        rv.y + rv.h
+    );
     // at the bottom of the world, cursor at the bottom edge
     sim.camera.y = bottom - cams.game_view.h;
     sim.camera.view_y = sim.camera.y.floor();
@@ -155,7 +163,11 @@ fn zoom_clamped_to_world_bounds() {
     settle(&mut cams, &mut sim, &mut zs, Vec2::new(960.0, 1075.0), 60);
     let rv = cams.render_view();
     assert!(rv.y >= sky_top - 1e-6);
-    assert!(rv.y + rv.h <= bottom + 1e-6, "{} below {bottom}", rv.y + rv.h);
+    assert!(
+        rv.y + rv.h <= bottom + 1e-6,
+        "{} below {bottom}",
+        rv.y + rv.h
+    );
     // the mouse maps through the clamped camera
     let p = Vec2::new(960.0, 540.0);
     let w = cams.screen_to_world(p);

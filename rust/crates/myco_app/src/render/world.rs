@@ -1731,6 +1731,21 @@ pub struct GlowImages {
 #[derive(Component)]
 struct GlowCamera(usize, AssetId<Image>);
 
+/// The texture filter `world_draw` leaves behind (`gpu_set_tex_filter` is global state in the
+/// original): linear when it drew nothing (view above the surface) or no food glow ran, nearest
+/// after the food glow. Task 15's life drawing (obj_life Draw_0, after the forest's Draw_0)
+/// starts from it.
+#[derive(Resource, Clone, Copy, Debug, PartialEq)]
+pub struct WorldDrawState {
+    pub end_linear: bool,
+}
+
+impl Default for WorldDrawState {
+    fn default() -> Self {
+        WorldDrawState { end_linear: true }
+    }
+}
+
 #[derive(Resource, Default)]
 struct WorldPools {
     back: BatchPool,
@@ -1743,6 +1758,10 @@ struct WorldPools {
 
 pub struct WorldRenderPlugin;
 
+/// The set of the world-drawing system (Task 15's life drawing runs after it).
+#[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct WorldDrawSet;
+
 impl Plugin for WorldRenderPlugin {
     fn build(&self, app: &mut App) {
         if !app.is_plugin_added::<BatchPlugin>() {
@@ -1750,8 +1769,9 @@ impl Plugin for WorldRenderPlugin {
         }
         app.init_resource::<LakeFlares>()
             .init_resource::<WorldPools>()
+            .init_resource::<WorldDrawState>()
             .add_systems(Startup, (build_world_art, spawn_glow))
-            .add_systems(Update, (draw_world, draw_world_gui));
+            .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui));
     }
 }
 
@@ -1841,6 +1861,7 @@ fn draw_world(
     stones: Option<Res<StonesArt>>,
     mut glow: ResMut<GlowImages>,
     mut flares: ResMut<LakeFlares>,
+    mut draw_state: ResMut<WorldDrawState>,
     mut pools: ResMut<WorldPools>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GmQuad>>,
@@ -1865,6 +1886,14 @@ fn draw_world(
         now,
     };
     let frame = world_draw(sim, &ctx, &mut flares, rv.x, rv.y, rv.w, rv.h);
+    let end_linear = if rv.y + rv.h < sim.world.params.surface_y {
+        true
+    } else {
+        frame.front.linear
+    };
+    if draw_state.end_linear != end_linear {
+        draw_state.end_linear = end_linear;
+    }
     let mut turf = QuadBatch::new();
     world_draw_turf(&mut turf, &assets, &sim.world, rv.x, rv.y, rv.w, rv.h);
 

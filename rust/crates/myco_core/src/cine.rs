@@ -462,9 +462,7 @@ fn cine_step_inner(sim: &mut Sim, c: &mut Cine) -> bool {
     c.shake_k = Some(
         1.0 + (vis("migration_mega_shake_max") - 1.0) * cine_span(since, 0.0, seconds - delay),
     );
-    c.white = Some(
-        cine_span(since, vis("migration_white_from"), seconds - delay).powf(1.6),
-    );
+    c.white = Some(cine_span(since, vis("migration_white_from"), seconds - delay).powf(1.6));
     true
 }
 

@@ -68,7 +68,10 @@ fn cine_draw_paints_the_flash_then_the_planet() {
     cine::cine_show_start(&mut sim);
     let mut g = Gm::new(&assets);
     cine_draw(&mut g, &sim, 1920.0, 1080.0);
-    assert!(g.items.is_empty(), "the tour before the burst draws nothing");
+    assert!(
+        g.items.is_empty(),
+        "the tour before the burst draws nothing"
+    );
     sim.progress.tasks.cine.as_mut().unwrap().white = Some(0.5);
     let mut g = Gm::new(&assets);
     cine_draw(&mut g, &sim, 1920.0, 1080.0);

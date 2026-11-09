@@ -818,8 +818,9 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
     }
     if let Some(t) = hud.place_type {
         let (wx, wy) = hud.mouse_world;
-        // hud_place_at = myc_place_check(...): ruling R22, Task 9 runs it in core from
-        // `StepInput.placement` and stores the result; until then no preview
+        // hud_place_at = myc_place_check(...): ruling R22, the core runs it from
+        // `StepInput.placement` (= `place_type`, set by `hud_step_game`) and stores
+        // `sim.mushrooms.place_preview`, which the Draw GUI reads
         hud.place_at = None;
         if click && !on_circle && !hud.build_mouse_over(mx, my) {
             // myc_place_mushroom: Task 9 answers with SimEvent::MushroomPlaced, which closes
@@ -955,6 +956,9 @@ pub fn hud_step_game(
     let inp = StepIn::from_pending(&pending, &cams);
     let out = step_game(&mut hud, &sim.0, &inp);
     pending.commands.extend(out.commands);
+    // ruling R22: the core runs `myc_place_check` for this type (obj_hud Step_1's placement
+    // branch, gated in core by `hud_reaches_placement`) and stores the preview
+    pending.placement = hud.place_type;
     if out.opened_tree {
         // the upgrade button: `global.menu_open = true` (the tree screen, Task 19)
         if let Some(t) = tree.as_mut() {
@@ -1333,7 +1337,19 @@ fn draw_build(
     cams: &Cameras,
 ) {
     let b = &hud.build;
-    if let (Some(t), Some(pa)) = (hud.place_type, hud.place_at) {
+    // hud_place_at: the core's placement check of this step (ruling R22)
+    let place_at = sim
+        .mushrooms
+        .place_preview
+        .as_ref()
+        .filter(|p| Some(p.kind) == hud.place_type)
+        .map(|p| PlaceAt {
+            ok: p.plan.ok,
+            x: p.plan.x,
+            y: p.plan.y,
+            face: Some(p.plan.face),
+        });
+    if let (Some(t), Some(pa)) = (hud.place_type, place_at) {
         let spr = mushrooms::types::mushroom_type_sprite(t);
         if let Some(def) = assets.try_sprite(spr) {
             let sw = def.size.x as f64;

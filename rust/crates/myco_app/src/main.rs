@@ -3,7 +3,8 @@
 //! Environment: `MYCO_ASSETS` (assets folder), `MYCO_SAVE_DIR` (saves and settings.ini; default
 //! the LÖVE port's folder), `MYCO_SEED`, `MYCO_INPUT`, `MYCO_DUMP`, `MYCO_SHOT`, `MYCO_FOCUS`
 //! (see `autopilot`), `MYCO_FORCE_RAIN=1` (start the rain at once), `MYCO_CAMERA=x,y`
-//! (camera top-left at game start), `MYCO_CAVE_TAKE=<cave id>` (take a cave at game start).
+//! (camera top-left at game start), `MYCO_CAVE_TAKE=<cave id>` (take a cave at game start),
+//! `MYCO_BW=1` (BLACK METAL post effect on; the shipped menus cannot turn it on).
 
 use bevy::prelude::*;
 use bevy::window::ExitCondition;
@@ -14,7 +15,9 @@ use myco_app::camera::CameraPlugin;
 use myco_app::cine::CinePlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
+use myco_app::render::life::LifeRenderPlugin;
 use myco_app::render::mycelium::MyceliumRenderPlugin;
+use myco_app::render::post::PostPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::render::world::WorldRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
@@ -100,6 +103,8 @@ fn main() {
         MyceliumRenderPlugin,
         MenuPlugin,
         WorldRenderPlugin,
+        LifeRenderPlugin,
+        PostPlugin,
         CinePlugin,
     ));
     app.add_systems(Update, comparison_hooks);

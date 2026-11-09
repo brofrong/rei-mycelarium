@@ -6,8 +6,7 @@
 //!   bounds embedded in myco_core (`world::art`, R7); the app recomputes them from the pixels for
 //!   the anchors, and a test checks both agree. `leaf_draw` (T15) draws with [`LeafFgSprite`].
 //! - Backdrop leaves need the white silhouettes `leaf_art_read` makes (`shape`), tinted with
-//!   `backdrop_leaf_colour`. [`LeafShapes`] builds them (only the shape images; the rest of
-//!   leaf_art_read is T15's).
+//!   `backdrop_leaf_colour`. [`LeafShapes`] holds them, built by Task 15's `leaf_art_init`.
 
 use crate::assets::{GameAssets, SpriteDef};
 use crate::render::sprite::part_sprite;
@@ -98,7 +97,7 @@ impl PagePixels {
 
 /// Alpha scan of one `fw × h` strip (`leaf_fg_art_read` / `leaf_art_read` loops): bounds of the
 /// pixels with alpha >= 128 (whole strip when none) and their centroid.
-fn strip_scan(px: &PagePixels, def: &SpriteDef, i: i64, fw: i64, h: i64) -> [f64; 6] {
+pub(crate) fn strip_scan(px: &PagePixels, def: &SpriteDef, i: i64, fw: i64, h: i64) -> [f64; 6] {
     let (mut x1, mut y1, mut x2, mut y2) = (fw as f64, h as f64, -1.0, -1.0);
     let (mut sx, mut sy, mut n) = (0.0, 0.0, 0.0);
     for yy in 0..h {
@@ -293,15 +292,15 @@ pub fn build_leaf_art(
         }
     };
     commands.insert_resource(leaf_fg_art_init(&assets, &px));
-    let mut add = |name: &str, frames: i64| -> Vec<Handle<Image>> {
-        leaf_shape_images(&px, assets.sprite(name), frames)
-            .into_iter()
-            .map(|i| images.add(i))
-            .collect()
-    };
+    // leaf_art_init (Task 15) measures the frames and makes the silhouettes
+    let art = crate::render::life::leaf_art_init(&px, &assets);
+    let mut add =
+        |v: Vec<Image>| -> Vec<Handle<Image>> { v.into_iter().map(|i| images.add(i)).collect() };
+    let [f0, f1] = art.faces;
+    let [t0, t1] = art.turns;
     let shapes = LeafShapes {
-        faces: [add("leaf", 1), add("leaf_2", 1)],
-        turns: [add("leaf_change", 8), add("leaf_change_2", 8)],
+        faces: [add(f0), add(f1)],
+        turns: [add(t0), add(t1)],
     };
     commands.insert_resource(shapes);
 }

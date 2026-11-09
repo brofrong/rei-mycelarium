@@ -39,6 +39,8 @@ pub enum QuadBlend {
     Add,
     /// `gpu_set_blendmode_ext(bm_one, bm_zero)`
     Replace,
+    /// `gpu_set_blendmode_ext(bm_one, bm_inv_src_alpha)` (premultiplied over, every channel)
+    Premul,
 }
 
 impl QuadBlend {
@@ -60,6 +62,10 @@ impl QuadBlend {
             QuadBlend::Replace => BlendState {
                 color: c(BlendFactor::One, BlendFactor::Zero),
                 alpha: c(BlendFactor::One, BlendFactor::Zero),
+            },
+            QuadBlend::Premul => BlendState {
+                color: c(BlendFactor::One, BlendFactor::OneMinusSrcAlpha),
+                alpha: c(BlendFactor::One, BlendFactor::OneMinusSrcAlpha),
             },
         }
     }
@@ -373,6 +379,27 @@ impl QuadBatch {
         col: f64,
         alpha: f64,
     ) {
+        self.sprite_general(assets, name, frame, part, x, y, xs, ys, 0.0, col, alpha);
+    }
+
+    /// `draw_sprite_general` with one colour: the part `[left, top, w, h]` with its top-left
+    /// corner at (x, y), scaled, then rotated counter-clockwise by `rot` degrees about (x, y)
+    /// (clipped to the trimmed frame like the LÖVE port).
+    #[allow(clippy::too_many_arguments)]
+    pub fn sprite_general(
+        &mut self,
+        assets: &GameAssets,
+        name: &str,
+        frame: usize,
+        part: [f64; 4],
+        x: f64,
+        y: f64,
+        xs: f64,
+        ys: f64,
+        rot: f64,
+        col: f64,
+        alpha: f64,
+    ) {
         let Some(def) = assets.try_sprite(name) else {
             return;
         };
@@ -400,7 +427,7 @@ impl QuadBatch {
             y,
             xs,
             ys,
-            0.0,
+            rot,
             col,
             alpha,
         );

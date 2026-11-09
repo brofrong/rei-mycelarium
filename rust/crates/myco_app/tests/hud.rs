@@ -528,6 +528,37 @@ fn tasks_fill_advances_once_per_step() {
     assert!((s.progress.tasks.fill["absorption"] - f).abs() < 1e-12);
 }
 
+/// Ruling R22: in placement mode the HUD's step fills `StepInput.placement`; the core runs the
+/// placement check from it and stores the preview the Draw GUI shows.
+#[test]
+fn placement_mode_fills_step_input_and_core_preview() {
+    use myco_app::camera::Cameras;
+    use myco_app::sim_bridge::{PendingInput, SimRes, UiCapture};
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .insert_resource(SimRes(sim()))
+        .insert_resource(HudState::default())
+        .init_resource::<Cameras>()
+        .init_resource::<PendingInput>()
+        .init_resource::<UiCapture>()
+        .add_systems(Update, myco_app::ui::hud::hud_step_game);
+    app.update();
+    assert_eq!(app.world().resource::<PendingInput>().placement, None);
+    app.world_mut().resource_mut::<HudState>().place_type = Some(MushroomKind::Spore);
+    app.update();
+    let cams = Cameras::default();
+    let input = {
+        let mut p = app.world_mut().resource_mut::<PendingInput>();
+        p.cursor = Some(Vec2::new(900.0, 500.0));
+        p.take_step(&cams)
+    };
+    assert_eq!(input.placement, Some(MushroomKind::Spore));
+    let mut s = app.world_mut().resource_mut::<SimRes>();
+    s.0.step(&input);
+    let pv = s.0.mushrooms.place_preview.as_ref().expect("core preview");
+    assert_eq!(pv.kind, MushroomKind::Spore);
+}
+
 /// `camera_fly_to_marker` keeps the marker itself: the fly's target follows the marker while
 /// the camera flies (Task 21).
 #[test]
@@ -565,9 +596,14 @@ fn camera_fly_follows_the_clicked_marker() {
         click: true,
         ..input(1800.0, 540.0)
     };
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &click);
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &click,
+    );
     assert!(
-        cmds.contains(&Command::CameraFlyTo { x: 3000.0, y: 500.0 }),
+        cmds.contains(&Command::CameraFlyTo {
+            x: 3000.0,
+            y: 500.0
+        }),
         "{cmds:?}"
     );
     // the core started the fly; the boar walks on
@@ -578,14 +614,21 @@ fn camera_fly_follows_the_clicked_marker() {
     });
     markers.list[0].x = 3100.0;
     let idle = input(600.0, 540.0);
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle);
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle,
+    );
     assert!(
-        cmds.contains(&Command::CameraFlyTrack { x: 3100.0, y: 500.0 }),
+        cmds.contains(&Command::CameraFlyTrack {
+            x: 3100.0,
+            y: 500.0
+        }),
         "{cmds:?}"
     );
     // the fly ended: no more tracking
     s.camera.fly = None;
-    let cmds = step_pre(&mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle);
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle,
+    );
     assert!(!cmds
         .iter()
         .any(|c| matches!(c, Command::CameraFlyTrack { .. })));

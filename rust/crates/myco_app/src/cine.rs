@@ -184,8 +184,20 @@ pub fn cine_draw(g: &mut Gm, sim: &Sim, gw: f64, gh: f64) {
         if st.s >= 3.0 {
             let h = (st.s - 1.0) * 0.5;
             g.set_alpha(al * st.a * tw * 0.45);
-            g.rectangle(sx - st.s, sy + h - 0.5, sx + st.s * 2.0 - 1.0, sy + h + 0.5, false);
-            g.rectangle(sx + h - 0.5, sy - st.s, sx + h + 0.5, sy + st.s * 2.0 - 1.0, false);
+            g.rectangle(
+                sx - st.s,
+                sy + h - 0.5,
+                sx + st.s * 2.0 - 1.0,
+                sy + h + 0.5,
+                false,
+            );
+            g.rectangle(
+                sx + h - 0.5,
+                sy - st.s,
+                sx + h + 0.5,
+                sy + st.s * 2.0 - 1.0,
+                false,
+            );
         }
     }
     let k = br / 540.0;
@@ -196,9 +208,26 @@ pub fn cine_draw(g: &mut Gm, sim: &Sim, gw: f64, gh: f64) {
     );
     let col = gml::merge_colour(16755310.0, C_WHITE, wk);
     let pulse = 1.0 + 0.04 * (tt * 3.0).sin();
-    soft_disc(g, bx, by, br * 2.4 * pulse, 2.2, col, al * gml::lerp(0.35, 0.6, wk));
+    soft_disc(
+        g,
+        bx,
+        by,
+        br * 2.4 * pulse,
+        2.2,
+        col,
+        al * gml::lerp(0.35, 0.6, wk),
+    );
     soft_disc(g, bx, by, br * 1.5, 2.2, col, al * gml::lerp(0.45, 0.9, wk));
-    g.sprite_ext("Earth", 0, bx - 668.0 * k, by - 618.0 * k, k, k, C_WHITE, al);
+    g.sprite_ext(
+        "Earth",
+        0,
+        bx - 668.0 * k,
+        by - 618.0 * k,
+        k,
+        k,
+        C_WHITE,
+        al,
+    );
     let mk = cine_span(
         tt,
         vis("migration_cine_myc_from"),
