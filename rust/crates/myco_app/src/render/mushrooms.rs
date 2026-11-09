@@ -705,7 +705,13 @@ impl Plugin for MushroomFxPlugin {
         }
         app.init_resource::<CloudTargets>()
             .init_resource::<CloudFrame>()
-            .add_systems(Startup, (build_fx_art, spawn_cloud_cameras))
+            .add_systems(
+                Startup,
+                (
+                    build_fx_art.in_set(crate::render::ArtPreloadSet),
+                    spawn_cloud_cameras,
+                ),
+            )
             .add_systems(Update, clouds_system.in_set(CloudsSet));
     }
 }

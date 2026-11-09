@@ -205,3 +205,46 @@ fn no_fullscreen_hotkeys() {
         assert_eq!(count(&mut app), 0, "{combo:?} must not toggle fullscreen");
     }
 }
+
+/// The game's `display_fit` (core_3.lua:370, the decompiled original) rounds with `gm.round`,
+/// GML's banker's rounding: a view width or height of exactly n.5 goes to the even n.
+#[test]
+fn display_fit_rounds_half_to_even() {
+    // 1080 * 4001 / 2160 = 2000.5 -> 2000
+    assert_eq!(
+        display::view_for_window(4001.0, 2160.0).unwrap().view_w,
+        2000.0
+    );
+    // 1920 * 2401 / 3840 = 1200.5 -> 1200
+    assert_eq!(
+        display::view_for_window(3840.0, 2401.0).unwrap().view_h,
+        1200.0
+    );
+    // 1080 * 4003 / 2160 = 2001.5 -> 2002
+    assert_eq!(
+        display::view_for_window(4003.0, 2160.0).unwrap().view_w,
+        2002.0
+    );
+}
+
+/// display_apply / display_step (core_3.lua:413, 460): switching to a window waits 4 steps;
+/// at 2 left the window takes the chosen size, at 0 it is centred. Fullscreen needs no wait.
+#[test]
+fn display_step_resizes_then_centres_a_window() {
+    use display::{display_apply_pending, display_step_tick, DisplayAction};
+    assert_eq!(display_apply_pending(true), 0);
+    let mut pending = display_apply_pending(false);
+    assert_eq!(pending, 4);
+    let ticks: Vec<_> = (0..6).map(|_| display_step_tick(&mut pending)).collect();
+    assert_eq!(
+        ticks,
+        vec![
+            None,
+            Some(DisplayAction::SetSize),
+            None,
+            Some(DisplayAction::Centre),
+            None,
+            None
+        ]
+    );
+}

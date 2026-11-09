@@ -645,7 +645,7 @@ pub struct ForestRenderPlugin;
 impl Plugin for ForestRenderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ForestEntities>()
-            .add_systems(Startup, build_leaf_art)
+            .add_systems(Startup, build_leaf_art.in_set(crate::render::ArtPreloadSet))
             .add_systems(Update, forest_draw);
     }
 }

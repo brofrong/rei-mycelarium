@@ -52,3 +52,35 @@ pub fn draw_generate_system(
     }
     forest::forest_draw_generate(sim, &assets, &rv);
 }
+
+/// `global.art_preloaded`: the art that reads sprite pixels is built.
+#[derive(Resource, Default, Clone, Copy, Debug, PartialEq)]
+pub struct ArtPreloaded(pub bool);
+
+/// The startup systems that build the pixel-reading art `art_preload_step` builds.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ArtPreloadSet;
+
+// port: art_preload_step
+/// `art_preload_step` (obj_game Draw_77): once, build the art inits that read sprite pixels
+/// (stones_init, stone_tiles_init, caves_mask_init, lakes_init → `world::build_world_art`;
+/// hedgehog_back_init, squirrel_art_init → `life::build_life_art`; leaf_art_init,
+/// leaf_fg_art_init → `forest::build_leaf_art`; stinky_art_init, repeller_cloud_art_init →
+/// `mushrooms::build_fx_art`). The original waits for a focused window with a surface (GPU
+/// surfaces need one); Bevy builds images without a window, so they are built at startup, in
+/// [`ArtPreloadSet`], and this marks them done.
+pub fn art_preload_step(mut done: ResMut<ArtPreloaded>) {
+    if !done.0 {
+        done.0 = true;
+    }
+}
+
+/// Registers [`art_preload_step`] after every art build in [`ArtPreloadSet`].
+pub struct ArtPreloadPlugin;
+
+impl Plugin for ArtPreloadPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ArtPreloaded>()
+            .add_systems(Startup, art_preload_step.after(ArtPreloadSet));
+    }
+}

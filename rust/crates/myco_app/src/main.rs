@@ -19,6 +19,7 @@ use myco_app::render::mycelium::MyceliumRenderPlugin;
 use myco_app::render::post::PostPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::render::world::WorldRenderPlugin;
+use myco_app::render::ArtPreloadPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
 use myco_app::ui::{MenuPlugin, UiPlugin};
 use myco_core::save;
@@ -68,7 +69,8 @@ fn main() {
         LifeRenderPlugin,
         PostPlugin,
         CinePlugin,
-    ));
+    ))
+    .add_plugins(ArtPreloadPlugin);
     if let Some(s) = screen {
         app.insert_resource(s);
     }

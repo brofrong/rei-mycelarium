@@ -43,23 +43,23 @@ impl Default for ViewLayout {
     }
 }
 
-/// Lua's `math.floor(x + 0.5)` (not banker's rounding: this is display_math's own `round`).
-fn round_half_up(x: f64) -> f64 {
-    (x + 0.5).floor()
-}
-
-/// Port of `display_math.view_for_window` (the original `gml_Script_display_fit`): the view keeps
-/// 1920×1080 as a minimum and grows along the window aspect (clamped to 1.25..32/9); the surface
-/// follows the window size, capped at 4K pixels. `None` for a degenerate window.
+// port: display_fit
+/// `display_fit` (core_3.lua:370; `display_math.view_for_window` in the LÖVE host): the view
+/// keeps 1920×1080 as a minimum and grows along the window aspect (clamped to 1.25..32/9); the
+/// surface follows the window size, capped at 4K pixels. Rounding is the game's `round`
+/// (banker's, `gml::round`), as the decompiled display_fit does. `None` for a degenerate window.
+/// [`crate::camera::Cameras`] applies it whenever the window changes (`track_window`), which is
+/// what display_fit's "changed" check guards in the original.
 pub fn view_for_window(ww: f64, wh: f64) -> Option<ViewLayout> {
     if ww <= 0.0 || wh <= 0.0 {
         return None;
     }
+    let round = myco_core::gml::round;
     let aspect = 1.25_f64.max((32.0 / 9.0_f64).min(ww / wh));
     let (vw, vh) = if aspect >= 16.0 / 9.0 {
-        (round_half_up(1080.0 * aspect), 1080.0)
+        (round(1080.0 * aspect), 1080.0)
     } else {
-        (1920.0, round_half_up(1920.0 / aspect))
+        (1920.0, round(1920.0 / aspect))
     };
     let k = (ww / vw)
         .min(wh / vh)
@@ -67,8 +67,8 @@ pub fn view_for_window(ww: f64, wh: f64) -> Option<ViewLayout> {
     Some(ViewLayout {
         view_w: vw,
         view_h: vh,
-        surf_w: round_half_up(vw * k).max(1.0),
-        surf_h: round_half_up(vh * k).max(1.0),
+        surf_w: round(vw * k).max(1.0),
+        surf_h: round(vh * k).max(1.0),
         ui_ox: (vw - 1920.0) * 0.5,
         ui_by: vh - 1080.0,
     })
@@ -202,8 +202,10 @@ pub fn save_dir_from(env: Option<PathBuf>) -> PathBuf {
     }
 }
 
-/// Write `[display]` into settings.ini through `save::ini_write`, keeping every other section
-/// (`[game] language`). Values in `settings_to_ini`'s format (`%f`).
+// port: display_save
+/// `display_save`: write `[display]` (fullscreen, the chosen window size) into settings.ini
+/// through `save::ini_write`, keeping every other section (`[game] language`). Values in
+/// `ini_write_real`'s format (`%f`).
 pub fn write_display_settings(dir: &Path, s: &DisplaySettings) -> io::Result<()> {
     std::fs::create_dir_all(dir)?;
     let path = dir.join("settings.ini");
@@ -292,6 +294,11 @@ impl DisplaySizes {
     }
 }
 
+// port: display_init
+/// `display_init`: the window sizes that fit the screen and the saved one picked
+/// ([`DisplaySizes::new`]); the saved fullscreen flag (default on) already chose the window mode
+/// in [`primary_window`]; then `display_apply` (the countdown) and `display_fit` (the camera's
+/// `track_window`).
 fn init_display_sizes(
     mut commands: Commands,
     screen: Option<Res<ScreenInfo>>,
@@ -310,6 +317,89 @@ fn init_display_sizes(
     };
     let saved = Some((num("window_w") as u32, num("window_h") as u32));
     commands.insert_resource(DisplaySizes::new(pt, saved));
+    let fullscreen = save::ini_read(&text, "display", "fullscreen")
+        .and_then(|v| v.trim().parse::<f64>().ok())
+        .is_none_or(|v| v != 0.0);
+    commands.insert_resource(DisplayPending(display_apply_pending(fullscreen)));
+}
+
+/// `global.display_pending`: steps left in the window-mode switch (see [`display_step_tick`]).
+#[derive(Resource, Default, Clone, Copy, Debug, PartialEq)]
+pub struct DisplayPending(pub u32);
+
+/// What `display_step` does to the window on a step.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DisplayAction {
+    /// `window_set_size(display_window_size())`
+    SetSize,
+    /// `window_center()`
+    Centre,
+}
+
+/// `display_apply`'s countdown: none in fullscreen, 4 steps for a window.
+pub fn display_apply_pending(fullscreen: bool) -> u32 {
+    if fullscreen {
+        0
+    } else {
+        4
+    }
+}
+
+/// One step of `display_step`'s countdown.
+pub fn display_step_tick(pending: &mut u32) -> Option<DisplayAction> {
+    if *pending == 0 {
+        return None;
+    }
+    *pending -= 1;
+    match *pending {
+        2 => Some(DisplayAction::SetSize),
+        0 => Some(DisplayAction::Centre),
+        _ => None,
+    }
+}
+
+// port: display_apply
+/// `display_apply`: switch the window mode when it differs from the setting, start the countdown.
+pub fn display_apply(win: &mut Window, fullscreen: bool) -> u32 {
+    let is_full = !matches!(win.mode, WindowMode::Windowed);
+    if is_full != fullscreen {
+        win.mode = if fullscreen {
+            WindowMode::BorderlessFullscreen(MonitorSelection::Current)
+        } else {
+            WindowMode::Windowed
+        };
+    }
+    display_apply_pending(fullscreen)
+}
+
+// port: display_step
+/// obj_game Step's `display_step`: two steps into a switch to a window it takes the chosen size
+/// (logical points, ruling R23), at the end it is centred.
+pub fn display_step(
+    mut pending: Option<ResMut<DisplayPending>>,
+    sizes: Option<Res<DisplaySizes>>,
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+) {
+    let Some(pending) = pending.as_mut() else {
+        return;
+    };
+    let Some(action) = display_step_tick(&mut pending.0) else {
+        return;
+    };
+    let Ok(mut win) = windows.single_mut() else {
+        return;
+    };
+    match action {
+        DisplayAction::SetSize => {
+            if let Some(s) = sizes {
+                let (w, h) = s.display_window_size();
+                win.resolution.set(w as f32, h as f32);
+            }
+        }
+        DisplayAction::Centre => {
+            win.position = WindowPosition::Centered(MonitorSelection::Current);
+        }
+    }
 }
 
 /// `display_cycle_size`: pick the size, resize the window when windowed, save settings.ini.
@@ -376,6 +466,7 @@ impl Plugin for DisplayPlugin {
         app.add_message::<SetFullscreen>()
             .add_message::<CycleWindowSize>()
             .add_systems(Startup, init_display_sizes)
+            .add_systems(FixedUpdate, display_step)
             .add_systems(
                 Update,
                 (display_keys, apply_set_fullscreen, apply_cycle_size).chain(),
@@ -392,25 +483,24 @@ pub fn display_keys(keys: Res<ButtonInput<KeyCode>>, mut exit: MessageWriter<App
     }
 }
 
-/// `display.set_fullscreen`: switch the mode and persist it.
+// port: display_set_fullscreen
+/// `display_set_fullscreen(on)` (the settings menu): the setting, `display_apply` (the window
+/// takes its size two steps later, `display_step`), `display_save`.
 fn apply_set_fullscreen(
     mut msgs: MessageReader<SetFullscreen>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     mut display: ResMut<Display>,
+    mut pending: Option<ResMut<DisplayPending>>,
     dir: Res<SaveDir>,
 ) {
     let Some(SetFullscreen(on)) = msgs.read().last().copied() else {
         return;
     };
     if let Ok(mut win) = windows.single_mut() {
-        win.mode = if on {
-            WindowMode::BorderlessFullscreen(MonitorSelection::Current)
-        } else {
-            // settings sizes are logical points (ruling R23)
-            let (w, h) = (display.0.window_w, display.0.window_h);
-            win.resolution.set(w as f32, h as f32);
-            WindowMode::Windowed
-        };
+        let p = display_apply(&mut win, on);
+        if let Some(pending) = pending.as_mut() {
+            pending.0 = p;
+        }
     }
     display.0.fullscreen = on;
     if let Err(e) = write_display_settings(&dir.0, &display.0) {

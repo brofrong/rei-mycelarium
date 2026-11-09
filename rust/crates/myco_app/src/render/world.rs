@@ -1836,7 +1836,13 @@ impl Plugin for WorldRenderPlugin {
         app.init_resource::<LakeFlares>()
             .init_resource::<WorldPools>()
             .init_resource::<WorldDrawState>()
-            .add_systems(Startup, (build_world_art, spawn_glow))
+            .add_systems(
+                Startup,
+                (
+                    build_world_art.in_set(crate::render::ArtPreloadSet),
+                    spawn_glow,
+                ),
+            )
             .add_systems(Update, (draw_world.in_set(WorldDrawSet), draw_world_gui))
             .add_systems(
                 FixedUpdate,

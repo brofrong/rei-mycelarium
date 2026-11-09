@@ -349,7 +349,10 @@ pub fn collect_input(
     pending.cursor = windows.single().ok().and_then(Window::cursor_position);
 }
 
-/// `focus_step` (the app's half of obj_game Step): losing focus opens the pause menu.
+// port: focus_step
+/// `focus_step` (obj_game Step): without window focus, and `pause_on_focus_loss` on, the pause
+/// menu opens unless a screen blocks (`ui_blocking`). `MYCO_FOCUS` (ForceFocus) treats the window
+/// as focused for automated runs.
 fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
