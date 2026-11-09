@@ -122,6 +122,10 @@ pub struct MycBake {
     pub chunks: HashMap<(usize, usize), usize>,
     /// mesh changes not yet applied to entities
     pub ops: Vec<MeshOp>,
+    /// growths the logic had at the last bake step (they only grow within one game)
+    pub seen_growths: usize,
+    /// ids of the growths whose hyphae sound may still play (for CleanUp on a replaced Sim)
+    pub sounding: Vec<u64>,
 }
 
 impl MycBake {
@@ -334,14 +338,23 @@ pub fn tiles_clear(m: &mut MyceliumRt, b: &mut MycBake) {
     b.ops.push(MeshOp::Clear);
 }
 
+/// The logic's mycelium is not the one baked so far: a new `Sim` (fewer growths or tiles than
+/// already seen; both only grow within one game).
+pub fn replaced(m: &MyceliumRt, b: &MycBake) -> bool {
+    m.growths.len() < b.seen_growths
+        || m.tile_list.len() < b.tiles.len()
+        || m.growths.len() < b.growths.len()
+}
+
 /// Drop every baked mesh and live chunk when the logic's mycelium was reset under us: a load
 /// (`tiles_reset`, set by `on_load`) or a whole new `Sim` (restart to the title, a loaded slot),
 /// which shows as fewer growths or tiles than the bake state knows (both only grow in a game).
 pub fn sync_reset(m: &mut MyceliumRt, b: &mut MycBake) {
-    if !(m.tiles_reset || m.tile_list.len() < b.tiles.len() || m.growths.len() < b.growths.len()) {
+    if !(m.tiles_reset || replaced(m, b)) {
         return;
     }
     m.tiles_reset = false;
+    b.seen_growths = m.growths.len();
     tiles_clear(m, b);
     b.growths.clear();
     for ((gi, bi), n) in std::mem::take(&mut b.chunks) {
@@ -373,6 +386,7 @@ pub fn tiles_step(m: &mut MyceliumRt, b: &mut MycBake) {
     {
         tile_merge(m, b, ti);
     }
+    b.seen_growths = m.growths.len();
 }
 
 /// The live (unfinished) strands of `myc_draw_strands` inside `view` = (x1, y1, x2, y2): the
@@ -660,8 +674,24 @@ fn sync_anchor(sim: Res<SimRes>, mut anchor: ResMut<crate::autopilot::MyceliumAn
 }
 
 /// `myc_tiles_step` after every fixed step (the end of the original's Step_0).
+///
+/// A replaced `Sim` (restart to the title, a loaded slot: `Sim::load_game` builds a new `Sim`, so
+/// its `on_load` never sees the old growths) means the old controller went away: its CleanUp_0
+/// stops the hyphae sounds that may still play. A second stop of an id is harmless.
 pub fn tiles_step_system(mut sim: ResMut<SimRes>, mut bake: ResMut<MycBake>) {
+    if replaced(&sim.0.mycelium, &bake) || sim.0.mycelium.tiles_reset {
+        for id in std::mem::take(&mut bake.sounding) {
+            sim.0.emit(SimEvent::Audio(AudioCall::HyphaeStop { id }));
+        }
+    }
     tiles_step(&mut sim.0.mycelium, &mut bake);
+    let m = &sim.0.mycelium;
+    bake.sounding = m
+        .growths
+        .iter()
+        .filter(|g| g.sound.is_some())
+        .map(|g| g.id)
+        .collect();
 }
 
 /// The visible world rectangle plus Draw_64's 64 px margin.

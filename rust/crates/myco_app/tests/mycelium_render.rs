@@ -557,3 +557,43 @@ fn a_click_on_an_in_world_button_becomes_its_command() {
     let (x, y) = mid(&r0);
     assert_eq!(button_click(&sim, &ctx, x, y), None);
 }
+
+#[test]
+fn a_replaced_sim_stops_the_old_hyphae_sounds() {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::prelude::World;
+    use myco_app::render::mycelium::tiles_step_system;
+    use myco_app::sim_bridge::SimRes;
+    use myco_core::audio::{HyphaePlan, HyphaeStart};
+    use myco_core::events::{AudioCall, SimEvent};
+    use myco_core::mycelium::GrowthSound;
+    use myco_core::sim::Sim;
+    use myco_core::state::GameMode;
+    let mut sim = Sim::new_game(GameMode::Exploration, "", Some(7));
+    let mut g = growth(&line(100.0, 600.0, 200.0), 6.0, true);
+    g.id = 4242;
+    g.sound = Some(GrowthSound {
+        plan: HyphaePlan {
+            start: HyphaeStart::One,
+            end_sound: "",
+            middle_at: 10.0,
+            end_at: 90.0,
+            tiny: false,
+        },
+        done: false,
+    });
+    sim.mycelium.growths.push(g);
+    sim.mycelium.active.push(sim.mycelium.growths.len() - 1);
+    let mut world = World::new();
+    world.insert_resource(SimRes(sim));
+    world.insert_resource(MycBake::default());
+    world.run_system_once(tiles_step_system).unwrap();
+    assert_eq!(world.resource::<MycBake>().sounding, vec![4242]);
+    // back to the title: a fresh Sim replaces the game
+    let fresh = Sim::new_game(GameMode::Exploration, "", Some(8));
+    world.resource_mut::<SimRes>().0 = fresh;
+    world.run_system_once(tiles_step_system).unwrap();
+    let events = world.resource_mut::<SimRes>().0.drain_events();
+    assert!(events.contains(&SimEvent::Audio(AudioCall::HyphaeStop { id: 4242 })));
+    assert!(world.resource::<MycBake>().sounding.is_empty());
+}
