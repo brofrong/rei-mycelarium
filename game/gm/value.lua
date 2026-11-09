@@ -3,7 +3,22 @@
 local M = {}
 
 local UNDEFINED = setmetatable({}, { __tostring = function() return "undefined" end })
+
+-- In GML booleans are the reals 1 and 0. Give Lua booleans arithmetic so
+-- translated code like `px - r` with r = true behaves as in GameMaker.
+local function num(v) if v == true then return 1 elseif v == false then return 0 end return v end
+debug.setmetatable(true, {
+  __add = function(a, b) return num(a) + num(b) end,
+  __sub = function(a, b) return num(a) - num(b) end,
+  __mul = function(a, b) return num(a) * num(b) end,
+  __div = function(a, b) return num(a) / num(b) end,
+  __mod = function(a, b) return math.fmod(num(a), num(b)) end,
+  __pow = function(a, b) return num(a) ^ num(b) end,
+  __unm = function(a) return -num(a) end,
+})
 M.undefined = UNDEFINED
+
+local METHOD = {} -- method metatable (declared early: array_sort checks for it)
 
 -- Arrays ----------------------------------------------------------------------
 -- Elements live at raw integer keys 0..n-1; the length is kept in a.__n.
@@ -99,7 +114,7 @@ function M.array_sort(a, asc_or_fn)
   local n = rawget(a, "__n")
   local t = {}
   for i = 0, n - 1 do t[i + 1] = rawget(a, i) end
-  if type(asc_or_fn) == "function" or getmetatable(asc_or_fn) then
+  if type(asc_or_fn) == "function" or getmetatable(asc_or_fn) == METHOD then
     table.sort(t, function(x, y) return asc_or_fn(nil, nil, x, y) < 0 end)
   elseif asc_or_fn == false then
     table.sort(t, function(x, y) return x > y end)
@@ -160,7 +175,6 @@ end
 
 -- Structs and methods -----------------------------------------------------------
 local STRUCT = { __name = "struct" }
-local METHOD = {}
 -- Called like any translated function: m(self, other, ...). The bound struct
 -- becomes self and the caller's self becomes other.
 METHOD.__call = function(m, caller, _, ...)

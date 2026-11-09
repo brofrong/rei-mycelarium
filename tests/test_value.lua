@@ -88,5 +88,21 @@ return {
     assert(gm.bool(1) and gm.bool(0.6) and not gm.bool(0.3) and not gm.bool(-4) and not gm.bool(0))
     assert(gm.bool(true) and not gm.bool(false) and not gm.bool(gm.undefined) and not gm.bool(nil))
   end,
+  booleans_are_numbers_in_arithmetic = function()
+    local r = true
+    assert(10 - r == 9 and r + 1 == 2 and r * 3 == 3 and false + 2 == 2 and -r == -1 and r / 2 == 0.5)
+  end,
+  array_sort_with_bool_ascending = function()
+    local a = gm.array(3, 1, 2)
+    gm.array_sort(a, true)
+    assert(a[0] == 1 and a[2] == 3)
+    gm.array_sort(a, false)
+    assert(a[0] == 3 and a[2] == 1)
+  end,
+  array_sort_with_method_comparator = function()
+    local a = gm.array(1, 3, 2)
+    gm.array_sort(a, gm.method(nil, function(self, other, x, y) return y - x end))
+    assert(a[0] == 3 and a[2] == 1)
+  end,
 }
 
