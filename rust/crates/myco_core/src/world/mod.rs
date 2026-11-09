@@ -10,12 +10,15 @@
 //! marks its chunk in `dirty_chunks` (ruling R9a) for the renderer to rebake and clear.
 
 pub mod art;
+pub mod bones;
 pub mod caves;
 pub mod food;
 pub mod gen;
 pub mod hash;
 pub mod lakes;
 pub mod obstacles;
+pub mod perks;
+pub mod relics;
 pub mod soil;
 pub mod stones;
 pub mod survival;
@@ -135,6 +138,8 @@ pub struct WorldRt {
     pub water_dip_hold: f64,
     /// chunks whose tiles, lakes or foods changed since the renderer last looked (R9a)
     pub dirty_chunks: BTreeSet<i64>,
+    /// runtime cave globals and the cached cave/bone/relic layout (Task 6)
+    pub caves: caves::CaveRt,
 }
 
 impl WorldRt {
@@ -470,6 +475,7 @@ pub fn on_load(sim: &mut Sim) {
     for cx in lake_chunks {
         sim.world.get_chunk(cx);
     }
+    caves::on_load(sim);
 }
 
 /// `save_game`'s world part: the live world into `out.world` (`out.water` is the live
