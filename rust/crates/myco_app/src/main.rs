@@ -13,6 +13,7 @@ use myco_app::autopilot::{seed_from_env, AutopilotPlugin};
 use myco_app::camera::CameraPlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
+use myco_app::render::life::LifeRenderPlugin;
 use myco_app::render::mycelium::MyceliumRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::render::world::WorldRenderPlugin;
@@ -91,6 +92,7 @@ fn main() {
         MyceliumRenderPlugin,
         MenuPlugin,
         WorldRenderPlugin,
+        LifeRenderPlugin,
     ));
     app.add_systems(Update, comparison_hooks);
     if let Some(s) = screen {

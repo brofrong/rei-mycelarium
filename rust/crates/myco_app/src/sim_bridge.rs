@@ -45,6 +45,9 @@ pub struct PendingInput {
     pub hud_hidden: bool,
     /// a slot name is being typed (`hud_slot_naming != -1`; set by the menus)
     pub slot_naming: bool,
+    /// `hud_place_type` while the HUD is in placement mode (ruling R22: the core runs
+    /// `myc_place_check` from it and stores `sim.mushrooms.place_preview`; set by the HUD)
+    pub placement: Option<myco_core::mushrooms::MushroomKind>,
 }
 
 impl PendingInput {
@@ -104,7 +107,7 @@ impl PendingInput {
             logo_open: self.logo_open,
             hud_hidden: self.hud_hidden,
             slot_naming: self.slot_naming,
-            placement: None,
+            placement: self.placement,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;
