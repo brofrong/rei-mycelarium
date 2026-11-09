@@ -52,4 +52,17 @@ return {
   div_mod = function()
     assert(gm.div(-7, 2) == -3 and gm.mod(-7, 2) == -1 and gm.mod(7.5, 2) == 1.5)
   end,
+  array_concat_contains_filter = function()
+    local a = gm.array_concat(gm.array(1, 2), gm.array(3))
+    assert(gm.array_length(a) == 3 and a[2] == 3 and gm.array_contains(a, 2) and not gm.array_contains(a, 9))
+    local f = gm.array_filter(a, function(_, _, v) return v ~= 2 end)
+    assert(gm.array_length(f) == 2 and f[1] == 3)
+  end,
+  variable_clone_deep = function()
+    local s = gm.struct({ list = gm.array(1, gm.struct({ k = 1 })) })
+    local c = gm.variable_clone(s)
+    c.list[1].k = 5
+    assert(s.list[1].k == 1 and c.list[1].k == 5 and gm.is_struct(c) and gm.is_array(c.list))
+  end,
 }
+

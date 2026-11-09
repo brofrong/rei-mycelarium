@@ -17,17 +17,29 @@ local function refit()
   display.update(v.surf_w, v.surf_h, v.view_w, v.view_h)
 end
 
+local demo_name = os.getenv("MYCO_DEMO")
+local demo = demo_name == "draw" and require("demo") or nil
+
 function love.load()
+  if demo then demo.load() end
   local shot = os.getenv("MYCO_SHOT")
   if shot then
     shot_path, shot_frame = shot:match("^(.*):(%d+)$")
     shot_frame = tonumber(shot_frame)
   end
-  display.init()
-  refit()
+  if not demo then
+    display.init()
+    refit()
+  end
 end
 
-function love.resize() refit() end
+function love.resize()
+  if demo then demo.resize() else refit() end
+end
+
+function love.update(dt)
+  if demo then demo.update(dt) end
+end
 
 function love.keypressed(key)
   local cmd = love.keyboard.isDown("lgui", "rgui")
@@ -66,12 +78,15 @@ end
 
 function love.draw()
   frame = frame + 1
-  if not view then return end
-  love.graphics.setCanvas(canvas)
-  draw_scene()
-  love.graphics.setCanvas()
-  love.graphics.clear(0, 0, 0, 1)
-  display.present(canvas)
+  if demo then
+    demo.draw()
+  elseif view then
+    love.graphics.setCanvas(canvas)
+    draw_scene()
+    love.graphics.setCanvas()
+    love.graphics.clear(0, 0, 0, 1)
+    display.present(canvas)
+  end
   if shot_frame and frame == shot_frame then
     love.graphics.captureScreenshot(function(img)
       local data = img:encode("png")

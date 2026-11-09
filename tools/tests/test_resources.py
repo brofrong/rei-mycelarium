@@ -13,6 +13,7 @@ def test_rooms(assets):
 
 def test_room_order(assets):
     assert assets["game"]["room_order"] == ["Room1", "Main_menu", "UI"]
+    assert assets["game"]["speed"] == 60
 
 
 def test_room1_layers_and_view(assets):

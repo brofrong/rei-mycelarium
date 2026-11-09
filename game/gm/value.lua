@@ -105,6 +105,46 @@ function M.array_sort(a, asc_or_fn)
   for i = 1, n do rawset(a, i - 1, t[i]) end
 end
 
+function M.array_concat(...)
+  local out = new_array(0)
+  for k = 1, select("#", ...) do
+    local a = select(k, ...)
+    for i = 0, rawget(a, "__n") - 1 do M.array_push(out, rawget(a, i)) end
+  end
+  return out
+end
+
+function M.array_contains(a, v)
+  for i = 0, rawget(a, "__n") - 1 do
+    if rawget(a, i) == v then return true end
+  end
+  return false
+end
+
+-- Callbacks follow the translated-GML convention fn(self, other, element, index).
+function M.array_filter(a, fn)
+  local out = new_array(0)
+  for i = 0, rawget(a, "__n") - 1 do
+    local v = rawget(a, i)
+    if fn(nil, nil, v, i) then M.array_push(out, v) end
+  end
+  return out
+end
+
+function M.array_shuffle(a, rng)
+  rng = rng or math.random
+  local n = rawget(a, "__n")
+  local out = new_array(0)
+  for i = 0, n - 1 do M.array_push(out, rawget(a, i)) end
+  for i = n - 1, 1, -1 do
+    local j = math.floor(rng() * (i + 1))
+    local t = rawget(out, i)
+    rawset(out, i, rawget(out, j))
+    rawset(out, j, t)
+  end
+  return out
+end
+
 -- Iterate as for i, v in gm.ipairs0(a)
 function M.ipairs0(a)
   local n = rawget(a, "__n")
@@ -153,6 +193,21 @@ function M.variable_struct_get_names(s)
 end
 M.struct_exists, M.struct_get, M.struct_set, M.struct_remove, M.struct_get_names =
   M.variable_struct_exists, M.variable_struct_get, M.variable_struct_set, M.variable_struct_remove, M.variable_struct_get_names
+
+function M.variable_clone(v)
+  local mt = getmetatable(v)
+  if mt == ARRAY then
+    local out = new_array(0)
+    for i = 0, rawget(v, "__n") - 1 do M.array_push(out, M.variable_clone(rawget(v, i))) end
+    return out
+  end
+  if mt == STRUCT then
+    local out = M.struct({})
+    for k, x in pairs(v) do rawset(out, k, M.variable_clone(x)) end
+    return out
+  end
+  return v
+end
 
 function M.is_undefined(v) return v == UNDEFINED or v == nil end
 function M.is_string(v) return type(v) == "string" end

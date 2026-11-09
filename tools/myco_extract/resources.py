@@ -179,4 +179,5 @@ def game(dw: DataWin) -> dict:
     o = dw.chunks["GEN8"][0]
     room_names = _names(dw, "ROOM")
     g["room_order"] = [room_names[i] for i in dw.pointer_list(o + 128)]
+    g["speed"] = dw.f32(o + 184)
     return g
