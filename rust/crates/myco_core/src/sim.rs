@@ -291,6 +291,24 @@ impl Sim {
         sim
     }
 
+    /// The game as it boots (and after `game_restart`): the room's Create events with the title
+    /// menu open over a fresh world; no slot is bound. The menu continues with
+    /// [`Sim::start_from_title`] or replaces it with [`Sim::load_game`].
+    pub fn title_screen(world_seed: Option<i64>) -> Sim {
+        let mut sim = Sim::create_room(world_seed);
+        sim.title_open = true;
+        sim
+    }
+
+    /// What the title menu does once a new game is named (obj_hud Step_1): bind the slot and
+    /// name, start the chosen mode on the world behind the title, close the title. Together
+    /// with [`Sim::title_screen`] this is the same sequence as [`Sim::new_game`].
+    pub fn start_from_title(&mut self, slot: i64, name: &str, mode: GameMode) {
+        self.save_start_new(slot, name);
+        self.game_mode_start(mode);
+        self.title_open = false;
+    }
+
     // port: gml_Object_obj_game_Create_0
     /// obj_game Create_0: `game_init` (Task 10 fills `game::init`); `audio_init` is the app's.
     fn obj_game_create(&mut self) {

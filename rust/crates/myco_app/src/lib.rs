@@ -8,3 +8,4 @@ pub mod display;
 pub mod logo;
 pub mod render;
 pub mod sim_bridge;
+pub mod ui;

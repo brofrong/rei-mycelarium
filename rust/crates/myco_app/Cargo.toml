@@ -10,6 +10,7 @@ bevy = { version = "0.20.1", features = ["wav"] }
 myco_core = { path = "../myco_core" }
 serde.workspace = true
 serde_json.workspace = true
+ttf-parser = "0.25"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
