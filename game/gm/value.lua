@@ -150,8 +150,9 @@ function M.array_filter(a, fn)
   return out
 end
 
+-- GML's array_shuffle draws from the game's seeded RNG (random_set_seed), not from Lua's.
 function M.array_shuffle(a, rng)
-  rng = rng or math.random
+  rng = rng or function() return require("gm.random").random(1) end
   local n = rawget(a, "__n")
   local out = new_array(0)
   for i = 0, n - 1 do M.array_push(out, rawget(a, i)) end
