@@ -254,6 +254,13 @@ pub fn world_to_bevy(x: f64, y: f64) -> Vec2 {
     Vec2::new(x as f32, -y as f32)
 }
 
+/// Blend space of every camera (R21b): GameMaker and LÖVE blend gamma-encoded sRGB values, so
+/// the cameras composite in sRGB space (Bevy 0.20 `CompositingSpace::Srgb`: an `Rgba8Unorm` main
+/// texture, the 2D shaders encode their output with `linear_to_srgb` under `SRGB_OUTPUT`).
+/// All cameras share the window target and must use the same space. Custom 2D fragment shaders
+/// must honour `SRGB_OUTPUT` the same way (Bevy's mesh2d / sprite / colour-material shaders do).
+pub const COMPOSITING: bevy::camera::CompositingSpace = bevy::camera::CompositingSpace::Srgb;
+
 /// Render layer of everything drawn by the GUI camera.
 pub const GUI_LAYER: usize = 1;
 
@@ -290,6 +297,7 @@ fn spawn_cameras(mut commands: Commands, cams: Res<Cameras>) {
             ..default()
         },
         RenderLayers::none(),
+        COMPOSITING,
     ));
     commands.spawn((
         Camera2d,
@@ -301,6 +309,7 @@ fn spawn_cameras(mut commands: Commands, cams: Res<Cameras>) {
         },
         Projection::Orthographic(cams.world_projection()),
         cams.world_transform(),
+        COMPOSITING,
         WorldCamera,
     ));
     commands.spawn((
@@ -314,6 +323,7 @@ fn spawn_cameras(mut commands: Commands, cams: Res<Cameras>) {
         Projection::Orthographic(cams.gui_projection()),
         cams.gui_transform(),
         RenderLayers::layer(GUI_LAYER),
+        COMPOSITING,
         GuiCamera,
     ));
 }

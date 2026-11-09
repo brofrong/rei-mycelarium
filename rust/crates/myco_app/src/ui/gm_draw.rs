@@ -124,20 +124,6 @@ pub enum DrawItem {
     },
 }
 
-/// Bevy blends in linear light, GameMaker/LÖVE in sRGB: a translucent black veil (the tree
-/// screen's 0.86 backdrop) looks much lighter in linear space. For pure black the sRGB result
-/// `dst·(1 − a)` is reproduced exactly by `a' = 1 − (1 − a)^2.2`; other colours keep `a`.
-///
-/// TODO(R21): only corrects `col == 0`. T13 switches blending to sRGB space (ruling R21); once
-/// that lands, remove `gamma_alpha` (it would double-correct the veil).
-pub fn gamma_alpha(col: f64, alpha: f64) -> f64 {
-    if col == 0.0 {
-        1.0 - (1.0 - alpha.clamp(0.0, 1.0)).powf(2.2)
-    } else {
-        alpha
-    }
-}
-
 /// Painter state and output for one frame.
 pub struct Gm<'a> {
     pub assets: &'a GameAssets,
@@ -190,12 +176,8 @@ impl<'a> Gm<'a> {
             .iter()
             .map(|&(x, y, col, alpha)| {
                 let (x, y) = self.tf(x, y);
-                Vert {
-                    x,
-                    y,
-                    col,
-                    alpha: gamma_alpha(col, alpha),
-                }
+                // blending is in sRGB space (camera::COMPOSITING), so alpha is used as is
+                Vert { x, y, col, alpha }
             })
             .collect();
         match self.items.last_mut() {
