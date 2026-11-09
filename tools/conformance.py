@@ -15,7 +15,8 @@ MYCO_RNG_SEED (game_init's clock-seeded randomise() reseeds the same way in both
 
 - LÖVE runs with MYCO_CONFORM=1 (game/gm/conform.lua): one logic step per frame on a step
   clock, with the music/ambience shuffle off the game's RNG; its save folder is the
-  MYCO_IDENTITY=MycelariumTest-t22 folder, wiped before each run.
+  MYCO_IDENTITY=MycelariumTest-t22 folder (MYCO_CONFORM_IDENTITY=MycelariumTest-<x> picks another,
+  e.g. per worktree), wiped before each run.
 - Rust runs rust/target/release/myco_app with MYCO_SAVE_DIR set to a fresh temp folder.
 
 The dumps (what save_game would write at that frame) are compared on the deterministic fields:
@@ -42,7 +43,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = ROOT / "rust" / "conformance" / "scenarios"
 LOVE = Path(os.environ.get("LOVE", ROOT / "build" / "tools" / "love.app" / "Contents" / "MacOS" / "love"))
 RUST_BIN = ROOT / "rust" / "target" / "release" / "myco_app"
-IDENTITY = "MycelariumTest-t22"
+IDENTITY = os.environ.get("MYCO_CONFORM_IDENTITY", "MycelariumTest-t22")
+assert IDENTITY.startswith("MycelariumTest"), "never the real LOVE/Mycelarium folder"
 LOVE_SAVE_DIR = Path.home() / "Library" / "Application Support" / "LOVE" / IDENTITY
 SETTINGS_INI = '[display]\nfullscreen="0.000000"\nwindow_w="1280.000000"\nwindow_h="720.000000"\n'
 
