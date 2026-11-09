@@ -74,7 +74,10 @@ impl Menus {
     /// `hud_slot_mode_label(i)`: the save's mode under its label.
     pub fn hud_slot_mode_label(&self, i: usize, env: &MenuEnv) -> String {
         match self.slot_status(i) {
-            SlotStatus::Ok(m) => env.locale.loc(&format!("mode_{}", mode_str(m.mode))).to_string(),
+            SlotStatus::Ok(m) => env
+                .locale
+                .loc(&format!("mode_{}", mode_str(m.mode)))
+                .to_string(),
             _ => String::new(),
         }
     }
@@ -138,7 +141,8 @@ impl Menus {
         if self.slot_mode == SlotMode::New {
             title += &format!(
                 "  -  {}",
-                loc.loc(&format!("mode_{}", mode_str(self.new_mode))).to_uppercase()
+                loc.loc(&format!("mode_{}", mode_str(self.new_mode)))
+                    .to_uppercase()
             );
         }
         let mut lines: Vec<(String, f64, f64)> = Vec::new();
@@ -201,7 +205,14 @@ impl Menus {
                     col
                 };
             }
-            let sc = hud_fit(m, FontSel::Main, &label, 0.7, r.x2 - r.x1 - 24.0, r.y2 - r.y1);
+            let sc = hud_fit(
+                m,
+                FontSel::Main,
+                &label,
+                0.7,
+                r.x2 - r.x1 - 24.0,
+                r.y2 - r.y1,
+            );
             let sub = if i < SLOTS {
                 self.hud_slot_mode_label(i, env)
             } else {

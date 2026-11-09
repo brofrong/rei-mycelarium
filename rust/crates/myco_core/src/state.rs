@@ -569,7 +569,10 @@ pub struct WorldSave {
     pub cols: i64,
     pub hard_row: i64,
     pub layer_rows: i64,
-    pub obstacles: ObstaclesSave,
+    /// `world.obstacles`: absent until `world_obstacles_reach` first builds it (lazily, from
+    /// `start_x`), so a save without the key starts the bands afresh
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub obstacles: Option<ObstaclesSave>,
     pub rows: i64,
     pub seed: i64,
     pub start_x: f64,
@@ -642,7 +645,8 @@ pub struct LakeSave {
     pub extra: Extra,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+/// A loose stone (`___struct___215__world_paint_stones`).
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct StoneSave {
     pub angle: f64,
@@ -657,12 +661,34 @@ pub struct StoneSave {
     pub y: f64,
     #[serde(flatten)]
     pub extra: Extra,
+    /// runtime identity (Lua compares the struct references): `global.stones_moving` holds
+    /// stones by uid; not saved, ignored by `==`
+    #[serde(skip)]
+    pub uid: u64,
+}
+
+impl PartialEq for StoneSave {
+    fn eq(&self, o: &Self) -> bool {
+        self.angle == o.angle
+            && self.cx == o.cx
+            && self.kind == o.kind
+            && self.moving == o.moving
+            && self.side == o.side
+            && self.spin == o.spin
+            && self.vx == o.vx
+            && self.vy == o.vy
+            && self.x == o.x
+            && self.y == o.y
+            && self.extra == o.extra
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct StoneCellSave {
-    pub band: i64,
+    /// tile depth row (0/1); old saves may lack it (`stone_redress_after_cut` then hashes one)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub band: Option<i64>,
     pub col: i64,
     pub deep: bool,
     pub row: i64,
@@ -704,7 +730,8 @@ pub struct ObstacleSideSave {
     pub extra: Extra,
 }
 
-/// One obstacle band; kind-specific keys (`cx`, `c1`/`c2`, `data`) stay as they were.
+/// One obstacle band (`___struct___228/229__world_obstacles_reach`): a `"wall"` has `cx`, a
+/// `"maze"` has `c1`/`c2` and `data` (null until `world_maze_build` caches the maze in it).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ObstacleSave {
@@ -718,6 +745,47 @@ pub struct ObstacleSave {
     pub c1: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub c2: Option<f64>,
+    /// absent (walls), `Some(None)` = null, `Some(Some(_))` = the built maze
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_or_null"
+    )]
+    pub data: Option<Option<MazeData>>,
+    #[serde(flatten)]
+    pub extra: Extra,
+}
+
+/// A key that is present deserializes to `Some` (null included); `#[serde(default)]` gives
+/// `None` when it is absent.
+fn present_or_null<'de, D, T>(d: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(d).map(Some)
+}
+
+/// A built maze or rock cluster (`___struct___236__maze_finish`): its stone cells, foods and
+/// lakes, painted into each chunk they overlap (`world_paint_maze_part`).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MazeData {
+    pub entries: Vec<StoneCellSave>,
+    pub foods: Vec<MazeFoodSave>,
+    pub lakes: Vec<LakeSave>,
+    #[serde(flatten)]
+    pub extra: Extra,
+}
+
+/// A food of a maze room (`___struct___235__maze_finish`).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MazeFoodSave {
+    pub x: f64,
+    pub y: f64,
+    pub kind: i64,
+    pub cell: i64,
     #[serde(flatten)]
     pub extra: Extra,
 }

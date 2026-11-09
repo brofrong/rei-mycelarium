@@ -36,11 +36,7 @@ impl Menus {
         } else {
             " "
         };
-        let mut lines = vec![(
-            format!("{}{cursor}", self.keyboard_string),
-            1.0,
-            COLOR_INK,
-        )];
+        let mut lines = vec![(format!("{}{cursor}", self.keyboard_string), 1.0, COLOR_INK)];
         if let Some(SlotStatus::Ok(m)) = self.slot_metas.get(self.slot_naming as usize) {
             lines.push((
                 format!("{} {}", loc.loc("slot_overwrites"), m.name),

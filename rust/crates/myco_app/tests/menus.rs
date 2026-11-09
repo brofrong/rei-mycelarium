@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 use myco_app::sim_bridge::SimRes;
-use myco_app::ui::draw::{DrawCmd, UiFonts};
+use myco_app::ui::draw::{DrawCmd, FixedMetrics};
 use myco_app::ui::menu::*;
 use myco_app::ui::settings::hud_pause_button_rect;
 use myco_app::ui::slots::hud_slot_button_rect;
@@ -17,7 +17,10 @@ const GW: f64 = 1920.0;
 const GH: f64 = 1200.0;
 
 fn locale() -> Locale {
-    let p = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../build/assets/localization.csv");
+    let p = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../build/assets/localization.csv"
+    );
     let csv = std::fs::read_to_string(p).unwrap_or_default();
     Locale::init(&csv, "en", "en", "US")
 }
@@ -73,7 +76,7 @@ impl Ctx {
             window_size: (1280, 720),
             flags: &mut self.flags,
         };
-        m.draw(sim, &UiFonts::fixed(20.0, 40.0), &env, GW, GH, 0.0)
+        m.draw(sim, &FixedMetrics { w: 20.0, h: 40.0 }, &env, GW, GH, 0.0)
     }
 }
 
@@ -132,7 +135,10 @@ fn corrupt_slot_listed_not_loadable() {
     let p = save::save_path(&dir, 1);
     let text = std::fs::read(&p).unwrap();
     std::fs::write(&p, &text[..text.len() / 2]).unwrap();
-    assert!(matches!(save::list_slots(&dir, 3)[1], SlotStatus::Corrupt(_)));
+    assert!(matches!(
+        save::list_slots(&dir, 3)[1],
+        SlotStatus::Corrupt(_)
+    ));
 
     let mut sim = title(&dir);
     let mut m = Menus::new(Some(dir.clone()));
@@ -143,9 +149,24 @@ fn corrupt_slot_listed_not_loadable() {
     assert_eq!(m.slot_mode, SlotMode::Load);
 
     let shown = texts(&cx.draw(&mut m, &sim));
-    assert!(shown.iter().any(|s| s.starts_with("Slot 2") && s.contains("Damaged")), "{shown:?}");
-    assert!(shown.iter().any(|s| s.starts_with("Slot 1") && s.contains("Good")), "{shown:?}");
-    assert!(shown.iter().any(|s| s.starts_with("Slot 3") && s.contains("Empty")), "{shown:?}");
+    assert!(
+        shown
+            .iter()
+            .any(|s| s.starts_with("Slot 2") && s.contains("Damaged")),
+        "{shown:?}"
+    );
+    assert!(
+        shown
+            .iter()
+            .any(|s| s.starts_with("Slot 1") && s.contains("Good")),
+        "{shown:?}"
+    );
+    assert!(
+        shown
+            .iter()
+            .any(|s| s.starts_with("Slot 3") && s.contains("Empty")),
+        "{shown:?}"
+    );
 
     let r1 = hud_slot_button_rect(GW, sim.camera.view_y, 1);
     cx.step(&mut m, &mut sim, hover_at(r1));
@@ -186,7 +207,10 @@ fn new_game_flow_binds_slot_and_name() {
     let mut cx = Ctx::new();
     let r = title_item(&sim, "survival");
     cx.step(&mut m, &mut sim, click_at(r));
-    assert_eq!((m.slot_mode, m.new_mode), (SlotMode::New, GameMode::Survival));
+    assert_eq!(
+        (m.slot_mode, m.new_mode),
+        (SlotMode::New, GameMode::Survival)
+    );
     let r2 = hud_slot_button_rect(GW, sim.camera.view_y, 2);
     cx.step(&mut m, &mut sim, click_at(r2));
     assert_eq!(m.slot_naming, 2);
@@ -198,7 +222,10 @@ fn new_game_flow_binds_slot_and_name() {
             ..idle()
         },
     );
-    assert_eq!(m.keyboard_string, "Spore cap and mu", "16 characters at most");
+    assert_eq!(
+        m.keyboard_string, "Spore cap and mu",
+        "16 characters at most"
+    );
     cx.step(
         &mut m,
         &mut sim,
@@ -216,7 +243,10 @@ fn new_game_flow_binds_slot_and_name() {
         },
     );
     assert!(!sim.title_open);
-    assert_eq!((sim.save.slot, sim.save.name.as_str()), (2, "Spore cap and m"));
+    assert_eq!(
+        (sim.save.slot, sim.save.name.as_str()),
+        (2, "Spore cap and m")
+    );
     assert_eq!(sim.state.state.mode, GameMode::Survival);
     assert_eq!(m.slot_mode, SlotMode::None);
     for _ in 0..31 {
@@ -279,11 +309,25 @@ fn settings_and_pause_items() {
     assert!(shown.iter().any(|s| s == "LANGUAGE: ENGLISH"), "{shown:?}");
     assert!(shown.iter().any(|s| s == "WINDOW: 1280x720"), "{shown:?}");
     assert!(!shown.iter().any(|s| s == "MAIN MENU"));
-    let lang = PAUSE_ITEMS_TITLE.iter().position(|i| *i == "language").unwrap();
-    let fx = cx.step(&mut m, &mut sim, click_at(hud_pause_button_rect(GW, GH, lang)));
+    let lang = PAUSE_ITEMS_TITLE
+        .iter()
+        .position(|i| *i == "language")
+        .unwrap();
+    let fx = cx.step(
+        &mut m,
+        &mut sim,
+        click_at(hud_pause_button_rect(GW, GH, lang)),
+    );
     assert_eq!(fx, vec![MenuEffect::CycleLanguage(1)]);
-    let units = PAUSE_ITEMS_TITLE.iter().position(|i| *i == "units").unwrap();
-    cx.step(&mut m, &mut sim, click_at(hud_pause_button_rect(GW, GH, units)));
+    let units = PAUSE_ITEMS_TITLE
+        .iter()
+        .position(|i| *i == "units")
+        .unwrap();
+    cx.step(
+        &mut m,
+        &mut sim,
+        click_at(hud_pause_button_rect(GW, GH, units)),
+    );
     assert!(cx.flags.units_imperial);
     cx.step(&mut m, &mut sim, click_at(hud_pause_button_rect(GW, GH, 0)));
     assert!(!sim.pause_open, "resume");
@@ -299,12 +343,23 @@ fn settings_and_pause_items() {
         },
     );
     assert!(sim.pause_open);
-    let mm = PAUSE_ITEMS_GAME.iter().position(|i| *i == "main_menu").unwrap();
-    let fx = cx.step(&mut m, &mut sim, click_at(hud_pause_button_rect(GW, GH, mm)));
+    let mm = PAUSE_ITEMS_GAME
+        .iter()
+        .position(|i| *i == "main_menu")
+        .unwrap();
+    let fx = cx.step(
+        &mut m,
+        &mut sim,
+        click_at(hud_pause_button_rect(GW, GH, mm)),
+    );
     assert_eq!(fx, vec![MenuEffect::AudioSave, MenuEffect::Restart]);
     assert!(matches!(&save::list_slots(&dir, 3)[0], SlotStatus::Ok(meta) if meta.name == "Run"));
     let quit = PAUSE_ITEMS_GAME.iter().position(|i| *i == "quit").unwrap();
-    let fx = cx.step(&mut m, &mut sim, click_at(hud_pause_button_rect(GW, GH, quit)));
+    let fx = cx.step(
+        &mut m,
+        &mut sim,
+        click_at(hud_pause_button_rect(GW, GH, quit)),
+    );
     assert_eq!(fx, vec![MenuEffect::Quit]);
 
     // volume slider: drag sets, release saves
@@ -335,7 +390,10 @@ fn quit_writes_slot() {
         .init_resource::<ExitSaved>()
         .add_systems(Last, save_on_exit);
     app.update();
-    assert!(!save::save_path(&dir, 1).exists(), "no save before quitting");
+    assert!(
+        !save::save_path(&dir, 1).exists(),
+        "no save before quitting"
+    );
     app.world_mut().write_message(AppExit::Success);
     app.update();
     let slots = save::list_slots(&dir, 3);
@@ -368,8 +426,33 @@ fn credits_open_and_close() {
     assert!(m.credits_open);
     let shown = texts(&cx.draw(&mut m, &sim));
     assert!(shown.iter().any(|s| s == "Eder Muniz"));
-    cx.step(&mut m, &mut sim, click_at(R { x1: 5.0, y1: 5.0, x2: 6.0, y2: 6.0 }));
+    cx.step(
+        &mut m,
+        &mut sim,
+        click_at(R {
+            x1: 5.0,
+            y1: 5.0,
+            x2: 6.0,
+            y2: 6.0,
+        }),
+    );
     assert!(!m.credits_open);
     let shown = texts(&cx.draw(&mut m, &sim));
     assert!(shown.iter().any(|s| s == "v1.02") && shown.iter().any(|s| s == "Exploration Mode"));
+}
+
+/// `display_init` / `display_cycle_size` as LÖVE reports a 14" MacBook (1512×982 points): the
+/// settings offer 1280×720 and 1366×768; no saved size selects the largest; cycling wraps.
+#[test]
+fn display_sizes_follow_love() {
+    use myco_app::display::DisplaySizes;
+    let mut s = DisplaySizes::new(Some((1512.0, 982.0)), None);
+    assert_eq!(s.sizes, vec![(1280, 720), (1366, 768)]);
+    assert_eq!(s.display_window_size(), (1366, 768));
+    assert_eq!(s.display_cycle_size(1), (1280, 720));
+    assert_eq!(s.display_cycle_size(-1), (1366, 768));
+    let s = DisplaySizes::new(Some((1512.0, 982.0)), Some((1280, 720)));
+    assert_eq!(s.display_window_size(), (1280, 720));
+    let s = DisplaySizes::new(Some((800.0, 600.0)), Some((0, 0)));
+    assert_eq!(s.sizes, vec![(1280, 720)]);
 }

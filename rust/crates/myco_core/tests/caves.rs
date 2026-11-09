@@ -1,7 +1,7 @@
 //! Caves, relics, perks and bones (Task 6) against the LÖVE port.
 //! Golden topics (rust/golden/scripts): caves_art (masks, outlines, sprite sizes), caves_s31607
-//! and caves_s7 (layout, chunks, queries, helpers, the yellow cave; captured with only the
-//! stone entry points neutralized, ruling R19), caves_touch (rewards on the Exploration
+//! and caves_s7 (layout, chunks, queries, helpers, the yellow cave; everything live, ruling
+//! R19), caves_touch (rewards on the Exploration
 //! fixture). The cave caches fill lazily, so every test replays the golden script's calls in
 //! the same order.
 mod common;
@@ -10,7 +10,7 @@ use common::{f, golden, i};
 use myco_core::sim::Sim;
 use myco_core::state::{GameMode, GameState, MushroomSave};
 use myco_core::world::caves::{self, Cave, CaveHost, CaveKind, HostKey, YellowSpot};
-use myco_core::world::{bones, perks, relics, stones, WorldRt};
+use myco_core::world::{bones, maze, perks, relics, WorldRt};
 use serde_json::{json, Value};
 
 fn unrle(v: &Value) -> Vec<f64> {
@@ -193,7 +193,7 @@ fn boxes_json(list: &[caves::Zone]) -> Value {
 }
 
 fn obstacles_eq(w: &WorldRt, want: &Value, what: &str) {
-    let o = &w.params.obstacles;
+    let o = w.params.obstacles.as_ref().expect("obstacles built");
     for (side, s) in [("left", &o.left), ("right", &o.right)] {
         let ws = &want[side];
         assert_eq!(s.count as f64, f(&ws["count"]), "{what}.{side}.count");
@@ -280,10 +280,10 @@ fn caves_seed_match(topic: &str, seed: i64) {
     obstacles_eq(w, &g["obstacles"], "obstacles");
     json_eq("rects_init", &rects_json(w), &g["rects_init"]);
     json_eq("blue_state", &blue_state_json(w), &g["blue_state"]);
-    let clusters: Vec<Value> = stones::world_rock_clusters(w)
+    let clusters: Vec<Value> = maze::world_rock_clusters(w)
         .iter()
         .map(|c| {
-            json!({"id": c.id, "tier": c.tier.id(), "key": c.key, "col": c.col, "row": c.row,
+            json!({"id": c.id, "tier": c.tier, "key": c.key, "col": c.col, "row": c.row,
                    "r": c.r, "c1": c.c1, "c2": c.c2, "x1": c.x1, "y1": c.y1, "x2": c.x2, "y2": c.y2})
         })
         .collect();
@@ -658,7 +658,14 @@ fn cave_touch_rewards_match_love() {
     let sounds = sim
         .drain_events()
         .into_iter()
-        .filter(|e| matches!(e, myco_core::events::SimEvent::Sound(s) if s.name == "water_touch"))
+        .filter(|e| {
+            matches!(
+                e,
+                myco_core::events::SimEvent::Audio(myco_core::events::AudioCall::WaterTouch {
+                    at: Some(_)
+                })
+            )
+        })
         .count();
     assert_eq!(sounds, 7, "water_touch sounds: 5 caves + 2 relics");
 
@@ -803,19 +810,7 @@ fn perk_costs_match_love() {
 // Rust-only checks
 
 #[test]
-fn neutralized_caves_leave_the_world_alone() {
-    caves::neutralize_caves(true);
-    let mut sim = Sim::new_game(GameMode::Exploration, "N", Some(31607));
-    assert!(sim.world.caves().is_empty());
-    assert!(!caves::world_cave_hits(
-        &mut sim.world,
-        -1e9,
-        -1e9,
-        1e9,
-        1e9,
-        None
-    ));
-    caves::neutralize_caves(false);
+fn a_new_world_has_its_first_caves() {
     let mut sim = Sim::new_game(GameMode::Exploration, "N", Some(31607));
     assert_eq!(sim.world.cave_rects().len(), 4);
 }
@@ -849,10 +844,7 @@ fn wrap_hits_wait_for_the_wrap_animation() {
     );
     // cave_wrap_ms = 2600 ms on the 60 Hz sim clock
     sim.frame += 156;
-    assert_eq!(
-        caves::now_ms(&sim) - sim.world.caves.wrap[&r.id].born,
-        2600.0
-    );
+    assert_eq!(sim.now_ms() - sim.world.caves.wrap[&r.id].born, 2600.0);
     let h = caves::caves_wrap_hit(&mut sim, x, y, 60.0);
     assert!(h.hit && h.dist <= 60.0, "{h:?}");
 }

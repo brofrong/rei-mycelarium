@@ -307,8 +307,10 @@ pub struct WeatherRenderPlugin;
 
 impl Plugin for WeatherRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(BlendPlugin)
-            .add_systems(Startup, spawn_weather_meshes)
+        if !app.is_plugin_added::<BlendPlugin>() {
+            app.add_plugins(BlendPlugin);
+        }
+        app.add_systems(Startup, spawn_weather_meshes)
             .add_systems(Update, weather_draw);
     }
 }

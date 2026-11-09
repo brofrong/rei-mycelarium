@@ -9,13 +9,21 @@ use myco_core::locale::Locale;
 /// `hud_credits_columns`: per column, (heading key, names).
 pub const CREDITS: [&[(&str, &[&str])]; 2] = [
     &[
-        ("credits_plan_kapkan", &["Andrey Tyulenev", "Philipp Zybkovets"]),
+        (
+            "credits_plan_kapkan",
+            &["Andrey Tyulenev", "Philipp Zybkovets"],
+        ),
         ("credits_smm_qa", &["Daria Konakhova"]),
     ],
     &[
         (
             "credits_art_ui",
-            &["LaNa_FeeD", "Wothy (@wothella)", "Olga Zaporozhskaia", "Oniks"],
+            &[
+                "LaNa_FeeD",
+                "Wothy (@wothella)",
+                "Olga Zaporozhskaia",
+                "Oniks",
+            ],
         ),
         ("credits_forest_assets", &["Eder Muniz"]),
     ],
@@ -79,6 +87,17 @@ impl Menus {
         } else {
             COLOR_DIM
         };
-        shadow_text(d, br.cx(), br.cy(), loc.loc("slot_back"), 0.7, col, ta, FontSel::Main, 1, 1);
+        shadow_text(
+            d,
+            br.cx(),
+            br.cy(),
+            loc.loc("slot_back"),
+            0.7,
+            col,
+            ta,
+            FontSel::Main,
+            1,
+            1,
+        );
     }
 }

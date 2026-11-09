@@ -114,9 +114,6 @@ pub fn bone_kind_pick(r: f64, depth: f64) -> BonePick {
 /// `world_paint_bones(chunk, layer)`: up to `bones_tries_per_layer` skeletons in the layer, on
 /// soil (not lakes, stones or rock), clear of caves, of each other, and of the start screen.
 pub fn world_paint_bones(w: &mut WorldRt, ch: &mut WorldChunkSave, layer: i64) {
-    if caves::neutral() {
-        return;
-    }
     let key = gen::layer_key(ch.cx, layer);
     let p = &w.params;
     let (tile, sy, chunk_w, start_x) = (p.tile as f64, p.surface_y, p.chunk_w as f64, p.start_x);

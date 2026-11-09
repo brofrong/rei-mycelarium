@@ -83,19 +83,20 @@ impl Menus {
         gh: f64,
     ) {
         let loc = env.locale;
-        let text = |d: &mut Vec<DrawCmd>, x: f64, y: f64, s: String, sc: f64, col: f64, alpha: f64| {
-            d.push(DrawCmd::Text {
-                x,
-                y,
-                s,
-                sc,
-                col,
-                alpha,
-                font: FontSel::Small,
-                halign: 0,
-                valign: 0,
-            })
-        };
+        let text =
+            |d: &mut Vec<DrawCmd>, x: f64, y: f64, s: String, sc: f64, col: f64, alpha: f64| {
+                d.push(DrawCmd::Text {
+                    x,
+                    y,
+                    s,
+                    sc,
+                    col,
+                    alpha,
+                    font: FontSel::Small,
+                    halign: 0,
+                    valign: 0,
+                })
+            };
         let rect = |d: &mut Vec<DrawCmd>, r: R, col: f64, alpha: f64, outline: bool| {
             d.push(DrawCmd::Rect {
                 x1: r.x1,
@@ -118,7 +119,15 @@ impl Menus {
             let r = hud_volume_slider_rect(gw, gh, i);
             let v = env.volumes[i];
             let kx = r.x1 + (r.x2 - r.x1) * v;
-            text(d, r.x1, r.y1 - 30.0, loc.loc(label).to_string(), 1.2, COLOR_DIM, 1.0);
+            text(
+                d,
+                r.x1,
+                r.y1 - 30.0,
+                loc.loc(label).to_string(),
+                1.2,
+                COLOR_DIM,
+                1.0,
+            );
             let pct = format!("{}%", myco_core::gml::round(v * 100.0) as i64);
             text(d, r.x2 - 60.0, r.y1 - 30.0, pct, 1.2, COLOR_DIM, 1.0);
             rect(d, r, COLOR_PANEL, 1.0, false);
@@ -154,6 +163,14 @@ impl Menus {
         }
         let lr = hud_pause_button_rect(gw, gh, items.len() - 1);
         let vw = m.width(FontSel::Small, VERSION);
-        text(d, lr.cx() - vw * 0.5, lr.y2 + 12.0, VERSION.into(), 1.0, COLOR_DIM, 0.7);
+        text(
+            d,
+            lr.cx() - vw * 0.5,
+            lr.y2 + 12.0,
+            VERSION.into(),
+            1.0,
+            COLOR_DIM,
+            0.7,
+        );
     }
 }

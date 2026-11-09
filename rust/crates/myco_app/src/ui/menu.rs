@@ -236,6 +236,8 @@ pub struct Menus {
     pub keyboard_string: String,
     /// `global.logo_*`
     pub logo: LogoState,
+    /// this step's Escape closed or toggled a menu other than the tree (the tree ignores it)
+    pub escape_used: bool,
 }
 
 impl Menus {
@@ -258,6 +260,7 @@ impl Menus {
             volume_drag: -1,
             keyboard_string: String::new(),
             logo: LogoState::logo_init(),
+            escape_used: false,
         }
     }
 
@@ -285,7 +288,13 @@ impl Menus {
         let title = sim.title_open;
         let popup = tasks_popup_open(sim);
         let cine = myco_core::camera::cine_blocking(sim);
+        self.escape_used = false;
         if inp.escape && !popup && !cine {
+            self.escape_used = !env.flags.menu_open
+                || self.slot_mode != SlotMode::None
+                || self.credits_open
+                || env.flags.debug_open
+                || self.logo.open;
             if self.slot_mode != SlotMode::None {
                 if self.slot_naming >= 0 {
                     self.slot_naming = -1;
@@ -384,12 +393,26 @@ impl Menus {
     }
 
     /// Title menu items, the version line, and the vignette while the title fades.
-    fn title_draw(&self, d: &mut Vec<DrawCmd>, m: &dyn TextMetrics, loc: &Locale, gw: f64, cam_y: f64) {
+    fn title_draw(
+        &self,
+        d: &mut Vec<DrawCmd>,
+        m: &dyn TextMetrics,
+        loc: &Locale,
+        gw: f64,
+        cam_y: f64,
+    ) {
         let ta = self.title_alpha;
         for (i, item) in TITLE_ITEMS.iter().enumerate() {
             let r = hud_title_button_rect(gw, cam_y, i);
             let label = loc.loc(&format!("title_{item}")).to_string();
-            let sc = super::draw::hud_fit(m, FontSel::Main, &label, 1.0, r.x2 - r.x1 - 24.0, r.y2 - r.y1);
+            let sc = super::draw::hud_fit(
+                m,
+                FontSel::Main,
+                &label,
+                1.0,
+                r.x2 - r.x1 - 24.0,
+                r.y2 - r.y1,
+            );
             let col = if self.hud_title_item_disabled(i) {
                 COLOR_DEEP
             } else if self.title_hover == i as i32 {
@@ -559,38 +582,14 @@ pub fn hud_title_button_rect(gw: f64, cam_y: f64, i: usize) -> R {
 }
 
 // port: anon__16771__gml_Object_obj_hud_Create_0
-/// `hud_close_button_rect()`: top-right CLOSE button of the full-screen panels.
+/// `hud_close_button_rect()`: top-right CLOSE button of the full-screen panels (the tree screen
+/// has the same rect as `TreeView::close_button_rect`).
 pub fn hud_close_button_rect(gw: f64) -> R {
     R {
         x1: gw - 152.0,
         y1: 30.0,
         x2: gw - 32.0,
         y2: 76.0,
-    }
-}
-
-// port: anon__16960__gml_Object_obj_hud_Create_0
-/// `hud_recentre_button_rect()` (upgrade tree).
-pub fn hud_recentre_button_rect(gw: f64) -> R {
-    let c = hud_close_button_rect(gw);
-    R {
-        x1: c.x1 - 208.0,
-        y1: c.y1,
-        x2: c.x1 - 20.0,
-        y2: c.y2,
-    }
-}
-
-// port: anon__17165__gml_Object_obj_hud_Create_0
-/// `hud_logo_button_rect()`: the tree screen's LOGO button that opens the generator (T19 draws
-/// it and calls [`LogoState::logo_open`] on click).
-pub fn hud_logo_button_rect(gw: f64) -> R {
-    let c = hud_recentre_button_rect(gw);
-    R {
-        x1: c.x1 - 580.0,
-        y1: c.y1,
-        x2: c.x1 - 20.0,
-        y2: c.y2,
     }
 }
 

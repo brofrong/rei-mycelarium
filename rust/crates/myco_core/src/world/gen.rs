@@ -70,7 +70,7 @@ impl WorldRt {
             cols: cols as i64,
             hard_row: hard_rows as i64,
             layer_rows: hard_rows as i64,
-            obstacles: Default::default(),
+            obstacles: None,
             rows: 1_000_000,
             seed,
             start_x,

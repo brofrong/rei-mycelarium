@@ -31,7 +31,17 @@ fn pts_eq(r: &[[f64; 2]], g: &Value, what: &str) {
 
 fn model_eq(m: &LogoModel, g: &Value, what: &str) {
     assert_eq!(m.letters, g["letters"].as_i64().unwrap(), "{what}: letters");
-    for k in ["x1", "x2", "y1", "y2", "letter_x1", "letter_x2", "letter_y1", "letter_y2", "duration"] {
+    for k in [
+        "x1",
+        "x2",
+        "y1",
+        "y2",
+        "letter_x1",
+        "letter_x2",
+        "letter_y1",
+        "letter_y2",
+        "duration",
+    ] {
         let v = match k {
             "x1" => m.x1,
             "x2" => m.x2,
@@ -53,7 +63,11 @@ fn model_eq(m: &LogoModel, g: &Value, what: &str) {
         close(r.total, f(&q["total"]), &format!("{w}.total"));
         close(r.nib, f(&q["nib"]), &format!("{w}.nib"));
         close(r.letter, f(&q["letter"]), &format!("{w}.letter"));
-        assert_eq!(r.tip_start, q["tip_start"].as_bool().unwrap(), "{w}.tip_start");
+        assert_eq!(
+            r.tip_start,
+            q["tip_start"].as_bool().unwrap(),
+            "{w}.tip_start"
+        );
         assert_eq!(r.tip_end, q["tip_end"].as_bool().unwrap(), "{w}.tip_end");
         let gl = q["len"].as_array().unwrap();
         assert_eq!(r.len.len(), gl.len());
@@ -100,7 +114,11 @@ fn logo_paint_vertices_match_love() {
             assert_eq!(s.len() * 2, flat.len(), "strip {i} at {progress}");
             for (k, v) in s.iter().enumerate() {
                 close(v[0], f(&flat[2 * k]), &format!("p{progress} s{i} v{k}.x"));
-                close(v[1], f(&flat[2 * k + 1]), &format!("p{progress} s{i} v{k}.y"));
+                close(
+                    v[1],
+                    f(&flat[2 * k + 1]),
+                    &format!("p{progress} s{i} v{k}.y"),
+                );
             }
         }
     }
@@ -113,7 +131,11 @@ fn logo_helpers_match_love() {
         close(logo_noise(f(&n[0]), f(&n[1])), f(&n[2]), "noise");
     }
     for t in g["text_seed"].as_array().unwrap() {
-        close(logo_text_seed(t[0].as_str().unwrap()), f(&t[1]), "text_seed");
+        close(
+            logo_text_seed(t[0].as_str().unwrap()),
+            f(&t[1]),
+            "text_seed",
+        );
     }
     for r in g["reach"].as_array().unwrap() {
         close(logo_reach(f(&r[0]), f(&r[1])), f(&r[2]), "reach");

@@ -1,11 +1,9 @@
 -- Survival layout (MYCO_SEED=31607): game_mode_start("survival") thins the existing world, new
 -- chunks are thinned as they generate, the bottom is rock. Plus the infinite-water path of an
--- exploration world. Task 6/7 features neutralized (world_lib.lua). For tests/world.rs.
+-- exploration world. Caves, stones and mazes live. For tests/world.rs.
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
 assert(os.getenv("MYCO_SEED") == "31607", "run with MYCO_SEED=31607")
-L.neutralize_caves()
-L.neutralize_stones()
 L.preload()
 
 local out = {}
