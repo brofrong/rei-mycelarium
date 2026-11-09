@@ -410,7 +410,7 @@ pub fn step(sim: &mut Sim, input: &StepInput) {
         // quick node, ruling: ignored while aiming)
         for c in &input.commands {
             match *c {
-                Command::QuickNode { x, y } if !input.lmb.down => {
+                Command::QuickNode { x, y } if !input.lmb.down && input.placement.is_none() => {
                     if let Err(reason) = knots::quick_node(sim, x, y) {
                         sim.emit(SimEvent::NodeRejected { reason, x, y });
                     }
@@ -578,13 +578,15 @@ fn lmb_press(sim: &mut Sim, input: &StepInput, pressed: bool) {
     }
 }
 
-/// The HUD's mushroom placement (obj_hud Step_1 calls `myc_place_mushroom` on a click in
-/// placement mode): `Command::PlaceMushroom` is handled here, from `progress::hud_begin_step`.
-/// Task 17 sees success as a new entry in `sim.state.mushrooms`.
+/// The HUD's mushroom placement (obj_hud Step_1, from `progress::hud_begin_step`): in placement
+/// mode `myc_place_check` runs for the cursor (the preview, ruling R22), then a click
+/// (`Command::PlaceMushroom`) calls `myc_place_mushroom`; success emits
+/// `SimEvent::MushroomPlaced`.
 pub fn apply_hud_commands(sim: &mut Sim, input: &StepInput) {
+    crate::mushrooms::placement_step(sim, input);
     for c in &input.commands {
         if let Command::PlaceMushroom { kind, x, y } = *c {
-            place::place_mushroom(sim, kind, x, Some(y));
+            crate::mushrooms::build_at(sim, kind, x, y);
         }
     }
 }

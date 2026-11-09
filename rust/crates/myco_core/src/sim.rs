@@ -102,8 +102,6 @@ pub struct StepInput {
     pub ui_captured: bool,
     pub view: ViewRect,
     pub commands: Vec<Command>,
-    /// the tasks panel is open (`tasks_block_open`, measured by the app; ruling R11)
-    pub tasks_panel_open: bool,
     /// a tasks popup is open (`tasks_popup_open`, app state; ruling R12)
     pub tasks_popup_open: bool,
     /// the upgrade tree screen is open (`global.menu_open`, HUD state; read by `tutorial_step`)
@@ -116,8 +114,17 @@ pub struct StepInput {
     pub hud_hidden: bool,
     /// a slot name is being typed (`obj_hud.hud_slot_naming != -1`): the F glow key is text
     pub slot_naming: bool,
+    /// the HUD's placement mode (`obj_hud.hud_place_type >= 0`): the type being placed. While
+    /// set, `myc_place_check` runs for the cursor every step (`MushroomsRt::place_preview`,
+    /// ruling R22) and `Command::QuickNode` is ignored (a right click cancels placement).
+    pub placement: Option<MushroomKind>,
 }
 
+/// What the app asks the simulation to do this step (clicks the app hit-tests, ruling R9).
+///
+/// Contract with Task 8: the in-world button commands (`MycReleaseSpores`, `MycBuildOption`,
+/// `MycRegenRepeller`) are dropped while `StepInput.ui_captured` is set, so the in-world
+/// prompts must never set `UiCapture` themselves; only HUD and menu screens do.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     /// right click
@@ -135,6 +142,22 @@ pub enum Command {
     },
     SetPaused(bool),
     Save,
+    /// `tasks_block_toggle(block)`: a click on a tasks panel header (the app hit-tests the
+    /// text-measured header, ruling R15); flips the saved open flag in obj_hud's Begin Step
+    ToggleTaskBlock {
+        block: crate::progress::tasks::Block,
+    },
+    /// HUD camera buttons (obj_hud Begin Step): `camera_jump_edge(dir)` (left -1 / right 1)
+    CameraJumpEdge {
+        dir: f64,
+    },
+    /// HUD camera button: `camera_jump_origin()`
+    CameraJumpOrigin,
+    /// a click on an animal marker: `camera_fly_to_marker` toward the animal at (x, y)
+    CameraFlyTo {
+        x: f64,
+        y: f64,
+    },
     /// Task 8: a click on the in-world build menu's option `index` (the app hit-tests
     /// `myc_build_button_rect`; ruling R9b)
     MycBuildOption {

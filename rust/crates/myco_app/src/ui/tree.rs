@@ -17,13 +17,14 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlockers, UiCapture};
+use crate::sim_bridge::{PendingInput, SimRes, UiBlockers, UiCapture};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use myco_core::balance::{bal, vis};
 use myco_core::gml::{self, lengthdir_x, lengthdir_y, point_direction, point_distance};
+use myco_core::mushrooms::types::{sheet_cell_width, shroom_sheet_cells};
 use myco_core::progress::skilltree::{
     layout, upg_children, upg_def, upg_tree_pos, upg_tree_via, TreeNode, UpgKind,
 };
@@ -571,22 +572,6 @@ pub fn tree_icon_scale(spr: &str) -> f64 {
     }
 }
 
-/// `shroom_sheet_cells` (Task 9's row; an unmarked copy until T9 lands in myco_core).
-/// TODO(T9): replace with the canonical `shroom_sheet_cells` / `mushroom_cell_width`.
-fn shroom_sheet_cells(spr: &str) -> f64 {
-    match spr {
-        "sporeshroom"
-        | "explosiveshroom"
-        | "explosiveshroom_exploded"
-        | "predatorshroom"
-        | "diggershroom"
-        | "experienceshroom"
-        | "consumptorshroom" => 2.0,
-        "stinkyshroom" => 3.0,
-        _ => 1.0,
-    }
-}
-
 // port: tree_draw_icon
 /// A sprite centred at (x, y) fitted into `size`; `cropped` uses [`tree_icon_box`].
 #[allow(clippy::too_many_arguments)]
@@ -639,7 +624,7 @@ pub fn tree_draw_icon(
     let sc = if fit {
         size * tree_icon_scale(spr) / bw.max(bh)
     } else {
-        let cell_w = (sw / shroom_sheet_cells(spr)).trunc().max(1.0);
+        let cell_w = sheet_cell_width(spr, sw);
         size / cell_w.max(sh).max(1.0)
     };
     gm.sprite_part_ext(
@@ -1117,8 +1102,8 @@ impl TreeView {
         out
     }
 
+    // port: hud_tree_label_back
     /// `hud_tree_label_back`: a rounded translucent plate behind a label.
-    /// TODO(T17): unmarked copy of the T17 row `hud_tree_label_back`; mark or move it in T17.
     #[allow(clippy::too_many_arguments)]
     fn label_back(&self, gm: &mut Gm, cx: f64, y: f64, w: f64, h: f64, scale: f64, alpha: f64) {
         if alpha <= 0.0 {
@@ -1620,9 +1605,9 @@ impl Plugin for TreePlugin {
             .add_systems(PreUpdate, collect_wheel.after(bevy::input::InputSystems))
             .add_systems(
                 FixedUpdate,
-                tree_step_system
-                    .in_set(SimSet::Prepare)
-                    .after(crate::autopilot::run_script),
+                // obj_hud Begin Step's tree branch: after the menus and the HUD's first stage,
+                // before its in-game stage (Task 17)
+                tree_step_system.in_set(crate::ui::HudStepSet::Screens),
             )
             .add_systems(Update, tree_draw_system);
     }
@@ -1665,7 +1650,6 @@ pub fn tree_step_system(
     // obj_hud Step_1 runs the pause and logo branches before the tree's and returns (Task 18);
     // the tree stays open under them, and an Escape they used is not the tree's
     let held = sim.0.pause_open || menus.as_ref().is_some_and(|m| m.logo.open);
-    let escape_used = menus.as_ref().is_some_and(|m| m.escape_used);
     if screen.open && held {
         pending.menu_open = true;
         capture.tree = true;
@@ -1677,18 +1661,19 @@ pub fn tree_step_system(
         .set_gui_size(cams.layout.view_w, cams.layout.view_h);
     screen.cache.mode = myco_core::balance::game_mode(&sim.0.state);
     let wheel = std::mem::take(&mut screen.wheel);
-    if screen.open {
-        // obj_hud Step_1's Escape chain ends in `menu_open = false`.
-        // TODO(T17): simplified. The original chain (ui_4.lua:963-977) first closes slots,
-        // credits, debug, logo, and only then the tree; it is also skipped while
-        // `cine_blocking`. T17 owns that chain and should move this check into it.
-        if pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open && !escape_used
-        {
-            screen.open = false;
-        }
+    // Escape: the single chain in `Menus::step` (Task 18) closes the tree through
+    // `UiFlags.menu_open` before this system runs. The original returns before the tree branch
+    // while a cut-scene blocks or the tasks popup is up (ui_4.lua:1053-1056): the screen stays
+    // open but takes no input.
+    if screen.open
+        && (myco_core::camera::cine_blocking(&sim.0)
+            || myco_core::progress::tasks::tasks_popup_open(&sim.0))
+    {
+        pending.menu_open = true;
+        capture.tree = true;
+        blockers.tree = true;
+        return;
     }
-    // TODO(T17): the original returns before the tree branch while a cine blocks or the tasks
-    // popup is open (ui_4.lua:1053-1056); T17 owns those and should gate this system on them.
     if !screen.open {
         screen.view.closed_step();
         pending.menu_open = false;

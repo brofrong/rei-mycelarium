@@ -6,7 +6,7 @@
 // `!(a < b)` keeps the original's behaviour for NaN
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 
-use super::{growth, knots, soil, source};
+use super::{growth, knots, soil};
 use crate::balance::vis;
 use crate::events::{ResourceKind, SimEvent};
 use crate::forest::{stump_parts, stump_slot_at, HostId};
@@ -241,24 +241,23 @@ pub fn get_mushroom_at(sim: &Sim, px: f64, py: f64) -> MushroomHit {
         if m.stolen {
             continue;
         }
-        if let Some(b) = mushrooms::mushroom_hit_box(sim, i) {
-            if in_rect(
-                px,
-                py,
-                &Rect {
-                    x1: b.0,
-                    y1: b.1,
-                    x2: b.2,
-                    y2: b.3,
-                },
-            ) {
-                return MushroomHit {
-                    hit: true,
-                    index: i as i64,
-                    x: m.x,
-                    y: m.y,
-                };
-            }
+        let b = mushrooms::mushroom_hit_box(sim, i);
+        if in_rect(
+            px,
+            py,
+            &Rect {
+                x1: b.x1,
+                y1: b.y1,
+                x2: b.x2,
+                y2: b.y2,
+            },
+        ) {
+            return MushroomHit {
+                hit: true,
+                index: i as i64,
+                x: m.x,
+                y: m.y,
+            };
         }
     }
     if in_rect(px, py, &origin_box(sim)) {
@@ -343,7 +342,7 @@ fn spend(sim: &mut Sim, kind: ResourceKind, n: f64, x: f64, y: f64) {
             delta: -n,
             x,
             y,
-            source: source::MUSHROOM | sim.state.mushrooms.len() as u64,
+            source: mushrooms::next_source(sim),
         });
     }
 }

@@ -36,9 +36,6 @@ pub struct PendingInput {
     pub keys_down: Vec<Key>,
     pub text: String,
     pub commands: Vec<Command>,
-    /// set by the UI each frame: the cursor is over the HUD / a menu
-    pub ui_captured: bool,
-    pub tasks_panel_open: bool,
     pub tasks_popup_open: bool,
     /// `global.menu_open`, `debug_open`, `logo_open`, `hud_hidden` (ruling R15; the menus copy
     /// them from `ui::UiFlags` / the logo state every step)
@@ -98,16 +95,16 @@ impl PendingInput {
             keys_pressed: std::mem::take(&mut self.keys_pressed),
             keys_down: self.keys_down.clone(),
             text: std::mem::take(&mut self.text),
-            ui_captured: self.ui_captured,
+            ui_captured: false,
             view: cams.game_view,
             commands: std::mem::take(&mut self.commands),
-            tasks_panel_open: self.tasks_panel_open,
             tasks_popup_open: self.tasks_popup_open,
             menu_open: self.menu_open,
             debug_open: self.debug_open,
             logo_open: self.logo_open,
             hud_hidden: self.hud_hidden,
             slot_naming: self.slot_naming,
+            placement: None,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;
@@ -125,42 +122,42 @@ pub struct StepHistory(pub Vec<StepInput>);
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct ForceFocus(pub bool);
 
-/// A menu is open (`ui_blocking`, ruling R9): focus loss does not pause. A plain flag for code
-/// that owns it outright; nothing resets it. UI screens use [`UiBlockers`] instead.
-#[derive(Resource, Default, Clone, Copy, Debug)]
-pub struct UiBlocking(pub bool);
-
 /// Per-screen part of `ui_blocking()`: each screen writes its own flag every fixed step (so no
 /// system has to reset a shared flag, and order between screens does not matter);
-/// `focus_step` reads `UiBlocking.0 || UiBlockers::any()`.
+/// `focus_step` reads `UiBlockers::any()`.
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiBlockers {
     /// title, slots, settings/pause, logo screen, debug, intro (Task 18)
     pub menus: bool,
     /// the upgrade-tree screen (Task 19)
     pub tree: bool,
+    /// a tasks popup or a blocking cut-scene (the HUD, Task 17)
+    pub hud: bool,
 }
 
 impl UiBlockers {
     pub fn any(&self) -> bool {
-        self.menus || self.tree
+        self.menus || self.tree || self.hud
     }
 }
 
 /// Per-step mouse capture by UI screens (`global.ui_capture_mouse`, recomputed every step,
 /// ui_4.lua:1051). Each screen writes its own flag every step; `step_sim` ORs them into
-/// `StepInput.ui_captured` together with `PendingInput.ui_captured`.
+/// `StepInput.ui_captured`.
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiCapture {
     /// the upgrade-tree screen is open (Task 19)
     pub tree: bool,
     /// the title, slot, settings/pause or logo screen is up (Task 18)
     pub menus: bool,
+    /// obj_hud's `ui_capture_mouse`: the cursor is on the HUD, a popup or a blocking screen
+    /// (Task 17, recomputed every step)
+    pub hud: bool,
 }
 
 impl UiCapture {
     pub fn any(&self) -> bool {
-        self.tree || self.menus
+        self.tree || self.menus || self.hud
     }
 }
 
@@ -181,7 +178,6 @@ impl Plugin for SimBridgePlugin {
         app.insert_resource(Time::<Fixed>::from_hz(60.0))
             .init_resource::<PendingInput>()
             .init_resource::<ForceFocus>()
-            .init_resource::<UiBlocking>()
             .init_resource::<UiBlockers>()
             .init_resource::<UiCapture>()
             .add_message::<SimEventMsg>()
@@ -329,17 +325,12 @@ fn collect_input(
 fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
-    blocking: Res<UiBlocking>,
     blockers: Res<UiBlockers>,
     sim: Res<SimRes>,
     mut pending: ResMut<PendingInput>,
 ) {
     let focused = windows.single().map(|w| w.focused).unwrap_or(true);
-    if focused
-        || force.0
-        || myco_core::balance::vis("pause_on_focus_loss") <= 0.0
-        || blocking.0
-        || blockers.any()
+    if focused || force.0 || myco_core::balance::vis("pause_on_focus_loss") <= 0.0 || blockers.any()
     {
         return;
     }
@@ -358,7 +349,7 @@ fn step_sim(
     mut out: MessageWriter<SimEventMsg>,
 ) {
     let mut input = pending.take_step(&cams);
-    input.ui_captured |= capture.any();
+    input.ui_captured = capture.any();
     sim.0.step(&input);
     if let Some(mut h) = history {
         h.0.push(input);
