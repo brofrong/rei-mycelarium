@@ -300,6 +300,8 @@ pub struct ForestRt {
     /// `global.backdrop_leaves` (two bands, far and near), made on the first step
     pub backdrop_leaves: Option<[Vec<BackdropLeaf>; 2]>,
     next_uid: u64,
+    /// x of hosts taken out by `remove_host` (they keep their position, as structs do in GML)
+    removed_x: HashMap<u64, f64>,
 }
 
 fn originshroom_w() -> f64 {
@@ -621,8 +623,16 @@ impl ForestRt {
 
     // port: anon__19468__gml_Object_obj_forest_controller_Create_0
     /// `forest_remove_host(t)`: take a host out of its chunk (searching the chunks around it).
+    /// A host that was already removed still has its x (the original keeps the struct), so
+    /// the chunks around it are still visited (and generated, which may draw from `rng`).
     pub fn remove_host(&mut self, rng: &mut Rng, id: HostId) {
-        let Some(x) = self.host_x(id) else {
+        let uid = match id {
+            HostId::Tree(u) | HostId::Stump(u) => u,
+        };
+        let Some(x) = self
+            .host_x(id)
+            .or_else(|| self.removed_x.get(&uid).copied())
+        else {
             return;
         };
         let cw = self.chunk_width;
@@ -634,12 +644,14 @@ impl ForestRt {
                 HostId::Tree(u) => {
                     if let Some(i) = ch.trees.iter().rposition(|t| t.uid == u) {
                         ch.trees.remove(i);
+                        self.removed_x.insert(u, x);
                         return;
                     }
                 }
                 HostId::Stump(u) => {
                     if let Some(i) = ch.stumps.iter().rposition(|t| t.uid == u) {
                         ch.stumps.remove(i);
+                        self.removed_x.insert(u, x);
                         return;
                     }
                 }
@@ -698,10 +710,12 @@ pub fn create(sim: &mut Sim) {
     f.chunks.clear();
 }
 
-/// `ui_blocking()` as far as the simulation knows it (menus and the logo are the app's; it
-/// pauses the simulation or sets `pause_open`/`title_open` for them).
+/// `ui_blocking()`: menu, debug and logo state come from the app through `StepInput`.
 fn ui_blocking(sim: &Sim, input: &StepInput) -> bool {
-    sim.pause_open
+    input.menu_open
+        || input.debug_open
+        || sim.pause_open
+        || input.logo_open
         || sim.intro_active
         || sim.title_open
         || input.tasks_popup_open
@@ -728,18 +742,19 @@ pub fn step(sim: &mut Sim, input: &StepInput) {
     let (cw, ch) = (sim.camera.width, sim.camera.height);
     if !blocking {
         if let Some((mx, my)) = input.cursor_gui {
-            // the GUI layer is the logical view's size
+            // display_get_gui_width/height: the GUI layer is view-sized (ruling R17)
+            let (gw, gh) = (input.view.w, input.view.h);
             let margin = sim.forest.camera_edge_margin;
             if mx >= 0.0 && mx < margin {
                 dx -= 1.0;
             }
-            if mx <= cw - 1.0 && mx > cw - margin {
+            if mx <= gw - 1.0 && mx > gw - margin {
                 dx += 1.0;
             }
             if my >= 0.0 && my < margin {
                 dy -= 1.0;
             }
-            if my <= ch - 1.0 && my > ch - margin {
+            if my <= gh - 1.0 && my > gh - margin {
                 dy += 1.0;
             }
         }
@@ -807,7 +822,13 @@ pub fn step(sim: &mut Sim, input: &StepInput) {
     if !blocking {
         weather::step(sim, x, y, cw, ch);
     }
-    if !sim.pause_open && !input.tasks_popup_open && !camera::cine_blocking(sim) {
+    if !input.menu_open
+        && !input.debug_open
+        && !sim.pause_open
+        && !input.logo_open
+        && !input.tasks_popup_open
+        && !camera::cine_blocking(sim)
+    {
         backdrop_leaves_step(sim, view_x, cw);
     }
     if !blocking {

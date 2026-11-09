@@ -538,8 +538,11 @@ fn tutorial_wrap_matches_love() {
     }
 }
 
+/// The golden's chunks become the live world's (`sim.world`; `sim.state.world` is only the
+/// saved form, written back by `world::before_save`).
 fn load_chunks(sim: &mut Sim, g: &Value) {
-    sim.state.world.chunk_w = i(&g["chunk_w"]);
+    sim.world.params.chunk_w = i(&g["chunk_w"]);
+    sim.world.chunks.clear();
     for c in g["chunks"].as_array().unwrap() {
         let cx = i(&c["cx"]);
         let foods = obj_array(&c["foods"])
@@ -568,7 +571,7 @@ fn load_chunks(sim: &mut Sim, g: &Value) {
             lakes,
             ..Default::default()
         };
-        sim.state.world.chunks.insert(format!("c{cx}"), ch);
+        sim.world.chunks.insert(cx, ch);
     }
 }
 

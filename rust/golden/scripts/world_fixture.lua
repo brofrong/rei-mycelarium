@@ -3,7 +3,8 @@
 -- 6/7 features neutralized (world_lib.lua). For tests/world.rs and tests/forest.rs.
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
-L.neutralize()
+L.neutralize_caves()
+L.neutralize_stones()
 L.preload()
 
 local function rle(t)

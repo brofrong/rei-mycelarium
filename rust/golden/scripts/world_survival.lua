@@ -4,7 +4,8 @@
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
 assert(os.getenv("MYCO_SEED") == "31607", "run with MYCO_SEED=31607")
-L.neutralize()
+L.neutralize_caves()
+L.neutralize_stones()
 L.preload()
 
 local out = {}

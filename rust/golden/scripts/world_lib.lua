@@ -1,6 +1,6 @@
 -- Shared helpers for the Task 5 world golden scripts (not a topic itself).
 --
--- `neutralize()` replaces the cave (Task 6) and stone/maze/obstacle (Task 7) entry points that
+-- `neutralize_caves()` (Task 6) and `neutralize_stones()` (Task 7) replace the cave (Task 6) and stone/maze/obstacle (Task 7) entry points that
 -- world generation and the tile queries call with neutral versions: no caves, no stones, no
 -- bones, no obstacles. myco_core's world hooks for those tasks have exactly these neutral
 -- bodies until Tasks 6/7 port them, so the Task 5 references compare the Task 5 logic alone.
@@ -8,7 +8,8 @@
 local gm = require("gm")
 local L = {}
 
-function L.neutralize()
+-- Task 6's entry points: no caves, no bones (T6 stops calling this and re-captures)
+function L.neutralize_caves()
   local function noop() return gm.undefined end
   local function no() return false end
   caves_extend = noop
@@ -16,6 +17,12 @@ function L.neutralize()
   world_clear_caves = noop
   world_cave_hits = no
   world_cave_solid_any = no
+end
+
+-- Task 7's entry points: no stones, rock clusters, mazes, walls (T7 stops calling this)
+function L.neutralize_stones()
+  local function noop() return gm.undefined end
+  local function no() return false end
   world_paint_clusters = noop
   world_paint_stone_clusters = noop
   world_paint_stone_pillar = noop

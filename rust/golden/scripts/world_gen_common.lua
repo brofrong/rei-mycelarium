@@ -3,7 +3,8 @@
 -- layers 0..40, tile queries, then the water/food mutations, for tests/world.rs.
 local gm = require("gm")
 local L = dofile("rust/golden/scripts/world_lib.lua")
-L.neutralize()
+L.neutralize_caves()
+L.neutralize_stones()
 L.preload()
 L.new_world()
 

@@ -190,34 +190,28 @@ pub fn hide(sim: &mut Sim, tip: Tip) {
 /// at the nearest unconnected lake within two chunks (or at the node when there is none).
 pub fn show_nearest(sim: &mut Sim, px: f64, py: f64) {
     let r = 2;
-    let world = &sim.state.world;
     let mut food: Option<(f64, f64)> = None;
     let mut food_d = f64::INFINITY;
     let mut lake: Option<(f64, f64, f64)> = None;
     let mut lake_d = f64::INFINITY;
-    if world.chunk_w > 0 {
-        let c = (px / world.chunk_w as f64).floor() as i64;
-        for ci in c - r..=c + r {
-            // world_get_chunk (Task 5) generates a missing chunk; the chunks around a placed
-            // node always exist, so a missing one is skipped here
-            let Some(ch) = world.chunks.get(&format!("c{ci}")) else {
-                continue;
-            };
-            for f in &ch.foods {
-                let d = gml::point_distance(px, py, f.x, f.y);
-                if !f.collected && d < food_d {
-                    food_d = d;
-                    food = Some((f.x, f.y));
-                }
+    let c = (px / sim.world.params.chunk_w as f64).floor() as i64;
+    for ci in c - r..=c + r {
+        // world_get_chunk: a missing chunk is generated, as in the original
+        let ch = sim.world.get_chunk(ci);
+        for f in &ch.foods {
+            let d = gml::point_distance(px, py, f.x, f.y);
+            if !f.collected && d < food_d {
+                food_d = d;
+                food = Some((f.x, f.y));
             }
-            for l in &ch.lakes {
-                let lx = l.body_x + l.body_w * 0.5;
-                let ly = l.body_y + l.body_h * 0.5;
-                let d = gml::point_distance(px, py, lx, ly);
-                if !l.connected && d < lake_d {
-                    lake_d = d;
-                    lake = Some((l.body_x, l.body_w, l.body_y));
-                }
+        }
+        for l in &ch.lakes {
+            let lx = l.body_x + l.body_w * 0.5;
+            let ly = l.body_y + l.body_h * 0.5;
+            let d = gml::point_distance(px, py, lx, ly);
+            if !l.connected && d < lake_d {
+                lake_d = d;
+                lake = Some((l.body_x, l.body_w, l.body_y));
             }
         }
     }

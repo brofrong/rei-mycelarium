@@ -331,3 +331,43 @@ fn camera_step_follows_keys_with_acceleration() {
         }
     );
 }
+
+#[test]
+fn remove_host_of_a_removed_host_still_visits_its_chunks() {
+    // Lua keeps the host struct, so forest_remove_host still calls surface_get_chunk for
+    // c-1..c+1 (generating missing chunks) when the host is already gone
+    let mut sim = Sim::from_save(fixture_state("exploration.json")).unwrap();
+    let h = sim
+        .forest
+        .find_host_near(&mut sim.rng, -933.0, 5.0)
+        .expect("tree at -933");
+    sim.forest.remove_host(&mut sim.rng, h);
+    sim.forest.chunks.remove(&-2);
+    sim.forest.remove_host(&mut sim.rng, h);
+    assert!(
+        sim.forest.chunks.contains_key(&-2),
+        "chunk c-1 of the removed host is generated again"
+    );
+}
+
+#[test]
+fn edge_scrolling_uses_the_view_sized_gui() {
+    let mut sim = fresh_sim();
+    sim.title_open = false;
+    sim.intro_active = false;
+    let input = StepInput {
+        cursor_gui: Some((2550.0, 500.0)),
+        view: myco_core::sim::ViewRect {
+            x: 0.0,
+            y: 0.0,
+            w: 2560.0,
+            h: 1080.0,
+        },
+        ..Default::default()
+    };
+    forest::step(&mut sim, &input);
+    assert!(
+        sim.camera.vx > 0.0,
+        "cursor at the right edge of a 2560-wide GUI scrolls right"
+    );
+}

@@ -48,7 +48,7 @@ pub fn connect_lake_at(sim: &mut Sim, x: f64, y: f64) -> bool {
         extra: Default::default(),
     });
     sim.world.dirty_chunks.insert(cx);
-    progress::tasks_stat_add(sim, "water", amount);
+    progress::tasks::stat_add(sim, "water", amount);
     tutorial::event(sim, "water", None, None);
     true
 }
@@ -80,7 +80,7 @@ pub fn connect_water_at(sim: &mut Sim, x: f64, y: f64) -> bool {
         chunk.connected[i] = true;
         let amount = chunk.amount[i];
         w.dirty_chunks.insert(loc.cx);
-        progress::tasks_stat_add(sim, "water", amount);
+        progress::tasks::stat_add(sim, "water", amount);
         sim.state.water.push(WaterSave::Cell {
             cx: loc.cx,
             idx: loc.idx,
