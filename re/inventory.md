@@ -1,0 +1,2979 @@
+# Mycelarium: инвентарь функций
+
+Функций в выгрузке: 2685, декомпилировано: 2671, встроенных функций используется: 226.
+
+## Объекты и события
+
+### obj_forest_controller
+- `gml_Object_obj_forest_controller_CleanUp_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_forest_controller_Create_0` — вызывает напрямую: 74, транзитивно: 83
+- `gml_Object_obj_forest_controller_Draw_0` — вызывает напрямую: 5, транзитивно: 245
+- `gml_Object_obj_forest_controller_Draw_73` — вызывает напрямую: 2, транзитивно: 9
+- `gml_Object_obj_forest_controller_Step_0` — вызывает напрямую: 10, транзитивно: 200
+
+### obj_game
+- `gml_Object_obj_game_Create_0` — вызывает напрямую: 2, транзитивно: 268
+- `gml_Object_obj_game_Draw_74` — вызывает напрямую: 1, транзитивно: 1
+- `gml_Object_obj_game_Draw_75` — вызывает напрямую: 1, транзитивно: 4
+- `gml_Object_obj_game_Draw_77` — вызывает напрямую: 2, транзитивно: 60
+- `gml_Object_obj_game_Other_3` — вызывает напрямую: 1, транзитивно: 195
+- `gml_Object_obj_game_Step_0` — вызывает напрямую: 7, транзитивно: 265
+
+### obj_gm_button
+- `gml_Object_obj_gm_button_Create_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_gm_button_Step_0` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_gm_button1
+- `gml_Object_obj_gm_button1_Create_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_gm_button1_Step_0` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_gm_text
+- `gml_Object_obj_gm_text_Create_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_gm_text_Draw_0` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_gm_text1
+- `gml_Object_obj_gm_text1_Create_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_gm_text1_Draw_0` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_gm_textbox
+- `gml_Object_obj_gm_textbox_Draw_0` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_hud
+- `gml_Object_obj_hud_Create_0` — вызывает напрямую: 53, транзитивно: 90
+- `gml_Object_obj_hud_Draw_75` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_hud_Step_1` — вызывает напрямую: 0, транзитивно: 0
+
+### obj_life
+- `gml_Object_obj_life_Create_0` — вызывает напрямую: 1, транзитивно: 11
+- `gml_Object_obj_life_Draw_0` — вызывает напрямую: 1, транзитивно: 75
+- `gml_Object_obj_life_Step_0` — вызывает напрямую: 3, транзитивно: 376
+
+### obj_mycelium_controller
+- `gml_Object_obj_mycelium_controller_CleanUp_0` — вызывает напрямую: 1, транзитивно: 1
+- `gml_Object_obj_mycelium_controller_Create_0` — вызывает напрямую: 0, транзитивно: 0
+- `gml_Object_obj_mycelium_controller_Draw_0` — вызывает напрямую: 2, транзитивно: 2
+- `gml_Object_obj_mycelium_controller_Draw_64` — вызывает напрямую: 8, транзитивно: 179
+- `gml_Object_obj_mycelium_controller_Step_0` — вызывает напрямую: 11, транзитивно: 20
+
+## Скрипты по файлам
+
+`(?)` — файл угадан по соседству адресов.
+
+### ExtensionCore_api (48)
+- `gml_Script___ext_core_buffer_marshal_value` @ 0x140001030, 39 B, ok
+- `gml_Script___SteamId_encode` (?) @ 0x140010b70, 39 B, ok
+- `gml_Script___SteamFriendsGetFollowerCountResult_encode` (?) @ 0x140010e40, 39 B, ok
+- `gml_Script___SteamFriendsIsFollowingResult_encode` (?) @ 0x140010f00, 39 B, ok
+- `gml_Script___SteamFriendsEnumerateFollowingListResult_encode` (?) @ 0x140010f60, 39 B, ok
+- `gml_Script___SteamFriendsRequestClanOfficerListResult_encode` (?) @ 0x140011020, 39 B, ok
+- `gml_Script___SteamFriendsDownloadClanActivityCountsResult_encode` (?) @ 0x1400110e0, 39 B, ok
+- `gml_Script___SteamFriendsAvatarImageLoaded_encode` (?) @ 0x140011140, 39 B, ok
+- `gml_Script___SteamFriendsClanActivityCounts_encode` (?) @ 0x140011230, 39 B, ok
+- `gml_Script_steam_parties_create_beacon` (?) @ 0x14001c690, 39 B, ok
+- `gml_Script_steam_parties_on_reservation_completed` (?) @ 0x14001c750, 39 B, ok
+- `gml_Script_steam_parties_cancel_reservation` (?) @ 0x14001c7b0, 39 B, ok
+- `gml_Script_steam_parties_change_num_open_slots` (?) @ 0x14001c7e0, 39 B, ok
+- `gml_Script_steam_parties_destroy_beacon` (?) @ 0x14001c810, 39 B, ok
+- `gml_Script_steam_parties_get_beacon_details` (?) @ 0x14001c840, 39 B, ok
+- `gml_Script_steam_parties_join_party` (?) @ 0x14001c870, 39 B, ok
+- `gml_Script_steam_parties_get_beacon_location_data` (?) @ 0x14001c8a0, 39 B, ok
+- `gml_Script___ext_core_buffer_unmarshal_value` @ 0x1400253e0, 7696 B, ok
+- `gml_Script____struct___1____ext_core_buffer_marshal_value__ExtensionCore_api` (?) @ 0x140027240, 338 B, ok
+- `gml_Script___array_marshalling__anon__3036____ext_core_buffer_marshal_value__ExtensionCore_api` (?) @ 0x1400273a0, 440 B, ok
+- `gml_Script___struct_marshalling__anon__3410____ext_core_buffer_marshal_value__ExtensionCore_api` (?) @ 0x140027560, 843 B, ok
+- `gml_Script___ext_core_buffer_marshal_value` @ 0x1400278b0, 6942 B, ok
+- `gml_Script___ext_core_get_args_buffer` @ 0x1400293d0, 2141 B, ok
+- `gml_Script___ext_core_get_ret_buffer` @ 0x140029c30, 2141 B, ok
+- `gml_Script___ext_core_get_async_buffer` @ 0x14002a490, 2141 B, ok
+- `gml_Script___ext_core_function_map` @ 0x14002acf0, 535 B, ok
+- `gml_Script_dispatch__anon__8979____GMNativeFunctionDispatcher__ExtensionCore_api` (?) @ 0x14002af10, 701 B, ok
+- `gml_Script_anon__8471____GMNativeFunctionDispatcher__ExtensionCore_api` (?) @ 0x14002b1d0, 908 B, ok
+- `gml_Script___GMNativeFunctionDispatcher` @ 0x14002b560, 1464 B, ok
+- `gml_Script___ext_core_function_register` @ 0x14002bb20, 1735 B, ok
+- `gml_Script___ext_core_function_dispatch_calls` @ 0x14002c1f0, 8216 B, ok
+- `gml_GlobalScript_ExtensionCore_api` @ 0x14002e210, 1356 B, ok
+- `gml_Script___SteamId_encode` (?) @ 0x1403a18f0, 12774 B, ok
+- `gml_Script___SteamFriendsGetFollowerCountResult_encode` (?) @ 0x1403a6590, 3478 B, ok
+- `gml_Script___SteamFriendsIsFollowingResult_encode` (?) @ 0x1403a7ae0, 3478 B, ok
+- `gml_Script___SteamFriendsEnumerateFollowingListResult_encode` (?) @ 0x1403a90d0, 4928 B, ok
+- `gml_Script___SteamFriendsRequestClanOfficerListResult_encode` (?) @ 0x1403aaf70, 3478 B, ok
+- `gml_Script___SteamFriendsDownloadClanActivityCountsResult_encode` (?) @ 0x1403ac560, 1830 B, ok
+- `gml_Script___SteamFriendsAvatarImageLoaded_encode` (?) @ 0x1403ad270, 4310 B, ok
+- `gml_Script___SteamFriendsClanActivityCounts_encode` (?) @ 0x1403aec40, 3478 B, ok
+- `gml_Script_steam_parties_create_beacon` (?) @ 0x1405b24a0, 7141 B, ok
+- `gml_Script_steam_parties_on_reservation_completed` (?) @ 0x1405b4090, 2997 B, ok
+- `gml_Script_steam_parties_cancel_reservation` (?) @ 0x1405b4c50, 2997 B, ok
+- `gml_Script_steam_parties_change_num_open_slots` (?) @ 0x1405b5810, 4226 B, ok
+- `gml_Script_steam_parties_destroy_beacon` (?) @ 0x1405b68a0, 2170 B, ok
+- `gml_Script_steam_parties_get_beacon_details` (?) @ 0x1405b7760, 3319 B, ok
+- `gml_Script_steam_parties_join_party` (?) @ 0x1405b8460, 3403 B, ok
+- `gml_Script_steam_parties_get_beacon_location_data` (?) @ 0x1405b91b0, 3720 B, ok
+
+### Steamworks_API (13)
+- `gml_Script_steam_parties_get_beacon_by_index` (?) @ 0x1405b7120, 1593 B, ok
+- `gml_Script___Steamworks_get_decoders` (?) @ 0x1405ba040, 24833 B, timeout
+- `gml_Script___Steamworks_get_dispatcher` (?) @ 0x1405c0150, 899 B, ok
+- `gml_Script___Steamworks_is_available` (?) @ 0x1405c04e0, 653 B, ok
+- `gml_GlobalScript_Steamworks_API` @ 0x1405c0770, 76501 B, timeout
+- `gml_Script_anon__799__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d3280, 1851 B, ok
+- `gml_Script____struct___367__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d39c0, 518 B, ok
+- `gml_Script____struct___368__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d3bd0, 518 B, ok
+- `gml_Script____struct___369__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d3de0, 518 B, ok
+- `gml_Script____struct___370__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d3ff0, 508 B, ok
+- `gml_Script____struct___371__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d41f0, 518 B, ok
+- `gml_Script____struct___372__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d4400, 518 B, ok
+- `gml_Script____struct___373__gml_Object_obj_forest_controller_Create_0` (?) @ 0x1405d4610, 518 B, ok
+
+### scr_audio (36)
+- `gml_Script_audio_init` @ 0x14002f640, 3056 B, ok
+- `gml_Script_audio_save` @ 0x140030230, 578 B, ok
+- `gml_Script_audio_get_volume` @ 0x140030480, 537 B, ok
+- `gml_Script_audio_set_volume` @ 0x1400306a0, 1304 B, ok
+- `gml_Script_audio_step` @ 0x140030bc0, 1775 B, ok
+- `gml_Script_music_next_track` @ 0x1400312b0, 2348 B, ok
+- `gml_Script_rain_sound_step` @ 0x140031be0, 2540 B, ok
+- `gml_Script_forest_sound_step` @ 0x1400325d0, 3397 B, ok
+- `gml_Script_ambience_init` @ 0x140033320, 2594 B, ok
+- `gml_Script____struct___3__ambience_add__scr_audio` @ 0x140033d50, 724 B, ok
+- `gml_Script_ambience_add` @ 0x140034030, 1256 B, ok
+- `gml_Script_ambience_rearm` @ 0x140034520, 1629 B, ok
+- `gml_Script_ambience_step` @ 0x140034b80, 4029 B, ok
+- `gml_Script_water_touch_sound` @ 0x140035b40, 2837 B, ok
+- `gml_Script____struct___4__hyphae_sound_begin__scr_audio` @ 0x140036660, 1724 B, ok
+- `gml_Script_hyphae_sound_begin` @ 0x140036d20, 6518 B, ok
+- `gml_Script_hyphae_sound_place_gain` @ 0x1400386a0, 702 B, ok
+- `gml_Script_hyphae_sound_step` @ 0x140038b20, 12602 B, ok
+- `gml_Script_hyphae_sound_stop` @ 0x14003bc60, 890 B, ok
+- `gml_Script_hyphae_sound_play` @ 0x14003bfe0, 1263 B, ok
+- `gml_Script_sound_camera_gain` @ 0x14003c4d0, 3701 B, ok
+- `gml_Script_mushroom_grow_sound` @ 0x14003d350, 3027 B, ok
+- `gml_Script_sfx_play` @ 0x14003df30, 1037 B, ok
+- `gml_Script_sound_emitters_init` @ 0x14003e340, 1593 B, ok
+- `gml_Script____struct___5__sound_world_place__scr_audio` @ 0x14003e980, 340 B, ok
+- `gml_Script____struct___6__sound_world_place__scr_audio` @ 0x14003eae0, 448 B, ok
+- `gml_Script_sound_world_place` @ 0x14003eca0, 5747 B, ok
+- `gml_Script_sfx_play_at` @ 0x140040560, 4256 B, ok
+- `gml_Script_sound_loops_init` @ 0x140041600, 990 B, ok
+- `gml_Script____struct___7__sound_loop_start__scr_audio` @ 0x1400419e0, 1190 B, ok
+- `gml_Script_sound_loop_start` @ 0x140041e90, 1128 B, ok
+- `gml_Script_sound_loop_follow` @ 0x140042300, 2654 B, ok
+- `gml_Script_sound_loop_apply` @ 0x140042d60, 3663 B, ok
+- `gml_Script_sound_loop_free` @ 0x140043bb0, 1251 B, ok
+- `gml_Script_sound_loops_step` @ 0x1400440a0, 1987 B, ok
+- `gml_GlobalScript_scr_audio` @ 0x140044870, 4233 B, ok
+
+### scr_balance (7)
+- `gml_Script____struct___8__balance_defaults__scr_balance` @ 0x1400459b0, 11435 B, ok
+- `gml_Script_balance_defaults` @ 0x140048660, 541 B, ok
+- `gml_Script_balance_init` @ 0x140048880, 300 B, ok
+- `gml_Script_game_mode_apply` @ 0x1400489b0, 9161 B, ok
+- `gml_Script_game_mode` @ 0x14004ad80, 634 B, ok
+- `gml_Script_bal` @ 0x14004b000, 500 B, ok
+- `gml_GlobalScript_scr_balance` @ 0x14004b200, 808 B, ok
+
+### scr_game (115)
+- `gml_Script_game_init` @ 0x14004bb30, 10929 B, ok
+- `gml_Script_game_step` @ 0x14004e5f0, 3532 B, ok
+- `gml_Script_game_mode_start` @ 0x14004f3c0, 2376 B, ok
+- `gml_Script_cheats_step` @ 0x14004fd10, 846 B, ok
+- `gml_Script_post_layer_draw` @ 0x140050060, 9001 B, ok
+- `gml_Script_surface_fit` @ 0x140052390, 2703 B, ok
+- `gml_Script_bw_shader_set` @ 0x140052fc0, 1941 B, ok
+- `gml_Script_cheat_flash` @ 0x140053760, 321 B, ok
+- `gml_Script_ui_blocking` @ 0x1400538b0, 637 B, ok
+- `gml_Script_pixels_to_cm` @ 0x140053b30, 673 B, ok
+- `gml_Script_length_text` @ 0x140053de0, 2039 B, ok
+- `gml_Script_mycelium_cm` @ 0x1400545e0, 390 B, ok
+- `gml_Script_mycelium_add_length` @ 0x140054770, 445 B, ok
+- `gml_Script_food_add` @ 0x140054930, 192 B, ok
+- `gml_Script_food_spend` @ 0x1400549f0, 290 B, ok
+- `gml_Script_reach_expand` @ 0x140054b20, 2515 B, ok
+- `gml_Script____struct___14__camera_bounds__scr_game` @ 0x140055500, 674 B, ok
+- `gml_Script_camera_bounds` @ 0x1400557b0, 2425 B, ok
+- `gml_Script_camera_jump_to` @ 0x140056130, 2130 B, ok
+- `gml_Script_camera_jump_origin` @ 0x140056990, 2346 B, ok
+- `gml_Script____struct___15__mycelium_extreme_tip__scr_game` @ 0x1400572c0, 499 B, ok
+- `gml_Script_mycelium_extreme_tip` @ 0x1400574c0, 5250 B, ok
+- `gml_Script_camera_jump_edge` @ 0x140058950, 970 B, ok
+- `gml_Script____struct___16__tutorial_init__scr_game` @ 0x140058d20, 1417 B, ok
+- `gml_Script____struct___19__tutorial_init__scr_game` @ 0x1400592b0, 753 B, ok
+- `gml_Script_tutorial_init` @ 0x1400595b0, 3651 B, ok
+- `gml_Script____struct___20__tutorial_event__scr_game` @ 0x14005a400, 499 B, ok
+- `gml_Script_tutorial_event` @ 0x14005a600, 1320 B, ok
+- `gml_Script_tutorial_show` @ 0x14005ab30, 1491 B, ok
+- `gml_Script_tutorial_hide` @ 0x14005b110, 883 B, ok
+- `gml_Script_tutorial_show_nearest` @ 0x14005b490, 9555 B, ok
+- `gml_Script_tutorial_wrap` @ 0x14005d9f0, 3985 B, ok
+- `gml_Script_tutorial_state` @ 0x14005e990, 638 B, ok
+- `gml_Script_tutorial_step` @ 0x14005ec10, 15386 B, ok
+- `gml_Script_tutorial_draw` @ 0x140062830, 19766 B, ok
+- `gml_Script_tasks_defs` @ 0x140067570, 651 B, ok
+- `gml_Script____struct___24_____struct___23__tasks_init__scr_game` @ 0x140067800, 609 B, ok
+- `gml_Script____struct___26_____struct___23__tasks_init__scr_game` @ 0x140067a70, 427 B, ok
+- `gml_Script____struct___29_____struct___23__tasks_init__scr_game` @ 0x140067c20, 422 B, ok
+- `gml_Script____struct___23__tasks_init__scr_game` @ 0x140067dd0, 2361 B, ok
+- `gml_Script_tasks_init` @ 0x140068710, 583 B, ok
+- `gml_Script_tasks_stat_add` @ 0x140068960, 1433 B, ok
+- `gml_Script_tasks_met` @ 0x140068f00, 5900 B, ok
+- `gml_Script_tasks_step` @ 0x14006a640, 9760 B, ok
+- `gml_Script_tasks_block_open` @ 0x14006cc60, 1174 B, ok
+- `gml_Script_tasks_block_toggle` @ 0x14006d100, 978 B, ok
+- `gml_Script____struct___30__tasks_block_items__scr_game` @ 0x14006d4e0, 635 B, ok
+- `gml_Script____struct___31__tasks_block_items__scr_game` @ 0x14006d760, 650 B, ok
+- `gml_Script____struct___32__tasks_block_items__scr_game` @ 0x14006d9f0, 630 B, ok
+- `gml_Script_tasks_block_items` @ 0x14006dc70, 10837 B, ok
+- `gml_Script____struct___33__tasks_blocks__scr_game` @ 0x1400706d0, 686 B, ok
+- `gml_Script_tasks_blocks` @ 0x140070980, 5991 B, ok
+- `gml_Script____struct___34__tasks_header_rect__scr_game` @ 0x1400722e0, 759 B, ok
+- `gml_Script_tasks_header_rect` @ 0x1400725e0, 4267 B, ok
+- `gml_Script_tasks_visible` @ 0x140073690, 827 B, ok
+- `gml_Script_tasks_mouse_step` @ 0x1400739d0, 2499 B, ok
+- `gml_Script_tasks_draw` @ 0x1400743a0, 2438 B, ok
+- `gml_Script_tasks_block_draw` @ 0x140074d30, 25811 B, timeout
+- `gml_Script_goal_spore_count` @ 0x14007b530, 2253 B, ok
+- `gml_Script_goal_met` @ 0x14007be00, 1979 B, ok
+- `gml_Script_tasks_popup_open` @ 0x14007c5c0, 817 B, ok
+- `gml_Script_goal_number_text` @ 0x14007c900, 2459 B, ok
+- `gml_Script____struct___35__tasks_popup_rect__scr_game` @ 0x14007d2a0, 751 B, ok
+- `gml_Script_tasks_popup_rect` @ 0x14007d590, 3267 B, ok
+- `gml_Script____struct___36__tasks_popup_buttons__scr_game` @ 0x14007e260, 827 B, ok
+- `gml_Script____struct___37__tasks_popup_buttons__scr_game` @ 0x14007e5a0, 827 B, ok
+- `gml_Script____struct___38__tasks_popup_buttons__scr_game` @ 0x14007e8e0, 827 B, ok
+- `gml_Script_tasks_popup_buttons` @ 0x14007ec20, 6115 B, ok
+- `gml_Script_tasks_popup_close` @ 0x140080410, 932 B, ok
+- `gml_Script_tasks_popup_step` @ 0x1400807c0, 3230 B, ok
+- `gml_Script_goal_text_scale` @ 0x140081460, 683 B, ok
+- `gml_Script_goal_sprite_fit` @ 0x140081710, 3219 B, ok
+- `gml_Script_goal_sprite_part_fit` @ 0x1400823b0, 2802 B, ok
+- `gml_Script_goal_fit` @ 0x140082eb0, 2904 B, ok
+- `gml_Script_tasks_popup_draw` @ 0x140083ed0, 14228 B, ok
+- `gml_Script____struct___39__cine_ball__scr_game` @ 0x140087670, 592 B, ok
+- `gml_Script_cine_ball` @ 0x1400878c0, 1558 B, ok
+- `gml_Script_cine_active` @ 0x140087ee0, 824 B, ok
+- `gml_Script_cine_blocking` @ 0x140088220, 510 B, ok
+- `gml_Script_cine_showing` @ 0x140088420, 510 B, ok
+- `gml_Script____struct___40__cine_spore_spots__scr_game` @ 0x140088620, 499 B, ok
+- `gml_Script_cine_spore_spots` @ 0x140088820, 2148 B, ok
+- `gml_Script____struct___41__cine_show_start__scr_game` @ 0x140089090, 499 B, ok
+- `gml_Script____struct___42__cine_show_start__scr_game` @ 0x140089290, 640 B, ok
+- `gml_Script____struct___43__cine_show_start__scr_game` @ 0x140089510, 686 B, ok
+- `gml_Script____struct___44__cine_show_start__scr_game` @ 0x1400897c0, 730 B, ok
+- `gml_Script_cine_show_start` @ 0x140089aa0, 11993 B, ok
+- `gml_Script____struct___45__cine_planet_start__scr_game` @ 0x14008c980, 878 B, ok
+- `gml_Script____struct___46__cine_planet_start__scr_game` @ 0x14008ccf0, 686 B, ok
+- `gml_Script____struct___47__cine_planet_start__scr_game` @ 0x14008cfa0, 747 B, ok
+- `gml_Script____struct___48__cine_planet_start__scr_game` @ 0x14008d290, 852 B, ok
+- `gml_Script____struct___49__cine_planet_start__scr_game` @ 0x14008d5f0, 780 B, ok
+- `gml_Script_cine_planet_start` @ 0x14008d900, 16463 B, ok
+- `gml_Script_cine_shake` @ 0x140091950, 3584 B, ok
+- `gml_Script____struct___50__cine_step__scr_game` @ 0x140092750, 499 B, ok
+- `gml_Script____struct___51__cine_step__scr_game` @ 0x140092950, 448 B, ok
+- `gml_Script_cine_step` @ 0x140092b10, 13965 B, ok
+- `gml_Script_cine_span` @ 0x140096270, 850 B, ok
+- `gml_Script_cine_draw` @ 0x1400965d0, 24705 B, ok
+- `gml_Script_steam_step` @ 0x14009c660, 1976 B, ok
+- `gml_Script_ach_stat` @ 0x14009ce20, 795 B, ok
+- `gml_Script_ach_standing` @ 0x14009d3a0, 1011 B, ok
+- `gml_Script_ach_list` @ 0x14009d7a0, 8274 B, ok
+- `gml_Script_ach_step` @ 0x14009f800, 6898 B, ok
+- `gml_Script_display_init` @ 0x1400a1530, 5580 B, ok
+- `gml_Script_display_fit` @ 0x1400a2b00, 7036 B, ok
+- `gml_Script_display_apply` @ 0x1400a4680, 771 B, ok
+- `gml_Script_focus_step` @ 0x1400a4990, 755 B, ok
+- `gml_Script_art_preload_step` @ 0x1400a4c90, 2373 B, ok
+- `gml_Script_display_step` @ 0x1400a55e0, 1238 B, ok
+- `gml_Script_display_window_size` @ 0x1400a5ac0, 315 B, ok
+- `gml_Script_display_save` @ 0x1400a5c00, 1052 B, ok
+- `gml_Script_display_set_fullscreen` @ 0x1400a6020, 409 B, ok
+- `gml_Script_display_cycle_size` @ 0x1400a61c0, 826 B, ok
+- `gml_GlobalScript_scr_game` @ 0x1400a6500, 11494 B, ok
+
+### scr_life (243)
+- `gml_Script_hedgehog_frame_w` (?) @ 0x1400a9490, 747 B, ok
+- `gml_Script_hedgehog_frame_h` (?) @ 0x1400a9780, 607 B, ok
+- `gml_Script_hedgehog_back_y` (?) @ 0x1400a99e0, 371 B, ok
+- `gml_Script____struct___54__hedgehog_back_init__scr_life` @ 0x1400a9b60, 499 B, ok
+- `gml_Script_hedgehog_back_init` (?) @ 0x1400a9d60, 12413 B, ok
+- `gml_Script_hedgehog_back_point` (?) @ 0x1400acde0, 4927 B, ok
+- `gml_Script_hedgehog_draw` (?) @ 0x1400ae120, 3399 B, ok
+- `gml_Script_animal_interval` (?) @ 0x1400aee70, 1111 B, ok
+- `gml_Script_animal_mushroom_count` (?) @ 0x1400af2d0, 1017 B, ok
+- `gml_Script_animal_timer_step` (?) @ 0x1400af6d0, 1264 B, ok
+- `gml_Script_life_init` (?) @ 0x1400afbc0, 3523 B, ok
+- `gml_Script_life_animal_timers_init` (?) @ 0x1400b0990, 2792 B, ok
+- `gml_Script_repeller_autoregen_frames` (?) @ 0x1400b9180, 2201 B, ok
+- `gml_Script_repeller_regen_price` (?) @ 0x1400b9a20, 1137 B, ok
+- `gml_Script_tree_drop_period` (?) @ 0x1400b9ea0, 994 B, ok
+- `gml_Script_tree_drop_water` (?) @ 0x1400ba290, 643 B, ok
+- `gml_Script_leaf_face_for_wind` (?) @ 0x1400ba520, 935 B, ok
+- `gml_Script_leaf_face_sprite` (?) @ 0x1400ba8d0, 402 B, ok
+- `gml_Script_leaf_change_sprite` (?) @ 0x1400baa70, 402 B, ok
+- `gml_Script_leaf_art_ready` (?) @ 0x1400bac10, 582 B, ok
+- `gml_Script____struct___55__leaf_art_init__scr_life` @ 0x1400bae60, 456 B, ok
+- `gml_Script_leaf_art_init` (?) @ 0x1400bb030, 2154 B, ok
+- `gml_Script____struct___56__leaf_art_read__scr_life` @ 0x1400bb8a0, 1095 B, ok
+- `gml_Script_leaf_art_read` (?) @ 0x1400bbcf0, 15716 B, ok
+- `gml_Script_leaf_art_frame` (?) @ 0x1400bfa60, 2117 B, ok
+- `gml_Script_leaf_fg_art_ready` (?) @ 0x1400c02b0, 582 B, ok
+- `gml_Script____struct___57__leaf_fg_art_init__scr_life` @ 0x1400c0500, 783 B, ok
+- `gml_Script_leaf_fg_art_init` (?) @ 0x1400c0810, 2197 B, ok
+- `gml_Script____struct___58__leaf_fg_art_read__scr_life` @ 0x1400c10b0, 988 B, ok
+- `gml_Script_leaf_fg_art_read` (?) @ 0x1400c1490, 14148 B, ok
+- `gml_Script_leaf_fg_frame` (?) @ 0x1400c4be0, 1651 B, ok
+- `gml_Script_leaf_fg_mirror` (?) @ 0x1400c5260, 1067 B, ok
+- `gml_Script_leaf_start_turn` (?) @ 0x1400c5690, 290 B, ok
+- `gml_Script_leaves_turn_all` (?) @ 0x1400c57c0, 770 B, ok
+- `gml_Script_leaf_fg_drop` (?) @ 0x1400c5ad0, 5350 B, ok
+- `gml_Script_leaf_draw` (?) @ 0x1400c6fc0, 2138 B, ok
+- `gml_Script_leaf_decay_time` (?) @ 0x1400c7820, 832 B, ok
+- `gml_Script_leaf_food_value` (?) @ 0x1400c7b60, 703 B, ok
+- `gml_Script____struct___59__mushroom_add__scr_life` @ 0x1400c7e20, 2057 B, ok
+- `gml_Script____struct___60__mushroom_add__scr_life` @ 0x1400c8630, 675 B, ok
+- `gml_Script_mushroom_add` (?) @ 0x1400c88e0, 5886 B, ok
+- `gml_Script_mushroom_hit_box` (?) @ 0x1400c9fe0, 2043 B, ok
+- `gml_Script____struct___61__mushroom_hit_box_unmirrored__scr_life` @ 0x1400ca7e0, 674 B, ok
+- `gml_Script____struct___62__mushroom_hit_box_unmirrored__scr_life` @ 0x1400caa90, 674 B, ok
+- `gml_Script_mushroom_hit_box_unmirrored` (?) @ 0x1400cad40, 4361 B, ok
+- `gml_Script____struct___63__mushrooms_step__scr_life` @ 0x1400cbe50, 716 B, ok
+- `gml_Script_mushrooms_step` (?) @ 0x1400cc120, 14058 B, ok
+- `gml_Script_drops_step` (?) @ 0x1400cf810, 2419 B, ok
+- `gml_Script____struct___64__hedgehog_world_span__scr_life` @ 0x1400d0190, 456 B, ok
+- `gml_Script_hedgehog_world_span` (?) @ 0x1400d0360, 1391 B, ok
+- `gml_Script_hedgehog_border_margin` (?) @ 0x1400d08d0, 351 B, ok
+- `gml_Script____struct___65__animal_spawn_hedgehog__scr_life` @ 0x1400d0a30, 1007 B, ok
+- `gml_Script_animal_spawn_hedgehog` (?) @ 0x1400d0e20, 2762 B, ok
+- `gml_Script____struct___66__hedgehog_summon__scr_life` @ 0x1400d18f0, 1007 B, ok
+- `gml_Script_hedgehog_summon` (?) @ 0x1400d1ce0, 5992 B, ok
+- `gml_Script_hedgehog_takes` (?) @ 0x1400d36c0, 568 B, ok
+- `gml_Script_animals_step` (?) @ 0x1400d3900, 10268 B, ok
+- `gml_Script_animals_reindex_after_removal` (?) @ 0x1400d6120, 1102 B, ok
+- `gml_Script_animals_rebind` (?) @ 0x1400d6570, 1802 B, ok
+- `gml_Script_boar_frame_w` (?) @ 0x1400d6c80, 747 B, ok
+- `gml_Script_boar_hits_mushroom` (?) @ 0x1400d6f70, 800 B, ok
+- `gml_Script_boar_any_target` (?) @ 0x1400d7290, 813 B, ok
+- `gml_Script_boar_pick_targets` (?) @ 0x1400d75c0, 2780 B, ok
+- `gml_Script____struct___67__boar_spawn__scr_life` @ 0x1400d80a0, 1022 B, ok
+- `gml_Script_boar_spawn` (?) @ 0x1400d84a0, 1621 B, ok
+- `gml_Script____struct___68__boar_spawn_pack__scr_life` @ 0x1400d8b00, 577 B, ok
+- `gml_Script_boar_spawn_pack` (?) @ 0x1400d8d50, 2813 B, ok
+- `gml_Script_boar_summon` (?) @ 0x1400d9850, 4318 B, ok
+- `gml_Script____struct___69__boar_fling__scr_life` @ 0x1400daba0, 1276 B, ok
+- `gml_Script_boar_fling` (?) @ 0x1400db0a0, 5644 B, ok
+- `gml_Script_boars_step` (?) @ 0x1400dc6b0, 18505 B, ok
+- `gml_Script_boar_shake` (?) @ 0x1400e0f00, 7716 B, ok
+- `gml_Script_boars_draw` (?) @ 0x1400e2d30, 11606 B, ok
+- `gml_Script____struct___70__repeller_cloud_fire__scr_life` @ 0x1400e5a90, 1015 B, ok
+- `gml_Script____struct___71__repeller_cloud_fire__scr_life` @ 0x1400e5e90, 1322 B, ok
+- `gml_Script____struct___72__repeller_cloud_fire__scr_life` @ 0x1400e63c0, 1317 B, ok
+- `gml_Script____struct___73__repeller_cloud_fire__scr_life` @ 0x1400e68f0, 892 B, ok
+- `gml_Script_repeller_cloud_fire` (?) @ 0x1400e6c70, 20115 B, ok
+- `gml_Script_repeller_animal_front` (?) @ 0x1400ebb10, 406 B, ok
+- `gml_Script_repeller_clouds_step` (?) @ 0x1400ebcb0, 23807 B, ok
+- `gml_Script_repeller_soft_sprite` (?) @ 0x1400f19c0, 5066 B, ok
+- `gml_Script_repeller_cloud_art_init` (?) @ 0x1400f2d90, 1105 B, ok
+- `gml_Script_repeller_cloud_draw_body` (?) @ 0x1400f31f0, 11638 B, ok
+- `gml_Script_repeller_cloud_draw_flash` (?) @ 0x1400f5f70, 7411 B, ok
+- `gml_Script_repeller_cloud_surface` (?) @ 0x1400f7c70, 2058 B, ok
+- `gml_Script_repeller_clouds_draw` (?) @ 0x1400f8480, 10932 B, ok
+- `gml_Script_squirrel_frame_w` (?) @ 0x1400faf40, 561 B, ok
+- `gml_Script_squirrel_frame_h` (?) @ 0x1400fb180, 398 B, ok
+- `gml_Script_squirrel_offset` (?) @ 0x1400fb310, 2923 B, ok
+- `gml_Script_squirrel_point` (?) @ 0x1400fbe80, 1621 B, ok
+- `gml_Script_squirrel_draw` (?) @ 0x1400fc4e0, 1536 B, ok
+- `gml_Script____struct___74__squirrel_view__scr_life` @ 0x1400fcae0, 707 B, ok
+- `gml_Script_squirrel_view` (?) @ 0x1400fcdb0, 3040 B, ok
+- `gml_Script_mushroom_index_of` (?) @ 0x1400fd990, 671 B, ok
+- `gml_Script____struct___76__squirrel_trunk_edges__scr_life` @ 0x1400fdc30, 674 B, ok
+- `gml_Script_squirrel_trunk_edges` (?) @ 0x1400fdee0, 17757 B, ok
+- `gml_Script_squirrel_art_init` (?) @ 0x140102440, 1019 B, ok
+- `gml_Script_squirrel_frames_build` (?) @ 0x140102840, 4107 B, ok
+- `gml_Script_squirrel_edge_x` (?) @ 0x140103850, 2792 B, ok
+- `gml_Script_squirrel_climb_x` (?) @ 0x140104340, 2023 B, ok
+- `gml_Script_squirrel_run_y` (?) @ 0x140104b30, 577 B, ok
+- `gml_Script_squirrel_tail_drop` (?) @ 0x140104d80, 807 B, ok
+- `gml_Script_squirrel_tree_near` (?) @ 0x1401050b0, 4413 B, ok
+- `gml_Script_squirrel_tree_has_mushroom` (?) @ 0x140106230, 1656 B, ok
+- `gml_Script_squirrel_takes` (?) @ 0x1401068b0, 1849 B, ok
+- `gml_Script_squirrel_tree_for` (?) @ 0x140106ff0, 1282 B, ok
+- `gml_Script_squirrel_bite_y` (?) @ 0x140107500, 1134 B, ok
+- `gml_Script_squirrel_shroom_bite` (?) @ 0x140107970, 1360 B, ok
+- `gml_Script____struct___77__squirrel_pick__scr_life` @ 0x140107ec0, 549 B, ok
+- `gml_Script_squirrel_pick` (?) @ 0x1401080f0, 5617 B, ok
+- `gml_Script_squirrel_sky_y` (?) @ 0x140109940, 2149 B, ok
+- `gml_Script_squirrel_any_target` (?) @ 0x14010a1b0, 1949 B, ok
+- `gml_Script____struct___78__squirrel_spawn__scr_life` @ 0x14010a950, 2497 B, ok
+- `gml_Script_squirrel_spawn` (?) @ 0x14010b320, 6555 B, ok
+- `gml_Script____struct___79__squirrel_summon__scr_life` @ 0x14010ccc0, 674 B, ok
+- `gml_Script_squirrel_summon` (?) @ 0x14010cf70, 3935 B, ok
+- `gml_Script____struct___80__squirrel_hold_pose__scr_life` @ 0x14010ded0, 808 B, ok
+- `gml_Script_squirrel_hold_pose` (?) @ 0x14010e200, 7389 B, ok
+- `gml_Script_squirrel_animate` (?) @ 0x14010fee0, 1375 B, ok
+- `gml_Script_squirrel_flip_up` (?) @ 0x140110440, 627 B, ok
+- `gml_Script_squirrel_flip_down` (?) @ 0x1401106c0, 586 B, ok
+- `gml_Script_squirrel_tree03_find` (?) @ 0x140110910, 6256 B, ok
+- `gml_Script_squirrel_check_repeller` (?) @ 0x140112720, 6179 B, ok
+- `gml_Script_squirrel_turn_start` (?) @ 0x140113f50, 1785 B, ok
+- `gml_Script_squirrel_turn_step` (?) @ 0x140114650, 3329 B, ok
+- `gml_Script_crow_frame_w` (?) @ 0x1401199f0, 444 B, ok
+- `gml_Script_crow_claw` (?) @ 0x140119bb0, 1329 B, ok
+- `gml_Script_crow_below_claws` (?) @ 0x14011a0f0, 1037 B, ok
+- `gml_Script_crow_claw_offset` (?) @ 0x14011a500, 2062 B, ok
+- `gml_Script_crow_cap_dy` (?) @ 0x14011ad10, 1152 B, ok
+- `gml_Script_crow_can_take` (?) @ 0x14011b190, 1060 B, ok
+- `gml_Script_crow_pick` (?) @ 0x14011b5c0, 4079 B, ok
+- `gml_Script_crow_sky_y` (?) @ 0x14011c5b0, 777 B, ok
+- `gml_Script____struct___81__crow_spawn__scr_life` @ 0x14011c8c0, 1655 B, ok
+- `gml_Script_crow_spawn` (?) @ 0x14011cf40, 3530 B, ok
+- `gml_Script____struct___82__crow_warn_check__scr_life` @ 0x14011dd10, 707 B, ok
+- `gml_Script_crow_warn_check` (?) @ 0x14011dfe0, 3595 B, ok
+- `gml_Script_crow_due` (?) @ 0x14011edf0, 4512 B, ok
+- `gml_Script_crow_summon` (?) @ 0x14011ff90, 935 B, ok
+- `gml_Script_crows_step` (?) @ 0x140120340, 16003 B, ok
+- `gml_Script_crows_draw` (?) @ 0x140124540, 6546 B, ok
+- `gml_Script____struct___85__life_far_init__scr_life` @ 0x140125ee0, 378 B, ok
+- `gml_Script_life_far_init` (?) @ 0x140126060, 1154 B, ok
+- `gml_Script_life_far_measure` (?) @ 0x1401264f0, 9472 B, ok
+- `gml_Script_life_far_outside` (?) @ 0x1401289f0, 1702 B, ok
+- `gml_Script_life_far_step` (?) @ 0x1401290a0, 13250 B, ok
+- `gml_Script____struct___86__consume_info__scr_life` @ 0x14012c470, 565 B, ok
+- `gml_Script____struct___87__consume_info__scr_life` @ 0x14012c6b0, 565 B, ok
+- `gml_Script_consume_info` (?) @ 0x14012c8f0, 3390 B, ok
+- `gml_Script_consume_frames` (?) @ 0x14012d630, 1229 B, ok
+- `gml_Script_consume_food` (?) @ 0x14012db00, 917 B, ok
+- `gml_Script_consumptors_on` (?) @ 0x14012dea0, 1445 B, ok
+- `gml_Script_consumptor_variant` (?) @ 0x14012e450, 345 B, ok
+- `gml_Script_consumptor_progress` (?) @ 0x14012e5b0, 1238 B, ok
+- `gml_Script_consume_finish` (?) @ 0x14012ea90, 4351 B, ok
+- `gml_Script_predator_progress` (?) @ 0x14012fb90, 898 B, ok
+- `gml_Script_experience_period` (?) @ 0x14012ff20, 822 B, ok
+- `gml_Script_experience_progress` (?) @ 0x140130260, 746 B, ok
+- `gml_Script_tree_shroom_progress` (?) @ 0x140130550, 1049 B, ok
+- `gml_Script_repeller_regen_progress` (?) @ 0x140130970, 1588 B, ok
+- `gml_Script_hover_bar_draw` (?) @ 0x140130fb0, 4032 B, ok
+- `gml_Script_hover_bar_step_draw` (?) @ 0x140131f70, 11428 B, ok
+- `gml_Script_stinky_cap_height` (?) @ 0x140134c20, 1435 B, ok
+- `gml_Script____struct___88__stinky_shape__scr_life` @ 0x1401351c0, 674 B, ok
+- `gml_Script_stinky_shape` (?) @ 0x140135470, 2605 B, ok
+- `gml_Script_stinky_top_at` (?) @ 0x140135ea0, 1424 B, ok
+- `gml_Script_stinky_funnel_radius` (?) @ 0x140136430, 1488 B, ok
+- `gml_Script____struct___89__stinky_pool__scr_life` @ 0x140136a00, 1755 B, ok
+- `gml_Script_stinky_pool` (?) @ 0x1401370e0, 2885 B, ok
+- `gml_Script_stinky_particle_add` (?) @ 0x140137c30, 3750 B, ok
+- `gml_Script_stinky_wind_target` (?) @ 0x140138ae0, 638 B, ok
+- `gml_Script_stinky_wind_shift` (?) @ 0x140138d60, 1364 B, ok
+- `gml_Script_stinky_step` (?) @ 0x1401392c0, 15088 B, ok
+- `gml_Script_stinky_art_init` (?) @ 0x14013cdb0, 4597 B, ok
+- `gml_Script_stinky_shade_table` (?) @ 0x14013dfb0, 2154 B, ok
+- `gml_Script_stinky_draw` (?) @ 0x14013e820, 11876 B, ok
+- `gml_Script_stinky_beam_hits` (?) @ 0x140141690, 3295 B, ok
+- `gml_Script_stinky_squirrel_reach` (?) @ 0x140142370, 1899 B, ok
+- `gml_Script_stinky_guards` (?) @ 0x140142ae0, 1553 B, ok
+- `gml_Script____struct___90__life_near_zone__scr_life` @ 0x140143100, 549 B, ok
+- `gml_Script_life_near_zone` (?) @ 0x140143330, 1708 B, ok
+- `gml_Script____struct___91__leaf_spawn__scr_life` @ 0x1401439e0, 1638 B, ok
+- `gml_Script_leaf_spawn` (?) @ 0x140144050, 4370 B, ok
+- `gml_Script_leaf_gust_spawn` (?) @ 0x140145170, 2065 B, ok
+- `gml_Script____struct___92__leaves_step__scr_life` @ 0x140145990, 565 B, ok
+- `gml_Script_leaves_step` (?) @ 0x140145bd0, 15174 B, ok
+- `gml_Script____struct___93__leaf_tendril_make__scr_life` @ 0x140149ad0, 658 B, ok
+- `gml_Script____struct___94__leaf_tendril_make__scr_life` @ 0x140149d70, 499 B, ok
+- `gml_Script____struct___95__leaf_tendril_make__scr_life` @ 0x140149f70, 506 B, ok
+- `gml_Script____struct___96__leaf_tendril_make__scr_life` @ 0x14014a170, 506 B, ok
+- `gml_Script_leaf_tendril_make` (?) @ 0x14014a370, 16629 B, ok
+- `gml_Script_leaf_tendril_cells_draw` (?) @ 0x14014e6b0, 4112 B, ok
+- `gml_Script_leaf_tendrils_draw` (?) @ 0x14014f6c0, 7643 B, ok
+- `gml_Script_worm_zone_top` (?) @ 0x1401516a0, 577 B, ok
+- `gml_Script_worm_zone_bottom` (?) @ 0x1401518f0, 803 B, ok
+- `gml_Script_worm_cell_ok` (?) @ 0x140151c20, 1266 B, ok
+- `gml_Script_worm_segment_px` (?) @ 0x140152120, 898 B, ok
+- `gml_Script____struct___97__worm_add__scr_life` @ 0x1401524b0, 506 B, ok
+- `gml_Script____struct___98__worm_add__scr_life` @ 0x1401526b0, 1133 B, ok
+- `gml_Script_worm_add` (?) @ 0x140152b20, 3953 B, ok
+- `gml_Script_worm_keep_bottom` (?) @ 0x140153aa0, 940 B, ok
+- `gml_Script_worm_spawn` (?) @ 0x140153e50, 7914 B, ok
+- `gml_Script_worm_absorb_frames` (?) @ 0x140155d40, 1419 B, ok
+- `gml_Script____struct___99__worm_move__scr_life` @ 0x1401562d0, 592 B, ok
+- `gml_Script_worm_move` (?) @ 0x140156520, 18756 B, ok
+- `gml_Script____struct___100__worm_body_at__scr_life` @ 0x14015b040, 606 B, ok
+- `gml_Script_worm_body_at` (?) @ 0x14015b2a0, 3627 B, ok
+- `gml_Script____struct___101__worm_tendril_make__scr_life` @ 0x14015c0d0, 499 B, ok
+- `gml_Script____struct___102__worm_tendril_make__scr_life` @ 0x14015c2d0, 506 B, ok
+- `gml_Script____struct___103__worm_tendril_make__scr_life` @ 0x14015c4d0, 506 B, ok
+- `gml_Script_worm_tendril_make` (?) @ 0x14015c6d0, 18276 B, ok
+- `gml_Script_worm_catch` (?) @ 0x140160e40, 3756 B, ok
+- `gml_Script____struct___104__worms_step__scr_life` @ 0x140161cf0, 565 B, ok
+- `gml_Script_worms_step` (?) @ 0x140161f30, 13951 B, ok
+- `gml_Script_worms_draw` (?) @ 0x1401655f0, 26257 B, ok
+- `gml_Script____struct___105__intro_init__scr_life` @ 0x14016bd80, 875 B, ok
+- `gml_Script_intro_init` (?) @ 0x14016c0f0, 1577 B, ok
+- `gml_Script_intro_step` (?) @ 0x14016c720, 4046 B, ok
+- `gml_Script____struct___106__intro_finish__scr_life` @ 0x14016d6f0, 1019 B, ok
+- `gml_Script_intro_finish` (?) @ 0x14016daf0, 2510 B, ok
+- `gml_Script_intro_draw` (?) @ 0x14016e4c0, 2234 B, ok
+- `gml_Script_life_step` (?) @ 0x14016ed80, 800 B, ok
+- `gml_Script_life_draw` (?) @ 0x14016f0a0, 17164 B, ok
+- `gml_Script_backdrop_leaf_band_setting` (?) @ 0x140173a30, 913 B, ok
+- `gml_Script_backdrop_leaf_count` (?) @ 0x140173dd0, 1317 B, ok
+- `gml_Script_backdrop_leaf_parallax` (?) @ 0x140174300, 520 B, ok
+- `gml_Script____struct___107__backdrop_leaf_make__scr_life` @ 0x140174510, 1417 B, ok
+- `gml_Script_backdrop_leaf_make` (?) @ 0x140174aa0, 4347 B, ok
+- `gml_Script_backdrop_leaves_init` (?) @ 0x140175ba0, 2253 B, ok
+- `gml_Script_backdrop_leaves_step` (?) @ 0x140176470, 14392 B, ok
+- `gml_Script_backdrop_leaves_draw` (?) @ 0x140179cb0, 4791 B, ok
+- `gml_Script____struct___108__animal_marker_list__scr_life` @ 0x14017af70, 1157 B, ok
+- `gml_Script____struct___109__animal_marker_list__scr_life` @ 0x14017b400, 1157 B, ok
+- `gml_Script____struct___110__animal_marker_list__scr_life` @ 0x14017b890, 1157 B, ok
+- `gml_Script____struct___111__animal_marker_list__scr_life` @ 0x14017bd20, 1157 B, ok
+- `gml_Script____struct___112__animal_marker_list__scr_life` @ 0x14017c1b0, 1247 B, ok
+- `gml_Script_animal_marker_list` (?) @ 0x14017c690, 14254 B, ok
+- `gml_Script_animal_markers_update` (?) @ 0x14017fe40, 15147 B, ok
+- `gml_Script_animal_markers_draw` (?) @ 0x140183d70, 18332 B, ok
+- `gml_Script_animal_marker_at` (?) @ 0x140188860, 2464 B, ok
+- `gml_Script____struct___113__camera_fly_to_marker__scr_life` @ 0x140189200, 392 B, ok
+- `gml_Script_camera_fly_to_marker` (?) @ 0x140189390, 666 B, ok
+- `gml_GlobalScript_scr_life` @ 0x140189630, 32108 B, error
+
+### scr_locale (16)
+- `gml_Script_locale_font_file` @ 0x1401913a0, 1463 B, ok
+- `gml_Script_ui_font` @ 0x140191960, 767 B, ok
+- `gml_Script_ui_font_small` @ 0x140191c60, 758 B, ok
+- `gml_Script_locale_font_ink_h` @ 0x140191f60, 6909 B, ok
+- `gml_Script_locale_font_fit` @ 0x140193a60, 6933 B, ok
+- `gml_Script_locale_font_load` @ 0x140195580, 3202 B, ok
+- `gml_Script____struct___114__locale_init__scr_locale` @ 0x140196210, 17237 B, error
+- `gml_Script_locale_init` @ 0x14019a570, 2131 B, ok
+- `gml_Script_locale_load_csv` @ 0x14019add0, 9367 B, ok
+- `gml_Script_locale_csv_split` @ 0x14019d270, 7358 B, ok
+- `gml_Script_locale_available` @ 0x14019ef30, 2969 B, ok
+- `gml_Script_locale_system` @ 0x14019fad0, 2236 B, ok
+- `gml_Script_locale_set` @ 0x1401a0390, 4821 B, ok
+- `gml_Script_locale_cycle` @ 0x1401a1670, 1826 B, ok
+- `gml_Script_loc` @ 0x1401a1da0, 740 B, ok
+- `gml_GlobalScript_scr_locale` @ 0x1401a2090, 2041 B, ok
+
+### scr_logo (70)
+- `gml_Script____struct___119_____struct___118__logo_init__scr_logo` @ 0x1401a2930, 402 B, ok
+- `gml_Script____struct___120_____struct___118__logo_init__scr_logo` @ 0x1401a2ad0, 402 B, ok
+- `gml_Script____struct___121_____struct___118__logo_init__scr_logo` @ 0x1401a2c70, 402 B, ok
+- `gml_Script____struct___122_____struct___118__logo_init__scr_logo` @ 0x1401a2e10, 402 B, ok
+- `gml_Script____struct___123_____struct___118__logo_init__scr_logo` @ 0x1401a2fb0, 402 B, ok
+- `gml_Script____struct___124_____struct___118__logo_init__scr_logo` @ 0x1401a3150, 402 B, ok
+- `gml_Script____struct___125_____struct___118__logo_init__scr_logo` @ 0x1401a32f0, 402 B, ok
+- `gml_Script____struct___126_____struct___118__logo_init__scr_logo` @ 0x1401a3490, 402 B, ok
+- `gml_Script____struct___127_____struct___118__logo_init__scr_logo` @ 0x1401a3630, 402 B, ok
+- `gml_Script____struct___128_____struct___118__logo_init__scr_logo` @ 0x1401a37d0, 402 B, ok
+- `gml_Script____struct___129_____struct___118__logo_init__scr_logo` @ 0x1401a3970, 402 B, ok
+- `gml_Script____struct___130_____struct___118__logo_init__scr_logo` @ 0x1401a3b10, 402 B, ok
+- `gml_Script____struct___131_____struct___118__logo_init__scr_logo` @ 0x1401a3cb0, 402 B, ok
+- `gml_Script____struct___132_____struct___118__logo_init__scr_logo` @ 0x1401a3e50, 402 B, ok
+- `gml_Script____struct___133_____struct___118__logo_init__scr_logo` @ 0x1401a3ff0, 402 B, ok
+- `gml_Script____struct___134_____struct___118__logo_init__scr_logo` @ 0x1401a4190, 402 B, ok
+- `gml_Script____struct___135_____struct___118__logo_init__scr_logo` @ 0x1401a4330, 402 B, ok
+- `gml_Script____struct___136_____struct___118__logo_init__scr_logo` @ 0x1401a44d0, 402 B, ok
+- `gml_Script____struct___137_____struct___118__logo_init__scr_logo` @ 0x1401a4670, 402 B, ok
+- `gml_Script____struct___138_____struct___118__logo_init__scr_logo` @ 0x1401a4810, 402 B, ok
+- `gml_Script____struct___139_____struct___118__logo_init__scr_logo` @ 0x1401a49b0, 402 B, ok
+- `gml_Script____struct___140_____struct___118__logo_init__scr_logo` @ 0x1401a4b50, 402 B, ok
+- `gml_Script____struct___141_____struct___118__logo_init__scr_logo` @ 0x1401a4cf0, 402 B, ok
+- `gml_Script____struct___142_____struct___118__logo_init__scr_logo` @ 0x1401a4e90, 402 B, ok
+- `gml_Script____struct___143_____struct___118__logo_init__scr_logo` @ 0x1401a5030, 402 B, ok
+- `gml_Script____struct___144_____struct___118__logo_init__scr_logo` @ 0x1401a51d0, 402 B, ok
+- `gml_Script____struct___118__logo_init__scr_logo` @ 0x1401a5370, 12800 B, ok
+- `gml_Script_logo_init` @ 0x1401a8570, 22075 B, timeout
+- `gml_Script_logo_noise` @ 0x1401adbb0, 844 B, ok
+- `gml_Script_logo_text_seed` @ 0x1401adf00, 1510 B, ok
+- `gml_Script____struct___145__logo_make_path__scr_logo` @ 0x1401ae4f0, 900 B, ok
+- `gml_Script_logo_make_path` @ 0x1401ae880, 3024 B, ok
+- `gml_Script____struct___146__logo_path_at__scr_logo` @ 0x1401af450, 606 B, ok
+- `gml_Script____struct___147__logo_path_at__scr_logo` @ 0x1401af6b0, 556 B, ok
+- `gml_Script_logo_path_at` @ 0x1401af8e0, 5801 B, ok
+- `gml_Script____struct___148__logo_path_nearest__scr_logo` @ 0x1401b0f90, 448 B, ok
+- `gml_Script_logo_path_nearest` @ 0x1401b1150, 6798 B, ok
+- `gml_Script_logo_half_width` @ 0x1401b2be0, 1820 B, ok
+- `gml_Script_logo_reach` @ 0x1401b3300, 4914 B, ok
+- `gml_Script_logo_stretch` @ 0x1401b4640, 1854 B, ok
+- `gml_Script____struct___149__logo_push_blade__scr_logo` @ 0x1401b4d80, 783 B, ok
+- `gml_Script_logo_push_blade` @ 0x1401b5090, 2163 B, ok
+- `gml_Script____struct___150__logo_anchor__scr_logo` @ 0x1401b5910, 592 B, ok
+- `gml_Script_logo_anchor` @ 0x1401b5b60, 3274 B, ok
+- `gml_Script_logo_grow_strand` @ 0x1401b6830, 13551 B, ok
+- `gml_Script_logo_grow_thorn` @ 0x1401b9d20, 1846 B, ok
+- `gml_Script_logo_grow_web` @ 0x1401ba460, 1846 B, ok
+- `gml_Script____struct___151__logo_seed_points__scr_logo` @ 0x1401baba0, 648 B, ok
+- `gml_Script____struct___152__logo_seed_points__scr_logo` @ 0x1401bae30, 660 B, ok
+- `gml_Script____struct___153__logo_seed_points__scr_logo` @ 0x1401bb0d0, 700 B, ok
+- `gml_Script_logo_seed_points` @ 0x1401bb390, 12013 B, ok
+- `gml_Script____struct___154__logo_outline__scr_logo` @ 0x1401be280, 613 B, ok
+- `gml_Script_logo_outline` @ 0x1401be4f0, 6882 B, ok
+- `gml_Script____struct___155__logo_build__scr_logo` @ 0x1401bffe0, 984 B, ok
+- `gml_Script____struct___156__logo_build__scr_logo` @ 0x1401c03c0, 549 B, ok
+- `gml_Script____struct___157__logo_build__scr_logo` @ 0x1401c05f0, 899 B, ok
+- `gml_Script_logo_build` @ 0x1401c0980, 39925 B, error
+- `gml_Script_logo_draw_ribbon` @ 0x1401ca800, 7696 B, ok
+- `gml_Script_logo_draw_blade` @ 0x1401cc610, 10559 B, ok
+- `gml_Script_logo_paint` @ 0x1401cef50, 6111 B, ok
+- `gml_Script_logo_draw` @ 0x1401d0730, 4231 B, ok
+- `gml_Script_logo_drop_surface` @ 0x1401d17c0, 609 B, ok
+- `gml_Script_logo_read_typing` @ 0x1401d1a30, 2270 B, ok
+- `gml_Script_logo_has_letters` @ 0x1401d2310, 714 B, ok
+- `gml_Script_logo_grow_start` @ 0x1401d25e0, 1209 B, ok
+- `gml_Script_logo_edit` @ 0x1401d2aa0, 432 B, ok
+- `gml_Script_logo_reroll` @ 0x1401d2c50, 260 B, ok
+- `gml_Script_logo_open` @ 0x1401d2d60, 547 B, ok
+- `gml_Script_logo_step` @ 0x1401d2f90, 2131 B, ok
+- `gml_GlobalScript_scr_logo` @ 0x1401d37f0, 4096 B, ok
+
+### scr_save (43)
+- `gml_Script_save_init` @ 0x1401d47f0, 352 B, ok
+- `gml_Script_save_path` @ 0x1401d4950, 902 B, ok
+- `gml_Script_save_meta_path` @ 0x1401d4ce0, 902 B, ok
+- `gml_Script_save_write_text` @ 0x1401d5070, 2000 B, ok
+- `gml_Script_save_read_text` @ 0x1401d5840, 1146 B, ok
+- `gml_Script_save_slot_meta` @ 0x1401d5cc0, 1239 B, ok
+- `gml_Script_save_any_exists` @ 0x1401d6240, 752 B, ok
+- `gml_Script_save_start_new` @ 0x1401d6530, 639 B, ok
+- `gml_Script_save_step` @ 0x1401d67b0, 606 B, ok
+- `gml_Script_save_copy_struct` @ 0x1401d6a10, 1498 B, ok
+- `gml_Script____struct___160__save_game__scr_save` @ 0x1401d6ff0, 1048 B, ok
+- `gml_Script____struct___161__save_game__scr_save` @ 0x1401d7410, 808 B, ok
+- `gml_Script____struct___162__save_game__scr_save` @ 0x1401d7740, 1154 B, ok
+- `gml_Script____struct___163__save_game__scr_save` @ 0x1401d7bd0, 652 B, ok
+- `gml_Script____struct___164__save_game__scr_save` @ 0x1401d7e60, 652 B, ok
+- `gml_Script____struct___165__save_game__scr_save` @ 0x1401d80f0, 652 B, ok
+- `gml_Script____struct___166__save_game__scr_save` @ 0x1401d8380, 852 B, ok
+- `gml_Script____struct___167__save_game__scr_save` @ 0x1401d86e0, 783 B, ok
+- `gml_Script____struct___168__save_game__scr_save` @ 0x1401d89f0, 338 B, ok
+- `gml_Script____struct___169__save_game__scr_save` @ 0x1401d8b50, 448 B, ok
+- `gml_Script____struct___170__save_game__scr_save` @ 0x1401d8d10, 448 B, ok
+- `gml_Script____struct___172_____struct___171__save_game__scr_save` @ 0x1401d8ed0, 565 B, ok
+- `gml_Script____struct___173_____struct___171__save_game__scr_save` @ 0x1401d9110, 456 B, ok
+- `gml_Script____struct___175_____struct___174_____struct___171__save_game__scr_save` @ 0x1401d92e0, 988 B, ok
+- `gml_Script____struct___176_____struct___174_____struct___171__save_game__scr_save` @ 0x1401d96c0, 751 B, ok
+- `gml_Script____struct___177_____struct___174_____struct___171__save_game__scr_save` @ 0x1401d99b0, 1062 B, ok
+- `gml_Script____struct___174_____struct___171__save_game__scr_save` @ 0x1401d9de0, 4825 B, ok
+- `gml_Script____struct___171__save_game__scr_save` @ 0x1401db0c0, 5743 B, ok
+- `gml_Script____struct___178__save_game__scr_save` @ 0x1401dc730, 674 B, ok
+- `gml_Script_save_game` @ 0x1401dc9e0, 26017 B, ok
+- `gml_Script____struct___180__load_game__scr_save` @ 0x1401e3240, 435 B, ok
+- `gml_Script____struct___181__load_game__scr_save` @ 0x1401e3400, 549 B, ok
+- `gml_Script____struct___188__load_game__scr_save` @ 0x1401e3630, 845 B, ok
+- `gml_Script____struct___189__load_game__scr_save` @ 0x1401e3980, 747 B, ok
+- `gml_Script____struct___190__load_game__scr_save` @ 0x1401e3c70, 845 B, ok
+- `gml_Script____struct___191__load_game__scr_save` @ 0x1401e3fc0, 652 B, ok
+- `gml_Script____struct___192__load_game__scr_save` @ 0x1401e4250, 652 B, ok
+- `gml_Script____struct___193__load_game__scr_save` @ 0x1401e44e0, 652 B, ok
+- `gml_Script____struct___194__load_game__scr_save` @ 0x1401e4770, 852 B, ok
+- `gml_Script____struct___195__load_game__scr_save` @ 0x1401e4ad0, 747 B, ok
+- `gml_Script____struct___196__load_game__scr_save` @ 0x1401e4dc0, 1567 B, ok
+- `gml_Script_load_game` @ 0x1401e53e0, 56395 B, timeout
+- `gml_GlobalScript_scr_save` @ 0x1401f48d0, 1767 B, ok
+
+### scr_skilltree (36)
+- `gml_Script_tree_seed` @ 0x1401f4fc0, 1653 B, ok
+- `gml_Script____struct___197__tree_strand_point__scr_skilltree` @ 0x1401f5640, 499 B, ok
+- `gml_Script_tree_strand_point` @ 0x1401f5840, 7275 B, ok
+- `gml_Script_tree_noise` @ 0x1401f74b0, 1306 B, ok
+- `gml_Script____struct___198__tree_strand_path__scr_skilltree` @ 0x1401f79d0, 606 B, ok
+- `gml_Script_tree_strand_path` @ 0x1401f7c30, 6838 B, ok
+- `gml_Script_tree_draw_hair` @ 0x1401f96f0, 5315 B, ok
+- `gml_Script_tree_draw_strand` @ 0x1401fabc0, 12155 B, ok
+- `gml_Script_tree_draw_glow` @ 0x1401fdb40, 1547 B, ok
+- `gml_Script_tree_draw_level_ring` @ 0x1401fe150, 4661 B, ok
+- `gml_Script____struct___199__tree_icon_box__scr_skilltree` @ 0x1401ff390, 988 B, ok
+- `gml_Script_tree_icon_box` @ 0x1401ff770, 2387 B, ok
+- `gml_Script_tree_icon_scale` @ 0x1402000d0, 638 B, ok
+- `gml_Script_tree_draw_icon` @ 0x140200350, 10557 B, ok
+- `gml_Script_tree_draw_guide` @ 0x140203290, 3704 B, ok
+- `gml_Script____struct___200__tree_bend_point__scr_skilltree` @ 0x140204920, 506 B, ok
+- `gml_Script_tree_bend_point` @ 0x140204b20, 2938 B, ok
+- `gml_Script____struct___201__tree_hypha_walk__scr_skilltree` @ 0x1402056a0, 499 B, ok
+- `gml_Script____struct___202__tree_hypha_walk__scr_skilltree` @ 0x1402058a0, 506 B, ok
+- `gml_Script____struct___203__tree_hypha_walk__scr_skilltree` @ 0x140205aa0, 506 B, ok
+- `gml_Script_tree_hypha_walk` @ 0x140205ca0, 12847 B, ok
+- `gml_Script____struct___204__tree_hypha_cells__scr_skilltree` @ 0x140208ed0, 686 B, ok
+- `gml_Script_tree_hypha_cells` @ 0x140209180, 8503 B, ok
+- `gml_Script____struct___205__tree_hypha_build__scr_skilltree` @ 0x14020b2c0, 445 B, ok
+- `gml_Script____struct___206__tree_hypha_build__scr_skilltree` @ 0x14020b480, 565 B, ok
+- `gml_Script____struct___207__tree_hypha_build__scr_skilltree` @ 0x14020b6c0, 650 B, ok
+- `gml_Script_tree_hypha_build` @ 0x14020b950, 16067 B, ok
+- `gml_Script____struct___209__tree_hypha_get__scr_skilltree` @ 0x14020f820, 448 B, ok
+- `gml_Script_tree_hypha_get` @ 0x14020f9e0, 8091 B, ok
+- `gml_Script_tree_hypha_length` @ 0x140211cd0, 3836 B, ok
+- `gml_Script_tree_hypha_cell_quad` @ 0x140212bd0, 3016 B, ok
+- `gml_Script_tree_hypha_draw` @ 0x1402137a0, 10382 B, ok
+- `gml_Script____struct___210__tree_draw_leaf_wrap__scr_skilltree` @ 0x140216040, 506 B, ok
+- `gml_Script_tree_draw_leaf_wrap` @ 0x140216240, 6593 B, ok
+- `gml_Script_tree_draw_padlock` @ 0x140217c10, 9852 B, ok
+- `gml_GlobalScript_scr_skilltree` @ 0x14021a290, 3137 B, ok
+
+### scr_stones (85)
+- `gml_Script____struct___211__stones_init__scr_stones` @ 0x14021aee0, 1095 B, ok
+- `gml_Script_stones_init` @ 0x14021b330, 20490 B, ok
+- `gml_Script_stones_ready` @ 0x140220340, 582 B, ok
+- `gml_Script____struct___212__stones_slice_sheet__scr_stones` @ 0x140220590, 448 B, ok
+- `gml_Script____struct___213__stones_slice_sheet__scr_stones` @ 0x140220750, 448 B, ok
+- `gml_Script____struct___214__stones_slice_sheet__scr_stones` @ 0x140220910, 448 B, ok
+- `gml_Script_stones_slice_sheet` @ 0x140220ad0, 6375 B, ok
+- `gml_Script_stones_wake` @ 0x1402223c0, 761 B, ok
+- `gml_Script_stones_shove` @ 0x1402226c0, 10497 B, ok
+- `gml_Script_stones_separate` @ 0x140224fd0, 6640 B, ok
+- `gml_Script_stones_step` @ 0x1402269c0, 7334 B, ok
+- `gml_Script____struct___215__world_paint_stones__scr_stones` @ 0x140228670, 1134 B, ok
+- `gml_Script_world_paint_stones` @ 0x140228ae0, 12699 B, ok
+- `gml_Script_world_draw_stones` @ 0x14022bc80, 4977 B, ok
+- `gml_Script_stone_role_tiles` @ 0x14022d000, 6376 B, ok
+- `gml_Script_stone_inner_corner_tile` @ 0x14022e8f0, 1516 B, ok
+- `gml_Script_stone_tiles_init` @ 0x14022eee0, 8551 B, ok
+- `gml_Script_stone_tiles_ready` @ 0x140231050, 582 B, ok
+- `gml_Script_stone_tile_solid_at` @ 0x1402312a0, 1572 B, ok
+- `gml_Script_stone_cell_key` @ 0x1402318d0, 874 B, ok
+- `gml_Script_stone_cell_at` @ 0x140231c40, 1650 B, ok
+- `gml_Script_stone_solid_at` @ 0x1402322c0, 2426 B, ok
+- `gml_Script_world_stone_covers` @ 0x140232c40, 692 B, ok
+- `gml_Script_stone_blob_cells` @ 0x140232f00, 17276 B, ok
+- `gml_Script____struct___217__stone_blob_finish__scr_stones` @ 0x140237280, 448 B, ok
+- `gml_Script____struct___219__stone_blob_finish__scr_stones` @ 0x140237440, 448 B, ok
+- `gml_Script_stone_blob_finish` @ 0x140237600, 9761 B, ok
+- `gml_Script_stone_blob_largest_piece` @ 0x140239c30, 7841 B, ok
+- `gml_Script_stone_blob_fits` @ 0x14023bae0, 9118 B, ok
+- `gml_Script_stone_pick_tile` @ 0x14023de90, 1237 B, ok
+- `gml_Script_stone_tile_for` @ 0x14023e370, 8169 B, ok
+- `gml_Script____struct___221__stone_redress_after_cut__scr_stones` @ 0x140240360, 549 B, ok
+- `gml_Script_anon__29665__stone_redress_after_cut__scr_stones` @ 0x140240590, 2944 B, ok
+- `gml_Script____struct___222__stone_redress_after_cut__scr_stones` @ 0x140241110, 338 B, ok
+- `gml_Script_anon__31443__stone_redress_after_cut__scr_stones` @ 0x140241270, 980 B, ok
+- `gml_Script_stone_redress_after_cut` @ 0x140241650, 12124 B, ok
+- `gml_Script____struct___223__stone_dress_blob__scr_stones` @ 0x140244820, 338 B, ok
+- `gml_Script_anon__32538__stone_dress_blob__scr_stones` @ 0x140244980, 847 B, ok
+- `gml_Script____struct___224__stone_dress_blob__scr_stones` @ 0x140244cd0, 852 B, ok
+- `gml_Script_stone_dress_blob` @ 0x140245030, 4788 B, ok
+- `gml_Script_world_paint_stone_deposits` @ 0x1402462f0, 17593 B, ok
+- `gml_Script____struct___226_____struct___225__world_obstacles_reach__scr_stones` @ 0x14024a960, 506 B, ok
+- `gml_Script____struct___227_____struct___225__world_obstacles_reach__scr_stones` @ 0x14024ab60, 506 B, ok
+- `gml_Script____struct___225__world_obstacles_reach__scr_stones` @ 0x14024ad60, 1339 B, ok
+- `gml_Script____struct___228__world_obstacles_reach__scr_stones` @ 0x14024b2a0, 967 B, ok
+- `gml_Script____struct___229__world_obstacles_reach__scr_stones` @ 0x14024b670, 763 B, ok
+- `gml_Script_world_obstacles_reach` @ 0x14024b970, 13997 B, ok
+- `gml_Script_world_obstacles_at_chunk` @ 0x14024f120, 3269 B, ok
+- `gml_Script_world_paint_surface_wall` @ 0x14024fdf0, 20340 B, ok
+- `gml_Script_stone_cut_round` @ 0x140254d70, 6914 B, ok
+- `gml_Script_stone_cut_tunnel` @ 0x140256880, 9452 B, ok
+- `gml_Script_maze_rng` @ 0x140258d70, 835 B, ok
+- `gml_Script_maze_rng_int` @ 0x1402590c0, 1367 B, ok
+- `gml_Script_maze_open_at` @ 0x140259620, 1578 B, ok
+- `gml_Script_maze_is_open` @ 0x140259c50, 1556 B, ok
+- `gml_Script_maze_disc` @ 0x14025a270, 3948 B, ok
+- `gml_Script____struct___231__maze_room__scr_stones` @ 0x14025b1e0, 650 B, ok
+- `gml_Script_maze_room` @ 0x14025b470, 8975 B, ok
+- `gml_Script_maze_tunnel` @ 0x14025d780, 11588 B, ok
+- `gml_Script_maze_distance` @ 0x1402604d0, 11268 B, ok
+- `gml_Script_maze_dig_out` @ 0x1402630e0, 8898 B, ok
+- `gml_Script_maze_inside` @ 0x1402653b0, 1025 B, ok
+- `gml_Script_maze_cave_hollows` @ 0x1402657c0, 15841 B, ok
+- `gml_Script_maze_hollows` @ 0x1402695b0, 10256 B, ok
+- `gml_Script_maze_branches` @ 0x14026c9c0, 9469 B, ok
+- `gml_Script____struct___232__maze_finish__scr_stones` @ 0x14026f7e0, 541 B, ok
+- `gml_Script____struct___234__maze_finish__scr_stones` @ 0x14026fa00, 1648 B, ok
+- `gml_Script____struct___235__maze_finish__scr_stones` @ 0x140270070, 707 B, ok
+- `gml_Script____struct___236__maze_finish__scr_stones` @ 0x140270340, 549 B, ok
+- `gml_Script_maze_finish` @ 0x140270570, 17793 B, ok
+- `gml_Script_maze_data` @ 0x140274b00, 1021 B, ok
+- `gml_Script____struct___237__world_maze_build__scr_stones` @ 0x140274f00, 1551 B, ok
+- `gml_Script_world_maze_build` @ 0x140275510, 24050 B, ok
+- `gml_Script____struct___239__world_rock_clusters__scr_stones` @ 0x14027bd90, 723 B, ok
+- `gml_Script____struct___240__world_rock_clusters__scr_stones` @ 0x14027c070, 723 B, ok
+- `gml_Script____struct___241__world_rock_clusters__scr_stones` @ 0x14027c350, 1680 B, ok
+- `gml_Script_world_rock_clusters` @ 0x14027c9e0, 18617 B, ok
+- `gml_Script____struct___242__world_cluster_build__scr_stones` @ 0x1402812a0, 1649 B, ok
+- `gml_Script_world_cluster_build` @ 0x140281920, 30399 B, timeout
+- `gml_Script_world_paint_clusters_late` @ 0x140288fe0, 4194 B, ok
+- `gml_Script_world_paint_clusters` @ 0x14028a050, 4160 B, ok
+- `gml_Script____struct___246__world_paint_maze_part__scr_stones` @ 0x14028b090, 870 B, ok
+- `gml_Script_world_paint_maze_part` @ 0x14028b400, 5976 B, ok
+- `gml_Script_world_draw_stone_deposits` @ 0x14028cb60, 6700 B, ok
+- `gml_GlobalScript_scr_stones` @ 0x14028e590, 7521 B, ok
+
+### scr_upgrades (61)
+- `gml_Script____struct___248__upgrades_init__scr_upgrades` @ 0x140290300, 1014 B, ok
+- `gml_Script____struct___249__upgrades_init__scr_upgrades` @ 0x140290700, 1182 B, ok
+- `gml_Script____struct___250__upgrades_init__scr_upgrades` @ 0x140290ba0, 1192 B, ok
+- `gml_Script____struct___251__upgrades_init__scr_upgrades` @ 0x140291050, 1192 B, ok
+- `gml_Script____struct___252__upgrades_init__scr_upgrades` @ 0x140291500, 1155 B, ok
+- `gml_Script____struct___253__upgrades_init__scr_upgrades` @ 0x140291990, 1155 B, ok
+- `gml_Script____struct___254__upgrades_init__scr_upgrades` @ 0x140291e20, 1155 B, ok
+- `gml_Script____struct___255__upgrades_init__scr_upgrades` @ 0x1402922b0, 1063 B, ok
+- `gml_Script____struct___256__upgrades_init__scr_upgrades` @ 0x1402926e0, 1192 B, ok
+- `gml_Script____struct___257__upgrades_init__scr_upgrades` @ 0x140292b90, 1145 B, ok
+- `gml_Script____struct___258__upgrades_init__scr_upgrades` @ 0x140293010, 1079 B, ok
+- `gml_Script____struct___259__upgrades_init__scr_upgrades` @ 0x140293450, 1316 B, ok
+- `gml_Script____struct___260__upgrades_init__scr_upgrades` @ 0x140293980, 1224 B, ok
+- `gml_Script____struct___261__upgrades_init__scr_upgrades` @ 0x140293e50, 1224 B, ok
+- `gml_Script____struct___262__upgrades_init__scr_upgrades` @ 0x140294320, 1151 B, ok
+- `gml_Script____struct___263__upgrades_init__scr_upgrades` @ 0x1402947a0, 1224 B, ok
+- `gml_Script____struct___264__upgrades_init__scr_upgrades` @ 0x140294c70, 1224 B, ok
+- `gml_Script____struct___265__upgrades_init__scr_upgrades` @ 0x140295140, 1128 B, ok
+- `gml_Script____struct___266__upgrades_init__scr_upgrades` @ 0x1402955b0, 1189 B, ok
+- `gml_Script____struct___267__upgrades_init__scr_upgrades` @ 0x140295a60, 1189 B, ok
+- `gml_Script____struct___268__upgrades_init__scr_upgrades` @ 0x140295f10, 1244 B, ok
+- `gml_Script____struct___269__upgrades_init__scr_upgrades` @ 0x1402963f0, 1189 B, ok
+- `gml_Script____struct___270__upgrades_init__scr_upgrades` @ 0x1402968a0, 1189 B, ok
+- `gml_Script____struct___271__upgrades_init__scr_upgrades` @ 0x140296d50, 1107 B, ok
+- `gml_Script____struct___272__upgrades_init__scr_upgrades` @ 0x1402971b0, 1224 B, ok
+- `gml_Script____struct___273__upgrades_init__scr_upgrades` @ 0x140297680, 1179 B, ok
+- `gml_Script____struct___274__upgrades_init__scr_upgrades` @ 0x140297b20, 1189 B, ok
+- `gml_Script____struct___275__upgrades_init__scr_upgrades` @ 0x140297fd0, 1118 B, ok
+- `gml_Script____struct___276__upgrades_init__scr_upgrades` @ 0x140298430, 1161 B, ok
+- `gml_Script____struct___277__upgrades_init__scr_upgrades` @ 0x1402988c0, 1224 B, ok
+- `gml_Script____struct___278__upgrades_init__scr_upgrades` @ 0x140298d90, 1128 B, ok
+- `gml_Script____struct___279__upgrades_init__scr_upgrades` @ 0x140299200, 1189 B, ok
+- `gml_Script_upgrades_init` @ 0x1402996b0, 20908 B, timeout
+- `gml_Script_upg_def` @ 0x14029e860, 816 B, ok
+- `gml_Script____struct___281__upg_tree_pos__scr_upgrades` @ 0x14029eb90, 506 B, ok
+- `gml_Script_upg_tree_pos` @ 0x14029ed90, 1302 B, ok
+- `gml_Script____struct___282__upg_tree_via__scr_upgrades` @ 0x14029f2b0, 506 B, ok
+- `gml_Script_upg_tree_via` @ 0x14029f4b0, 1676 B, ok
+- `gml_Script_upg_children` @ 0x14029fb40, 1244 B, ok
+- `gml_Script_upg_level` @ 0x1402a0020, 857 B, ok
+- `gml_Script_upg_max_level` @ 0x1402a0380, 1072 B, ok
+- `gml_Script_upg_bonus` @ 0x1402a07b0, 1337 B, ok
+- `gml_Script_upg_is_owned` @ 0x1402a0cf0, 460 B, ok
+- `gml_Script_upg_requirement_met` @ 0x1402a0ec0, 1091 B, ok
+- `gml_Script_upg_cost` @ 0x1402a1310, 4339 B, ok
+- `gml_Script_upg_demo_locked` @ 0x1402a2410, 1667 B, ok
+- `gml_Script_upg_can_buy` @ 0x1402a2aa0, 2001 B, ok
+- `gml_Script_upg_buy` @ 0x1402a3280, 951 B, ok
+- `gml_Script_upg_state` @ 0x1402a3640, 2701 B, ok
+- `gml_Script_upgrades_grow_step` @ 0x1402a40d0, 2497 B, ok
+- `gml_Script_upg_grow` @ 0x1402a4cd0, 857 B, ok
+- `gml_Script_myc_shot_range` @ 0x1402a5030, 643 B, ok
+- `gml_Script_myc_shot_range_max` @ 0x1402a52c0, 897 B, ok
+- `gml_Script_myc_digger_range` @ 0x1402a5650, 615 B, ok
+- `gml_Script_myc_shot_spread` @ 0x1402a58c0, 643 B, ok
+- `gml_Script_myc_shot_water_cost` @ 0x1402a5b50, 1026 B, ok
+- `gml_Script_myc_shot_water_rate` @ 0x1402a5f60, 714 B, ok
+- `gml_Script_myc_node_food_cost` @ 0x1402a6230, 1137 B, ok
+- `gml_Script_myc_budding_chance` @ 0x1402a66b0, 624 B, ok
+- `gml_Script_myc_soil_penetration` @ 0x1402a6920, 577 B, ok
+- `gml_GlobalScript_scr_upgrades` @ 0x1402a6b70, 3685 B, ok
+
+### scr_visual (5)
+- `gml_Script____struct___283__visual_defaults__scr_visual` @ 0x1402a79e0, 32108 B, error
+- `gml_Script_visual_defaults` @ 0x1402af750, 2386 B, ok
+- `gml_Script_visual_init` @ 0x1402b00b0, 300 B, ok
+- `gml_Script_vis` @ 0x1402b01e0, 500 B, ok
+- `gml_GlobalScript_scr_visual` @ 0x1402b03e0, 534 B, ok
+
+### scr_weather (25)
+- `gml_Script____struct___284__weather_init__scr_weather` @ 0x1402b0600, 1470 B, ok
+- `gml_Script____struct___285__weather_init__scr_weather` @ 0x1402b0bc0, 614 B, ok
+- `gml_Script____struct___286__weather_init__scr_weather` @ 0x1402b0e30, 614 B, ok
+- `gml_Script____struct___287__weather_init__scr_weather` @ 0x1402b10a0, 624 B, ok
+- `gml_Script____struct___288__weather_init__scr_weather` @ 0x1402b1310, 788 B, ok
+- `gml_Script_weather_init` @ 0x1402b1630, 4420 B, ok
+- `gml_Script_weather_is_raining` @ 0x1402b2780, 304 B, ok
+- `gml_Script_weather_force_rain` @ 0x1402b28b0, 1311 B, ok
+- `gml_Script_rain_begin` @ 0x1402b2dd0, 1421 B, ok
+- `gml_Script_rain_phase_step` @ 0x1402b3360, 4861 B, ok
+- `gml_Script_rain_gloom_step` @ 0x1402b4660, 2765 B, ok
+- `gml_Script_rain_drop_reset` @ 0x1402b5130, 3229 B, ok
+- `gml_Script____struct___289__rain_splash_add__scr_weather` @ 0x1402b5dd0, 766 B, ok
+- `gml_Script____struct___290__rain_splash_add__scr_weather` @ 0x1402b60d0, 970 B, ok
+- `gml_Script_rain_splash_add` @ 0x1402b64a0, 3902 B, ok
+- `gml_Script_rain_splashes_step` @ 0x1402b73e0, 3811 B, ok
+- `gml_Script_weather_step` @ 0x1402b82d0, 9473 B, ok
+- `gml_Script_rain_streak` @ 0x1402ba7e0, 6689 B, ok
+- `gml_Script_rain_bands_draw` @ 0x1402bc210, 8279 B, ok
+- `gml_Script_rain_gloom_shade` @ 0x1402be270, 1131 B, ok
+- `gml_Script_rain_gloom_draw` @ 0x1402be6e0, 2812 B, ok
+- `gml_Script_rain_splashes_draw` @ 0x1402bf1e0, 7739 B, ok
+- `gml_Script_weather_draw_back` @ 0x1402c1020, 1263 B, ok
+- `gml_Script_weather_draw_front` @ 0x1402c1510, 2133 B, ok
+- `gml_GlobalScript_scr_weather` @ 0x1402c1d70, 2452 B, ok
+
+### scr_world (222)
+- `gml_Script____struct___291__world_init__scr_world` @ 0x1402c2780, 1704 B, ok
+- `gml_Script_world_init` @ 0x1402c2e30, 4322 B, ok
+- `gml_Script____struct___293__world_start_ring__scr_world` @ 0x1402c3f20, 1117 B, ok
+- `gml_Script_world_start_ring` @ 0x1402c4380, 3733 B, ok
+- `gml_Script_world_start_on_screen` @ 0x1402c5220, 711 B, ok
+- `gml_Script_world_start_angle` @ 0x1402c54f0, 1079 B, ok
+- `gml_Script_world_rect_distance` @ 0x1402c5dd0, 1947 B, ok
+- `gml_Script____struct___294__cave_defs__scr_world` @ 0x1402c6570, 778 B, ok
+- `gml_Script____struct___295__cave_defs__scr_world` @ 0x1402c6880, 778 B, ok
+- `gml_Script____struct___296__cave_defs__scr_world` @ 0x1402c6b90, 778 B, ok
+- `gml_Script____struct___297__cave_defs__scr_world` @ 0x1402c6ea0, 778 B, ok
+- `gml_Script____struct___298__cave_defs__scr_world` @ 0x1402c71b0, 778 B, ok
+- `gml_Script_cave_defs` @ 0x1402c74c0, 5274 B, ok
+- `gml_Script_cave_def` @ 0x1402c8960, 929 B, ok
+- `gml_Script_cave_range` @ 0x1402c8d10, 725 B, ok
+- `gml_Script____struct___299__cave_place__scr_world` @ 0x1402c8ff0, 942 B, ok
+- `gml_Script_cave_place` @ 0x1402c93a0, 11682 B, ok
+- `gml_Script_cave_host_pick` @ 0x1402cc150, 2442 B, ok
+- `gml_Script____struct___300__world_cave_rects__scr_world` @ 0x1402ccae0, 826 B, ok
+- `gml_Script____struct___301__world_cave_rects__scr_world` @ 0x1402cce20, 1135 B, ok
+- `gml_Script_anon__10783__world_cave_rects__scr_world` @ 0x1402cd290, 4190 B, ok
+- `gml_Script_anon__11290__world_cave_rects__scr_world` @ 0x1402ce2f0, 2986 B, ok
+- `gml_Script____struct___303_____struct___302__world_cave_rects__scr_world` @ 0x1402ceea0, 542 B, ok
+- `gml_Script____struct___304_____struct___302__world_cave_rects__scr_world` @ 0x1402cf0c0, 499 B, ok
+- `gml_Script____struct___302__world_cave_rects__scr_world` @ 0x1402cf2c0, 1517 B, ok
+- `gml_Script_world_cave_rects` @ 0x1402cf8b0, 18454 B, ok
+- `gml_Script_cave_yellow_spot` @ 0x1402d4300, 801 B, ok
+- `gml_Script_world_area_untouched` @ 0x1402d4630, 2905 B, ok
+- `gml_Script____struct___305__cave_yellow_pick__scr_world` @ 0x1402d5190, 808 B, ok
+- `gml_Script_cave_yellow_pick` @ 0x1402d54c0, 12026 B, ok
+- `gml_Script_cave_yellow_step` @ 0x1402d83c0, 2770 B, ok
+- `gml_Script_cave_blue_place` @ 0x1402d8ea0, 4499 B, ok
+- `gml_Script____struct___306__caves_extend__scr_world` @ 0x1402da040, 834 B, ok
+- `gml_Script_caves_extend` @ 0x1402da390, 13292 B, ok
+- `gml_Script_world_clear_zones` @ 0x1402dd780, 2665 B, ok
+- `gml_Script____struct___307__bone_kinds__scr_world` @ 0x1402de1f0, 679 B, ok
+- `gml_Script____struct___308__bone_kinds__scr_world` @ 0x1402de4a0, 679 B, ok
+- `gml_Script____struct___309__bone_kinds__scr_world` @ 0x1402de750, 679 B, ok
+- `gml_Script____struct___310__bone_kinds__scr_world` @ 0x1402dea00, 689 B, ok
+- `gml_Script____struct___311__bone_kinds__scr_world` @ 0x1402decc0, 689 B, ok
+- `gml_Script____struct___312__bone_kinds__scr_world` @ 0x1402def80, 689 B, ok
+- `gml_Script_bone_kinds` @ 0x1402df240, 2772 B, ok
+- `gml_Script_bone_kind_weight` @ 0x1402dfd20, 1574 B, ok
+- `gml_Script____struct___313__bone_kind_pick__scr_world` @ 0x1402e0350, 392 B, ok
+- `gml_Script____struct___314__bone_kind_pick__scr_world` @ 0x1402e04e0, 448 B, ok
+- `gml_Script____struct___315__bone_kind_pick__scr_world` @ 0x1402e06a0, 448 B, ok
+- `gml_Script_bone_kind_pick` @ 0x1402e0860, 3554 B, ok
+- `gml_Script____struct___316__world_paint_bones__scr_world` @ 0x1402e1650, 913 B, ok
+- `gml_Script_world_paint_bones` @ 0x1402e19f0, 18041 B, ok
+- `gml_Script____struct___317__world_big_bones__scr_world` @ 0x1402e6070, 548 B, ok
+- `gml_Script____struct___318__world_big_bones__scr_world` @ 0x1402e62a0, 548 B, ok
+- `gml_Script____struct___319__world_big_bones__scr_world` @ 0x1402e64d0, 847 B, ok
+- `gml_Script_world_big_bones` @ 0x1402e6820, 15986 B, ok
+- `gml_Script_world_draw_bones` @ 0x1402ea6a0, 10822 B, ok
+- `gml_Script____struct___321_____struct___320__relic_def__scr_world` @ 0x1402ed0f0, 698 B, ok
+- `gml_Script____struct___322_____struct___320__relic_def__scr_world` @ 0x1402ed3b0, 698 B, ok
+- `gml_Script____struct___320__relic_def__scr_world` @ 0x1402ed670, 1339 B, ok
+- `gml_Script_relic_def` @ 0x1402edbb0, 2164 B, ok
+- `gml_Script____struct___323__world_relics__scr_world` @ 0x1402ee430, 1004 B, ok
+- `gml_Script_world_relics` @ 0x1402ee820, 3691 B, ok
+- `gml_Script_relic_taken` @ 0x1402ef690, 1026 B, ok
+- `gml_Script_relic_wrapped` @ 0x1402efaa0, 2111 B, ok
+- `gml_Script____struct___324__relics_touch_at__scr_world` @ 0x1402f0520, 549 B, ok
+- `gml_Script_relics_touch_at` @ 0x1402f0750, 6860 B, ok
+- `gml_Script_relics_wrap_draw_visible` @ 0x1402f2220, 1693 B, ok
+- `gml_Script_world_cave_hits` @ 0x1402f28c0, 2463 B, ok
+- `gml_Script____struct___326__caves_mask_init__scr_world` @ 0x1402f3260, 751 B, ok
+- `gml_Script____struct___327__caves_mask_init__scr_world` @ 0x1402f3550, 751 B, ok
+- `gml_Script_caves_mask_init` @ 0x1402f3840, 9403 B, ok
+- `gml_Script_cave_hash` @ 0x1402f5d00, 1325 B, ok
+- `gml_Script_cave_branch_points` @ 0x1402f6230, 3488 B, ok
+- `gml_Script____struct___328__cave_outline_build__scr_world` @ 0x1402f6fd0, 448 B, ok
+- `gml_Script____struct___329__cave_outline_build__scr_world` @ 0x1402f7190, 528 B, ok
+- `gml_Script_cave_outline_build` @ 0x1402f73a0, 17895 B, ok
+- `gml_Script_cave_solid_at` @ 0x1402fb990, 5219 B, ok
+- `gml_Script_world_cave_solid_any` @ 0x1402fce00, 1628 B, ok
+- `gml_Script____struct___330__world_clear_caves__scr_world` @ 0x1402fd460, 650 B, ok
+- `gml_Script_anon__46074__world_clear_caves__scr_world` @ 0x1402fd6f0, 998 B, ok
+- `gml_Script_anon__46304__world_clear_caves__scr_world` @ 0x1402fdae0, 664 B, ok
+- `gml_Script____struct___331__world_clear_caves__scr_world` @ 0x1402fdd80, 650 B, ok
+- `gml_Script_anon__46678__world_clear_caves__scr_world` @ 0x1402fe010, 664 B, ok
+- `gml_Script_anon__46870__world_clear_caves__scr_world` @ 0x1402fe2b0, 1013 B, ok
+- `gml_Script_world_clear_caves` @ 0x1402fe6b0, 15728 B, ok
+- `gml_Script_perk_has` @ 0x140302420, 954 B, ok
+- `gml_Script_cave_taken` @ 0x1403027e0, 1020 B, ok
+- `gml_Script_caves_touch_at` @ 0x140302be0, 4992 B, ok
+- `gml_Script____struct___334__cave_take__scr_world` @ 0x140303f60, 565 B, ok
+- `gml_Script____struct___335__cave_take__scr_world` @ 0x1403041a0, 707 B, ok
+- `gml_Script____struct___336__cave_take__scr_world` @ 0x140304470, 499 B, ok
+- `gml_Script_cave_take` @ 0x140304670, 10727 B, ok
+- `gml_Script_perk_time_mult` @ 0x1403073c0, 669 B, ok
+- `gml_Script_perk_cost_mult` @ 0x140307660, 669 B, ok
+- `gml_Script_world_draw_cave` @ 0x140307900, 8269 B, ok
+- `gml_Script____struct___337__caves_wrap_hit__scr_world` @ 0x140309950, 685 B, ok
+- `gml_Script_caves_wrap_hit` @ 0x140309c00, 14455 B, ok
+- `gml_Script_caves_wrap_draw_visible` @ 0x14030d480, 1693 B, ok
+- `gml_Script_cave_wrap_draw` @ 0x14030db20, 27709 B, ok
+- `gml_Script_cave_popups_draw` @ 0x140314760, 6858 B, ok
+- `gml_Script_cave_perk_icons_draw` @ 0x140316230, 5569 B, ok
+- `gml_Script_cave_hover_tip` @ 0x140317800, 5458 B, ok
+- `gml_Script_perk_debug_next` @ 0x140318d60, 3334 B, ok
+- `gml_Script____struct___338__caves_debug_draw__scr_world` @ 0x140319a70, 783 B, ok
+- `gml_Script____struct___339__caves_debug_draw__scr_world` @ 0x140319d80, 850 B, ok
+- `gml_Script____struct___340__caves_debug_draw__scr_world` @ 0x14031a0e0, 806 B, ok
+- `gml_Script____struct___341__caves_debug_draw__scr_world` @ 0x14031a410, 940 B, ok
+- `gml_Script_anon__68900__caves_debug_draw__scr_world` @ 0x14031a7c0, 442 B, ok
+- `gml_Script_caves_debug_draw` @ 0x14031a980, 14066 B, ok
+- `gml_Script_world_start_clear` @ 0x14031e080, 4283 B, ok
+- `gml_Script_world_start_food_quota` @ 0x14031f140, 5648 B, ok
+- `gml_Script_world_food_value_in` @ 0x140320750, 3630 B, ok
+- `gml_Script____struct___342__world_food_fill__scr_world` @ 0x140321580, 805 B, ok
+- `gml_Script_world_food_fill` @ 0x1403218b0, 14702 B, ok
+- `gml_Script_world_food_spot_ok` @ 0x1403257c0, 3646 B, ok
+- `gml_Script_world_start_guarantee` @ 0x140326600, 7986 B, ok
+- `gml_Script____struct___343__world_start_add_lake__scr_world` @ 0x140328540, 1681 B, ok
+- `gml_Script_world_start_add_lake` @ 0x140328be0, 18406 B, ok
+- `gml_Script____struct___344__world_start_add_food__scr_world` @ 0x14032d3d0, 805 B, ok
+- `gml_Script_world_start_add_food` @ 0x14032d700, 11224 B, ok
+- `gml_Script_world_hash01` @ 0x1403306e0, 1806 B, ok
+- `gml_Script_world_chunk_key` @ 0x140330df0, 609 B, ok
+- `gml_Script_world_get_chunk` @ 0x140331060, 2633 B, ok
+- `gml_Script_world_chunk_set` @ 0x140331ab0, 1690 B, ok
+- `gml_Script_world_chunk_get` @ 0x140332150, 1450 B, ok
+- `gml_Script_world_paint_stone_clusters` @ 0x140332700, 8344 B, ok
+- `gml_Script_world_paint_stone_pillar` @ 0x1403347b0, 3501 B, ok
+- `gml_Script____struct___345__lake_layout__scr_world` @ 0x140335560, 565 B, ok
+- `gml_Script____struct___346__lake_layout__scr_world` @ 0x1403357a0, 575 B, ok
+- `gml_Script____struct___347__lake_layout__scr_world` @ 0x1403359e0, 575 B, ok
+- `gml_Script_lake_layout` @ 0x140335c20, 1650 B, ok
+- `gml_Script____struct___348__lakes_init__scr_world` @ 0x1403362a0, 892 B, ok
+- `gml_Script_lakes_init` @ 0x140336620, 11671 B, ok
+- `gml_Script_lakes_ready` @ 0x1403393c0, 582 B, ok
+- `gml_Script_lake_solid_at` @ 0x140339610, 1235 B, ok
+- `gml_Script_lake_pick_kind` @ 0x140339af0, 1845 B, ok
+- `gml_Script_lake_amount` @ 0x14033a230, 881 B, ok
+- `gml_Script_lake_flare_count` @ 0x14033a5b0, 881 B, ok
+- `gml_Script____struct___349__world_paint_lakes__scr_world` @ 0x14033a930, 1681 B, ok
+- `gml_Script_world_paint_lakes` @ 0x14033afd0, 14578 B, ok
+- `gml_Script_world_lake_covers` @ 0x14033e8d0, 1609 B, ok
+- `gml_Script_lake_flare_life_ms` @ 0x14033ef20, 1743 B, ok
+- `gml_Script_lake_flare_alpha` @ 0x14033f5f0, 3210 B, ok
+- `gml_Script____struct___350__lake_flare_spot__scr_world` @ 0x140340280, 499 B, ok
+- `gml_Script_lake_flare_spot` @ 0x140340480, 12279 B, ok
+- `gml_Script____struct___351__lake_init_flares__scr_world` @ 0x140343480, 616 B, ok
+- `gml_Script_lake_init_flares` @ 0x1403436f0, 5147 B, ok
+- `gml_Script_lake_cut_row` @ 0x140344b10, 1552 B, ok
+- `gml_Script____struct___352__world_paint_food__scr_world` @ 0x140345120, 805 B, ok
+- `gml_Script_world_paint_food` @ 0x140345450, 20855 B, ok
+- `gml_Script_world_layer_top` @ 0x14034a5d0, 918 B, ok
+- `gml_Script_world_layer_bottom` @ 0x14034a970, 916 B, ok
+- `gml_Script_world_layer_key` @ 0x14034ad10, 505 B, ok
+- `gml_Script____struct___353__world_generate_chunk__scr_world` @ 0x14034af10, 1415 B, ok
+- `gml_Script_world_generate_chunk` @ 0x14034b4a0, 1894 B, ok
+- `gml_Script_world_chunk_reach` @ 0x14034bc10, 2962 B, ok
+- `gml_Script_world_survival_full_at` @ 0x14034c7b0, 1751 B, ok
+- `gml_Script_world_survival_thin` @ 0x14034ce90, 8170 B, ok
+- `gml_Script_world_paint_layer` @ 0x14034ee80, 2145 B, ok
+- `gml_Script_world_paint_layer_content` @ 0x14034f6f0, 9270 B, ok
+- `gml_Script____struct___355__world_clear_ocean__scr_world` @ 0x140351b30, 338 B, ok
+- `gml_Script_anon__109412__world_clear_ocean__scr_world` @ 0x140351c90, 444 B, ok
+- `gml_Script____struct___356__world_clear_ocean__scr_world` @ 0x140351e50, 338 B, ok
+- `gml_Script_anon__109575__world_clear_ocean__scr_world` @ 0x140351fb0, 291 B, ok
+- `gml_Script____struct___357__world_clear_ocean__scr_world` @ 0x1403520e0, 338 B, ok
+- `gml_Script_anon__109735__world_clear_ocean__scr_world` @ 0x140352240, 291 B, ok
+- `gml_Script____struct___358__world_clear_ocean__scr_world` @ 0x140352370, 338 B, ok
+- `gml_Script_anon__109891__world_clear_ocean__scr_world` @ 0x1403524d0, 458 B, ok
+- `gml_Script_world_clear_ocean` @ 0x1403526a0, 6430 B, ok
+- `gml_Script____struct___359__world_locate__scr_world` @ 0x140353fc0, 565 B, ok
+- `gml_Script_world_locate` @ 0x140354200, 2666 B, ok
+- `gml_Script_world_tile_at` @ 0x140354c70, 4854 B, ok
+- `gml_Script_world_water_at` @ 0x140355f70, 5800 B, ok
+- `gml_Script_world_water_shown_at` @ 0x140357620, 3930 B, ok
+- `gml_Script_world_is_passable` @ 0x140358580, 990 B, ok
+- `gml_Script_world_is_deep_soil` @ 0x140358960, 1035 B, ok
+- `gml_Script_world_soil_water_factor` @ 0x140358d70, 1617 B, ok
+- `gml_Script_world_travel_cost` @ 0x1403593d0, 2364 B, ok
+- `gml_Script____struct___360__world_connect_lake_at__scr_world` @ 0x140359d10, 435 B, ok
+- `gml_Script_world_connect_lake_at` @ 0x140359ed0, 6400 B, ok
+- `gml_Script____struct___361__world_connect_water_at__scr_world` @ 0x14035b7d0, 565 B, ok
+- `gml_Script_world_connect_water_at` @ 0x14035ba10, 4195 B, ok
+- `gml_Script_world_food_sheets` @ 0x14035ca80, 822 B, ok
+- `gml_Script_world_food_kinds` @ 0x14035cdc0, 232 B, ok
+- `gml_Script_world_food_sprite` @ 0x14035ceb0, 500 B, ok
+- `gml_Script_world_food_cells` @ 0x14035d0b0, 1001 B, ok
+- `gml_Script_world_food_value` @ 0x14035d4a0, 675 B, ok
+- `gml_Script____struct___364__world_food_columns__scr_world` @ 0x14035d750, 549 B, ok
+- `gml_Script_world_food_columns` @ 0x14035d980, 5821 B, ok
+- `gml_Script_world_collect_food_at` @ 0x14035f040, 7375 B, ok
+- `gml_Script_water_source_amount` @ 0x140360d20, 1018 B, ok
+- `gml_Script_water_source_take` @ 0x140361120, 2036 B, ok
+- `gml_Script_water_total` @ 0x140361920, 1067 B, ok
+- `gml_Script_water_spend` @ 0x140361d50, 2044 B, ok
+- `gml_Script_water_shown` @ 0x140362550, 655 B, ok
+- `gml_Script_water_counter_step` @ 0x1403627e0, 1229 B, ok
+- `gml_Script_world_draw_turf` @ 0x140362cb0, 2977 B, ok
+- `gml_Script_world_soil_band` @ 0x140363860, 1312 B, ok
+- `gml_Script_world_seam_row_at_screens` @ 0x140363d80, 2567 B, ok
+- `gml_Script_world_dense_row` @ 0x140364790, 1139 B, ok
+- `gml_Script_world_deep_row` @ 0x140364c10, 1498 B, ok
+- `gml_Script_world_soil_tier` @ 0x1403651f0, 612 B, ok
+- `gml_Script_world_deep_y` @ 0x140365460, 605 B, ok
+- `gml_Script_world_ocean_row` @ 0x1403656c0, 1876 B, ok
+- `gml_Script_world_ocean_y` @ 0x140365e20, 605 B, ok
+- `gml_Script_world_is_ocean_at` @ 0x140366080, 235 B, ok
+- `gml_Script_world_dense_y` @ 0x140366170, 605 B, ok
+- `gml_Script_world_soil_sprite` @ 0x1403663d0, 3647 B, ok
+- `gml_Script_world_dirt_sprite` @ 0x140367210, 3647 B, ok
+- `gml_Script_world_soil_edge_sprite` @ 0x140368050, 3603 B, ok
+- `gml_Script_world_draw_soil_edges` @ 0x140368e70, 6522 B, ok
+- `gml_Script_world_bottom_is_rock` @ 0x14036a7f0, 661 B, ok
+- `gml_Script_world_draw_bottom_rock` @ 0x14036aa90, 6855 B, ok
+- `gml_Script_world_draw_ocean` @ 0x14036c560, 8333 B, ok
+- `gml_Script_world_draw_ocean_flares` @ 0x14036e5f0, 12614 B, ok
+- `gml_Script_world_draw_water_fill` @ 0x140371740, 1206 B, ok
+- `gml_Script_world_draw_lakes` @ 0x140371c00, 17897 B, ok
+- `gml_Script_world_draw_dirt` @ 0x1403761f0, 10378 B, ok
+- `gml_Script_world_draw` @ 0x140378a80, 21651 B, ok
+- `gml_Script____struct___365__world_draw_food_glow__scr_world` @ 0x14037df20, 686 B, ok
+- `gml_Script_world_draw_food_glow` @ 0x14037e1d0, 12688 B, ok
+- `gml_Script_food_glow_pulse` @ 0x140381360, 1995 B, ok
+- `gml_Script_world_draw_food_glow_inner` @ 0x140381b30, 2529 B, ok
+- `gml_GlobalScript_scr_world` @ 0x140382520, 19577 B, ok
+
+### scr_worldgen (13)
+- `gml_Script____struct___366__worldgen_defaults__scr_worldgen` @ 0x1403871a0, 9986 B, ok
+- `gml_Script_worldgen_defaults` @ 0x1403898b0, 1974 B, ok
+- `gml_Script_worldgen_init` @ 0x14038a070, 300 B, ok
+- `gml_Script_wld` @ 0x14038a1a0, 500 B, ok
+- `gml_GlobalScript_scr_worldgen` @ 0x14038a3a0, 534 B, ok
+- `gml_Script_SteamId` (?) @ 0x14038a5c0, 1718 B, ok
+- `gml_Script_SteamFriendsGetFollowerCountResult` (?) @ 0x14038ac80, 652 B, ok
+- `gml_Script_SteamFriendsIsFollowingResult` (?) @ 0x14038af10, 652 B, ok
+- `gml_Script_SteamFriendsEnumerateFollowingListResult` (?) @ 0x14038b1a0, 652 B, ok
+- `gml_Script_SteamFriendsRequestClanOfficerListResult` (?) @ 0x14038b430, 652 B, ok
+- `gml_Script_SteamFriendsDownloadClanActivityCountsResult` (?) @ 0x14038b6c0, 443 B, ok
+- `gml_Script_SteamFriendsAvatarImageLoaded` (?) @ 0x14038b880, 753 B, ok
+- `gml_Script_SteamFriendsClanActivityCounts` (?) @ 0x14038bb80, 653 B, ok
+
+### unknown (1616)
+- `gml_Script___SteamFriendsClanChatMessage_encode` @ 0x1400112f0, 39 B, ok
+- `gml_Script___SteamFriendsFriendGamePlayed_encode` @ 0x1400113b0, 39 B, ok
+- `gml_Script___SteamFriendsFriendMessage_encode` @ 0x1400114d0, 39 B, ok
+- `gml_Script___SteamFriendsPersonaStateChange_encode` @ 0x140011530, 39 B, ok
+- `gml_Script___SteamFriendsGameOverlayActivated_encode` @ 0x140011590, 39 B, ok
+- `gml_Script___SteamFriendsGameRichPresenceJoinRequested_encode` @ 0x140011650, 39 B, ok
+- `gml_Script___SteamFriendsGameLobbyJoinRequested_encode` @ 0x1400116e0, 39 B, ok
+- `gml_Script___SteamFriendsFriendRichPresenceUpdate_encode` @ 0x140011740, 39 B, ok
+- `gml_Script___SteamFriendsGameServerChangeRequested_encode` @ 0x140011770, 39 B, ok
+- `gml_Script___SteamAppsFileDetailsResult_encode` @ 0x140011800, 39 B, ok
+- `gml_Script___SteamAppsDlcData_encode` @ 0x1400118c0, 39 B, ok
+- `gml_Script___SteamAppsIsTimedTrialResult_encode` @ 0x140011950, 39 B, ok
+- `gml_Script___SteamAppsNumBetas_encode` @ 0x1400119e0, 39 B, ok
+- `gml_Script___SteamAppsBetaInfo_encode` @ 0x140011aa0, 39 B, ok
+- `gml_Script___SteamAppsDlcDownloadProgress_encode` @ 0x140011b90, 39 B, ok
+- `gml_Script___SteamAppsDlcInstalled_encode` @ 0x140011c20, 39 B, ok
+- `gml_Script___SteamScreenshotsScreenshotReady_encode` @ 0x140011c50, 39 B, ok
+- `gml_Script___SteamUserStoreAuthUrlResponse_encode` @ 0x140011cb0, 39 B, ok
+- `gml_Script___SteamUserEncryptedAppTicketResponse_encode` @ 0x140011d10, 39 B, ok
+- `gml_Script___SteamUserDurationControl_encode` @ 0x140011d40, 39 B, ok
+- `gml_Script___SteamUserMarketEligibilityResponse_encode` @ 0x140011e90, 39 B, ok
+- `gml_Script___SteamUserAuthSessionTicket_encode` @ 0x140011fb0, 39 B, ok
+- `gml_Script___SteamUserGetAuthSessionTicketResponse_encode` @ 0x140012040, 39 B, ok
+- `gml_Script___SteamUserAvailableVoice_encode` @ 0x140012070, 39 B, ok
+- `gml_Script___SteamUserGetVoiceResult_encode` @ 0x140012100, 39 B, ok
+- `gml_Script___SteamUserDecompressVoiceResult_encode` @ 0x140012190, 39 B, ok
+- `gml_Script___SteamUserGetTicketForWebApiResponse_encode` @ 0x1400121f0, 39 B, ok
+- `gml_Script___SteamUserValidateAuthTicketResponse_encode` @ 0x140012220, 39 B, ok
+- `gml_Script___SteamUserSteamServersDisconnected_encode` @ 0x1400122b0, 39 B, ok
+- `gml_Script___SteamUserSteamServerConnectFailure_encode` @ 0x1400122e0, 39 B, ok
+- `gml_Script___SteamUserClientGameServerDeny_encode` @ 0x140012340, 39 B, ok
+- `gml_Script___SteamUserMicroTxnAuthorizationResponse_encode` @ 0x140012430, 39 B, ok
+- `gml_Script___SteamUtilsCheckFileSignatureResult_encode` @ 0x1400124c0, 39 B, ok
+- `gml_Script___SteamUtilsLowBatteryPower_encode` @ 0x1400124f0, 39 B, ok
+- `gml_Script___SteamUtilsSteamApiCallCompleted_encode` @ 0x140012550, 39 B, ok
+- `gml_Script___SteamUtilsImageSize_encode` @ 0x140012610, 39 B, ok
+- `gml_Script___SteamUtilsFilterTextResult_encode` @ 0x140012640, 39 B, ok
+- `gml_Script___SteamUtilsGamepadTextInputDismissed_encode` @ 0x1400126d0, 39 B, ok
+- `gml_Script___SteamUtilsWarningMessage_encode` @ 0x140012760, 39 B, ok
+- `gml_Script___SteamUgcItemDownloadInfo_encode` @ 0x1400127c0, 39 B, ok
+- `gml_Script___SteamUgcItemInstallInfo_encode` @ 0x1400127f0, 39 B, ok
+- `gml_Script___SteamUgcItemUpdateProgress_encode` @ 0x1400128b0, 39 B, ok
+- `gml_Script___SteamUgcQueryResult_encode` @ 0x140012940, 39 B, ok
+- `gml_Script___SteamUgcAdditionalPreview_encode` @ 0x140012d90, 39 B, ok
+- `gml_Script___SteamUgcKeyValueTag_encode` @ 0x140012e50, 39 B, ok
+- `gml_Script___SteamUgcItemInstalled_encode` @ 0x140012ee0, 39 B, ok
+- `gml_Script___SteamUgcUserSubscribedItemsListChanged_encode` @ 0x140012f10, 39 B, ok
+- `gml_Script___SteamUgcQueryCompleted_encode` @ 0x140012f40, 39 B, ok
+- `gml_Script___SteamUgcCreateItemResult_encode` @ 0x140013030, 39 B, ok
+- `gml_Script___SteamUgcSubmitItemUpdateResult_encode` @ 0x140013090, 39 B, ok
+- `gml_Script___SteamUgcSubscribeItemResult_encode` @ 0x1400130c0, 39 B, ok
+- `gml_Script___SteamUgcUnsubscribeItemResult_encode` @ 0x1400130f0, 39 B, ok
+- `gml_Script___SteamUgcFavoriteItemsListChanged_encode` @ 0x140013120, 39 B, ok
+- `gml_Script___SteamUgcSetUserItemVoteResult_encode` @ 0x140013180, 39 B, ok
+- `gml_Script___SteamUgcGetUserItemVoteResult_encode` @ 0x1400131e0, 39 B, ok
+- `gml_Script___SteamUgcSupportedGameVersionData_encode` @ 0x1400132a0, 39 B, ok
+- `gml_Script___SteamUgcDeleteItemResult_encode` @ 0x140013330, 39 B, ok
+- `gml_Script___SteamUgcAddAppDependencyResult_encode` @ 0x140013360, 39 B, ok
+- `gml_Script___SteamUgcRemoveAppDependencyResult_encode` @ 0x140013390, 39 B, ok
+- `gml_Script___SteamUgcAddUGCDependencyResult_encode` @ 0x1400133c0, 39 B, ok
+- `gml_Script___SteamUgcRemoveUGCDependencyResult_encode` @ 0x140013420, 39 B, ok
+- `gml_Script___SteamUgcGetAppDependenciesResult_encode` @ 0x140013450, 39 B, ok
+- `gml_Script___SteamUgcStartPlaytimeTrackingResult_encode` @ 0x140013540, 39 B, ok
+- `gml_Script___SteamUgcStopPlaytimeTrackingResult_encode` @ 0x140013570, 39 B, ok
+- `gml_Script___SteamUgcDownloadItemResult_encode` @ 0x1400135a0, 39 B, ok
+- `gml_Script___SteamUgcWorkshopEULAStatusResult_encode` @ 0x1400135d0, 39 B, ok
+- `gml_Script___SteamInputAnalogActionData_encode` @ 0x1400136c0, 39 B, ok
+- `gml_Script___SteamInputDigitalActionData_encode` @ 0x140013780, 39 B, ok
+- `gml_Script___SteamInputMotionData_encode` @ 0x1400137e0, 39 B, ok
+- `gml_Script___SteamInputActionOrigins_encode` @ 0x1400139f0, 39 B, ok
+- `gml_Script___SteamInputDeviceBindingRevision_encode` @ 0x140013a80, 39 B, ok
+- `gml_Script___SteamInputDeviceEvent_encode` @ 0x140013b10, 39 B, ok
+- `gml_Script___SteamUserStatsAchievementAndUnlockTime_encode` @ 0x140013b70, 39 B, ok
+- `gml_Script___SteamUserStatsMostAchievedAchievementInfo_encode` @ 0x140013c00, 39 B, ok
+- `gml_Script___SteamUserStatsDownloadedLeaderboardEntry_encode` @ 0x140013c90, 39 B, ok
+- `gml_Script___SteamUserStatsLeaderboardFindResult_encode` @ 0x140013db0, 39 B, ok
+- `gml_Script___SteamUserStatsScoresDownloadedResult_encode` @ 0x140013e40, 39 B, ok
+- `gml_Script___SteamUserStatsScoreUploadedResult_encode` @ 0x140013ed0, 39 B, ok
+- `gml_Script___SteamUserStatsNumberOfCurrentPlayersResult_encode` @ 0x140013f90, 39 B, ok
+- `gml_Script___SteamUserStatsGlobalAchievementPercentagesReadyResult_encode` @ 0x140013ff0, 39 B, ok
+- `gml_Script___SteamUserStatsGlobalStatsReceivedResult_encode` @ 0x140014020, 39 B, ok
+- `gml_Script___SteamUserStatsAttachLeaderboardUgcResult_encode` @ 0x140014050, 39 B, ok
+- `gml_Script___SteamUserStatsAchievementIconFetched_encode` @ 0x140014080, 39 B, ok
+- `gml_Script___SteamUserStatsUnloaded_encode` @ 0x140014110, 39 B, ok
+- `gml_Script___SteamUserStatsUserStatsReceived_encode` @ 0x140014140, 39 B, ok
+- `gml_Script___SteamUserStatsUserStatsStored_encode` @ 0x140014170, 39 B, ok
+- `gml_Script___SteamUserStatsUserAchievementStored_encode` @ 0x1400141a0, 39 B, ok
+- `gml_Script___SteamUserStatsIntMinMax_encode` @ 0x140014260, 39 B, ok
+- `gml_Script___SteamUserStatsFloatMinMax_encode` @ 0x1400142f0, 39 B, ok
+- `gml_Script___SteamMusicPlaybackStatusHasChanged_encode` @ 0x140014320, 39 B, ok
+- `gml_Script___SteamMusicVolumeHasChanged_encode` @ 0x140014380, 39 B, ok
+- `gml_Script___SteamTimelineGamePhaseRecordingExists_encode` @ 0x1400143e0, 39 B, ok
+- `gml_Script___SteamTimelineEventRecordingExists_encode` @ 0x140014500, 39 B, ok
+- `gml_Script___SteamInventoryItemDefQuantity_encode` @ 0x140014590, 39 B, ok
+- `gml_Script___SteamInventoryItemInstanceQuantity_encode` @ 0x140014620, 39 B, ok
+- `gml_Script___SteamInventoryItemWithPrice_encode` @ 0x140014680, 39 B, ok
+- `gml_Script___SteamInventoryItemDetails_encode` @ 0x140014710, 39 B, ok
+- `gml_Script___SteamInventoryDeserializeResult_encode` @ 0x140014770, 39 B, ok
+- `gml_Script___SteamInventoryItemPrice_encode` @ 0x1400147d0, 39 B, ok
+- `gml_Script___SteamInventoryResultReady_encode` @ 0x140014800, 39 B, ok
+- `gml_Script___SteamInventoryFullUpdate_encode` @ 0x140014830, 39 B, ok
+- `gml_Script___SteamInventoryStartPurchaseResult_encode` @ 0x140014860, 39 B, ok
+- `gml_Script___SteamInventoryEligiblePromoItemDefIdsResult_encode` @ 0x1400148c0, 39 B, ok
+- `gml_Script___SteamInventoryRequestPricesResult_encode` @ 0x140014920, 39 B, ok
+- `gml_Script___SteamRemoteStorageFileNameAndSize_encode` @ 0x140014980, 39 B, ok
+- `gml_Script___SteamRemoteStorageQuota_encode` @ 0x1400149b0, 39 B, ok
+- `gml_Script___SteamRemoteStorageUgcDetails_encode` @ 0x140014a40, 39 B, ok
+- `gml_Script___SteamRemoteStorageFileShareResult_encode` @ 0x140014ad0, 39 B, ok
+- `gml_Script___SteamRemoteStorageFileWriteAsyncResult_encode` @ 0x140014b00, 39 B, ok
+- `gml_Script___SteamRemoteStorageDownloadUgcResult_encode` @ 0x140014b30, 39 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileSubscribed_encode` @ 0x140014b60, 39 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileUnsubscribed_encode` @ 0x140014b90, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyCreated_encode` @ 0x140014bc0, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyEnter_encode` @ 0x140014c20, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyMatchList_encode` @ 0x140014ce0, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataUpdate_encode` @ 0x140014d40, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatUpdate_encode` @ 0x140014da0, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatMsg_encode` @ 0x140014e60, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameCreated_encode` @ 0x140014f20, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyInvite_encode` @ 0x140014fe0, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataEntry_encode` @ 0x140015070, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatEntry_encode` @ 0x1400150a0, 39 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameServer_encode` @ 0x140015100, 39 B, ok
+- `gml_Script___SteamMatchmakingFavoriteGame_encode` @ 0x1400151c0, 39 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionRequest_encode` @ 0x140015250, 39 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionFailed_encode` @ 0x1400152b0, 39 B, ok
+- `gml_Script___SteamNetworkingMessage_encode` @ 0x140015340, 39 B, ok
+- `gml_Script___SteamNetworkingSocketsConnectionInfo_encode` @ 0x1400154c0, 39 B, ok
+- `gml_Script___SteamPartiesBeaconLocation_encode` @ 0x1400155e0, 39 B, ok
+- `gml_Script___SteamPartiesCreateBeaconResult_encode` @ 0x140015670, 39 B, ok
+- `gml_Script___SteamPartiesJoinPartyResult_encode` @ 0x1400156d0, 39 B, ok
+- `gml_Script___SteamPartiesChangeNumOpenSlotsResult_encode` @ 0x140015730, 39 B, ok
+- `gml_Script___SteamPartiesReservationNotification_encode` @ 0x140015760, 39 B, ok
+- `gml_Script___SteamPartiesBeaconDetails_encode` @ 0x1400157c0, 39 B, ok
+- `gml_Script___SteamNetworkingSocketsStatusChanged_encode` @ 0x140015820, 39 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_invite_dialog` @ 0x1400158e0, 39 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_store` @ 0x140015940, 39 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_user` @ 0x1400159d0, 39 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_web_page` @ 0x140015a60, 39 B, ok
+- `gml_Script_steam_friends_close_clan_chat_window_in_steam` @ 0x140015af0, 39 B, ok
+- `gml_Script_steam_friends_download_clan_activity_counts` @ 0x140015b50, 39 B, ok
+- `gml_Script_steam_friends_enumerate_following_list` @ 0x140015c10, 39 B, ok
+- `gml_Script_steam_friends_set_callback_avatar_image_loaded` @ 0x140015c40, 39 B, ok
+- `gml_Script_steam_friends_get_chat_member_by_index` @ 0x140015ca0, 39 B, ok
+- `gml_Script_steam_friends_get_clan_activity_counts` @ 0x140015d00, 39 B, ok
+- `gml_Script_steam_friends_get_clan_chat_member_count` @ 0x140015d30, 39 B, ok
+- `gml_Script_steam_friends_get_clan_chat_message` @ 0x140015d60, 39 B, ok
+- `gml_Script_steam_friends_get_clan_name` @ 0x140015dc0, 39 B, ok
+- `gml_Script_steam_friends_get_clan_officer_by_index` @ 0x140015df0, 39 B, ok
+- `gml_Script_steam_friends_get_clan_officer_count` @ 0x140015e50, 39 B, ok
+- `gml_Script_steam_friends_get_clan_owner` @ 0x140015e80, 39 B, ok
+- `gml_Script_steam_friends_get_clan_tag` @ 0x140015eb0, 39 B, ok
+- `gml_Script_steam_friends_get_follower_count` @ 0x140015ee0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_by_index` @ 0x140015f40, 39 B, ok
+- `gml_Script_steam_friends_get_friend_coplay_game` @ 0x140015fd0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_coplay_time` @ 0x140016000, 39 B, ok
+- `gml_Script_steam_friends_get_friend_count` @ 0x140016030, 39 B, ok
+- `gml_Script_steam_friends_get_friend_count_from_source` @ 0x140016090, 39 B, ok
+- `gml_Script_steam_friends_get_friend_from_source_by_index` @ 0x1400160c0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_game_played` @ 0x1400160f0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_message` @ 0x140016120, 39 B, ok
+- `gml_Script_steam_friends_get_friend_persona_name` @ 0x140016180, 39 B, ok
+- `gml_Script_steam_friends_get_friend_persona_name_history` @ 0x1400161b0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_persona_state` @ 0x140016210, 39 B, ok
+- `gml_Script_steam_friends_get_friend_relationship` @ 0x140016240, 39 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence` @ 0x140016270, 39 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence_key_by_index` @ 0x1400162d0, 39 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence_key_count` @ 0x140016330, 39 B, ok
+- `gml_Script_steam_friends_get_friend_steam_level` @ 0x140016360, 39 B, ok
+- `gml_Script_steam_friends_get_large_friend_avatar` @ 0x140016390, 39 B, ok
+- `gml_Script_steam_friends_get_medium_friend_avatar` @ 0x1400163c0, 39 B, ok
+- `gml_Script_steam_friends_get_player_nickname` @ 0x140016420, 39 B, ok
+- `gml_Script_steam_friends_get_small_friend_avatar` @ 0x140016450, 39 B, ok
+- `gml_Script_steam_friends_has_friend` @ 0x140016480, 39 B, ok
+- `gml_Script_steam_friends_invite_user_to_game` @ 0x1400164b0, 39 B, ok
+- `gml_Script_steam_friends_is_clan_chat_admin` @ 0x140016510, 39 B, ok
+- `gml_Script_steam_friends_is_clan_public` @ 0x140016570, 39 B, ok
+- `gml_Script_steam_friends_is_clan_official_game_group` @ 0x1400165a0, 39 B, ok
+- `gml_Script_steam_friends_is_clan_chat_window_open_in_steam` @ 0x1400165d0, 39 B, ok
+- `gml_Script_steam_friends_is_following` @ 0x140016600, 39 B, ok
+- `gml_Script_steam_friends_request_clan_officer_list` @ 0x140016630, 39 B, ok
+- `gml_Script_steam_friends_request_friend_rich_presence` @ 0x140016660, 39 B, ok
+- `gml_Script_steam_friends_request_user_information` @ 0x140016690, 39 B, ok
+- `gml_Script_steam_friends_set_in_game_voice_speaking` @ 0x1400166f0, 39 B, ok
+- `gml_Script_steam_friends_set_played_with` @ 0x140016780, 39 B, ok
+- `gml_Script_steam_friends_set_callback_persona_state_change` @ 0x1400167b0, 39 B, ok
+- `gml_Script_steam_friends_set_callback_game_overlay_activated` @ 0x1400167e0, 39 B, ok
+- `gml_Script_steam_friends_set_callback_game_rich_presence_join_requested` @ 0x140016810, 39 B, ok
+- `gml_Script_steam_friends_set_callback_game_lobby_join_requested` @ 0x140016840, 39 B, ok
+- `gml_Script_steam_friends_set_callback_friend_rich_presence_update` @ 0x140016870, 39 B, ok
+- `gml_Script_steam_friends_set_callback_game_server_change_requested` @ 0x1400168a0, 39 B, ok
+- `gml_Script_steam_apps_get_app_ownership_ticket_data` @ 0x1400168d0, 39 B, ok
+- `gml_Script_steam_apps_get_file_details` @ 0x140016960, 39 B, ok
+- `gml_Script_steam_apps_set_callback_dlc_installed` @ 0x140016990, 39 B, ok
+- `gml_Script_steam_screenshots_add_vr_screenshot_to_library` @ 0x1400169f0, 39 B, ok
+- `gml_Script_steam_screenshots_tag_published_file` @ 0x140016ab0, 39 B, ok
+- `gml_Script_steam_screenshots_tag_user` @ 0x140016b10, 39 B, ok
+- `gml_Script_steam_screenshots_write_screenshot` @ 0x140016b70, 39 B, ok
+- `gml_Script_steam_screenshots_set_callback_screenshot_ready` @ 0x140016c60, 39 B, ok
+- `gml_Script_steam_screenshots_set_callback_screenshot_requested` @ 0x140016c90, 39 B, ok
+- `gml_Script_steam_user_advertise_game` @ 0x140016cf0, 39 B, ok
+- `gml_Script_steam_user_begin_auth_session` @ 0x140016db0, 39 B, ok
+- `gml_Script_steam_user_set_duration_control_online_state` @ 0x140016e10, 39 B, ok
+- `gml_Script_steam_user_decompress_voice` @ 0x140016e70, 39 B, ok
+- `gml_Script_steam_user_end_auth_session` @ 0x140016f00, 39 B, ok
+- `gml_Script_steam_user_get_auth_session_ticket` @ 0x140016f60, 39 B, ok
+- `gml_Script_steam_user_decode_steam_id` @ 0x140016fc0, 39 B, ok
+- `gml_Script_steam_user_get_voice` @ 0x140017020, 39 B, ok
+- `gml_Script_steam_user_request_encrypted_app_ticket` @ 0x140017110, 39 B, ok
+- `gml_Script_steam_user_get_encrypted_app_ticket` @ 0x140017140, 39 B, ok
+- `gml_Script_steam_user_request_auth_ticket_for_web_api` @ 0x1400171a0, 39 B, ok
+- `gml_Script_steam_user_fetch_auth_ticket_for_web_api` @ 0x140017200, 39 B, ok
+- `gml_Script_steam_user_get_duration_control` @ 0x140017230, 39 B, ok
+- `gml_Script_steam_user_request_store_auth_url` @ 0x140017290, 39 B, ok
+- `gml_Script_steam_user_get_market_eligibility` @ 0x1400172c0, 39 B, ok
+- `gml_Script_steam_user_track_app_usage_event` @ 0x140017320, 39 B, ok
+- `gml_Script_steam_user_user_has_license_for_app` @ 0x1400173b0, 39 B, ok
+- `gml_Script_steam_user_set_callback_steam_servers_connected` @ 0x1400173e0, 39 B, ok
+- `gml_Script_steam_user_set_callback_steam_server_connect_failure` @ 0x140017410, 39 B, ok
+- `gml_Script_steam_user_set_callback_steam_servers_disconnected` @ 0x140017440, 39 B, ok
+- `gml_Script_steam_user_set_callback_client_game_server_deny` @ 0x140017470, 39 B, ok
+- `gml_Script_steam_user_set_callback_licenses_updated` @ 0x1400174a0, 39 B, ok
+- `gml_Script_steam_user_set_callback_microtxn_authorization_response` @ 0x1400174d0, 39 B, ok
+- `gml_Script_steam_user_set_callback_get_auth_session_ticket_response` @ 0x140017500, 39 B, ok
+- `gml_Script_steam_user_set_callback_validate_auth_ticket_response` @ 0x140017530, 39 B, ok
+- `gml_Script_steam_utils_check_file_signature` @ 0x140017560, 39 B, ok
+- `gml_Script_steam_utils_get_api_call_failure_reason` @ 0x1400175c0, 39 B, ok
+- `gml_Script_steam_utils_get_api_call_result` @ 0x1400175f0, 39 B, ok
+- `gml_Script_steam_utils_set_callback_ip_country` @ 0x140017680, 39 B, ok
+- `gml_Script_steam_utils_set_callback_low_battery_power` @ 0x1400176b0, 39 B, ok
+- `gml_Script_steam_utils_set_callback_steam_api_call_completed` @ 0x1400176e0, 39 B, ok
+- `gml_Script_steam_utils_set_callback_app_resuming_from_suspend` @ 0x140017710, 39 B, ok
+- `gml_Script_steam_utils_set_callback_steam_shutdown` @ 0x140017740, 39 B, ok
+- `gml_Script_steam_utils_get_image_rgba` @ 0x1400177a0, 39 B, ok
+- `gml_Script_steam_utils_is_api_call_completed` @ 0x1400177d0, 39 B, ok
+- `gml_Script_steam_utils_filter_text` @ 0x140017830, 39 B, ok
+- `gml_Script_steam_utils_set_overlay_notification_position` @ 0x1400178f0, 39 B, ok
+- `gml_Script_steam_utils_show_gamepad_text_input` @ 0x140017950, 39 B, ok
+- `gml_Script_steam_utils_show_floating_gamepad_text_input` @ 0x140017a70, 39 B, ok
+- `gml_Script_steam_utils_set_callback_gamepad_text_input_dismissed` @ 0x140017b60, 39 B, ok
+- `gml_Script_steam_utils_set_callback_floating_gamepad_text_input_dismissed` @ 0x140017b90, 39 B, ok
+- `gml_Script_steam_utils_set_callback_warning_message` @ 0x140017bc0, 39 B, ok
+- `gml_Script_steam_ugc_add_app_dependency` @ 0x140017bf0, 39 B, ok
+- `gml_Script_steam_ugc_add_dependency` @ 0x140017c50, 39 B, ok
+- `gml_Script_steam_ugc_add_excluded_tag` @ 0x140017ce0, 39 B, ok
+- `gml_Script_steam_ugc_add_item_key_value_tag` @ 0x140017d70, 39 B, ok
+- `gml_Script_steam_ugc_add_item_preview_file` @ 0x140017dd0, 39 B, ok
+- `gml_Script_steam_ugc_add_item_preview_video` @ 0x140017e60, 39 B, ok
+- `gml_Script_steam_ugc_add_item_to_favorites` @ 0x140017ec0, 39 B, ok
+- `gml_Script_steam_ugc_add_required_key_value_tag` @ 0x140017ef0, 39 B, ok
+- `gml_Script_steam_ugc_add_required_tag` @ 0x140017f20, 39 B, ok
+- `gml_Script_steam_ugc_add_required_tag_group` @ 0x140017f50, 39 B, ok
+- `gml_Script_steam_ugc_create_item` @ 0x140018010, 39 B, ok
+- `gml_Script_steam_ugc_create_query_all_ugc_request` @ 0x1400180a0, 39 B, ok
+- `gml_Script_steam_ugc_create_query_ugc_details_request` @ 0x140018190, 39 B, ok
+- `gml_Script_steam_ugc_create_query_user_ugc_request` @ 0x140018220, 39 B, ok
+- `gml_Script_steam_ugc_delete_item` @ 0x1400182b0, 39 B, ok
+- `gml_Script_steam_ugc_download_item` @ 0x1400182e0, 39 B, ok
+- `gml_Script_steam_ugc_get_app_dependencies` @ 0x140018340, 39 B, ok
+- `gml_Script_steam_ugc_get_item_download_info` @ 0x140018370, 39 B, ok
+- `gml_Script_steam_ugc_get_item_install_info` @ 0x1400183a0, 39 B, ok
+- `gml_Script_steam_ugc_get_item_state` @ 0x1400183d0, 39 B, ok
+- `gml_Script_steam_ugc_get_item_update_progress` @ 0x140018400, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_result` @ 0x140018430, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_tags` @ 0x140018490, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_tag` @ 0x1400184c0, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_tag_display_name` @ 0x140018520, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_preview_url` @ 0x140018550, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_metadata` @ 0x140018580, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_children` @ 0x1400185b0, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_statistic` @ 0x140018610, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_additional_previews` @ 0x140018670, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_additional_preview` @ 0x1400186a0, 39 B, ok
+- `gml_Script_steam_ugc_get_supported_game_version_data` @ 0x140018700, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_key_value_tags` @ 0x140018760, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_key_value_tag` @ 0x140018790, 39 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_content_descriptors` @ 0x1400187f0, 39 B, ok
+- `gml_Script_steam_ugc_remove_app_dependency` @ 0x140018850, 39 B, ok
+- `gml_Script_steam_ugc_remove_dependency` @ 0x140018880, 39 B, ok
+- `gml_Script_steam_ugc_remove_item_from_favorites` @ 0x1400188b0, 39 B, ok
+- `gml_Script_steam_ugc_remove_all_item_key_value_tags` @ 0x1400188e0, 39 B, ok
+- `gml_Script_steam_ugc_remove_item_key_value_tags` @ 0x140018910, 39 B, ok
+- `gml_Script_steam_ugc_remove_item_preview` @ 0x140018940, 39 B, ok
+- `gml_Script_steam_ugc_add_content_descriptor` @ 0x140018970, 39 B, ok
+- `gml_Script_steam_ugc_remove_content_descriptor` @ 0x1400189d0, 39 B, ok
+- `gml_Script_steam_ugc_set_required_game_versions` @ 0x140018a00, 39 B, ok
+- `gml_Script_steam_ugc_send_query_ugc_request` @ 0x140018a90, 39 B, ok
+- `gml_Script_steam_ugc_release_query_ugc_request` @ 0x140018ac0, 39 B, ok
+- `gml_Script_steam_ugc_set_callback_item_installed` @ 0x140018af0, 39 B, ok
+- `gml_Script_steam_ugc_set_callback_download_item_result` @ 0x140018b20, 39 B, ok
+- `gml_Script_steam_ugc_set_allow_cached_response` @ 0x140018b50, 39 B, ok
+- `gml_Script_steam_ugc_set_cloud_file_name_filter` @ 0x140018bb0, 39 B, ok
+- `gml_Script_steam_ugc_set_item_content` @ 0x140018c10, 39 B, ok
+- `gml_Script_steam_ugc_set_item_description` @ 0x140018c70, 39 B, ok
+- `gml_Script_steam_ugc_set_item_metadata` @ 0x140018ca0, 39 B, ok
+- `gml_Script_steam_ugc_set_item_preview` @ 0x140018d00, 39 B, ok
+- `gml_Script_steam_ugc_set_item_tags` @ 0x140018d60, 39 B, ok
+- `gml_Script_steam_ugc_set_item_title` @ 0x140018d90, 39 B, ok
+- `gml_Script_steam_ugc_set_item_update_language` @ 0x140018df0, 39 B, ok
+- `gml_Script_steam_ugc_set_items_disabled_locally` @ 0x140018e50, 39 B, ok
+- `gml_Script_steam_ugc_set_item_visibility` @ 0x140018eb0, 39 B, ok
+- `gml_Script_steam_ugc_set_language` @ 0x140018f10, 39 B, ok
+- `gml_Script_steam_ugc_set_match_any_tag` @ 0x140018f40, 39 B, ok
+- `gml_Script_steam_ugc_set_ranked_by_trend_days` @ 0x140018fa0, 39 B, ok
+- `gml_Script_steam_ugc_set_return_additional_previews` @ 0x140019000, 39 B, ok
+- `gml_Script_steam_ugc_set_return_children` @ 0x140019060, 39 B, ok
+- `gml_Script_steam_ugc_set_return_key_value_tags` @ 0x1400190c0, 39 B, ok
+- `gml_Script_steam_ugc_set_return_long_description` @ 0x140019120, 39 B, ok
+- `gml_Script_steam_ugc_set_return_metadata` @ 0x140019180, 39 B, ok
+- `gml_Script_steam_ugc_set_return_only_ids` @ 0x1400191e0, 39 B, ok
+- `gml_Script_steam_ugc_set_return_playtime_stats` @ 0x140019240, 39 B, ok
+- `gml_Script_steam_ugc_set_return_total_only` @ 0x140019270, 39 B, ok
+- `gml_Script_steam_ugc_set_search_text` @ 0x1400192d0, 39 B, ok
+- `gml_Script_steam_ugc_set_subscriptions_load_order` @ 0x140019330, 39 B, ok
+- `gml_Script_steam_ugc_set_user_item_vote` @ 0x140019360, 39 B, ok
+- `gml_Script_steam_ugc_get_user_item_vote` @ 0x1400193c0, 39 B, ok
+- `gml_Script_steam_ugc_start_item_update` @ 0x1400193f0, 39 B, ok
+- `gml_Script_steam_ugc_start_playtime_tracking` @ 0x140019420, 39 B, ok
+- `gml_Script_steam_ugc_stop_playtime_tracking` @ 0x140019450, 39 B, ok
+- `gml_Script_steam_ugc_stop_playtime_tracking_for_all_items` @ 0x140019480, 39 B, ok
+- `gml_Script_steam_ugc_submit_item_update` @ 0x1400194b0, 39 B, ok
+- `gml_Script_steam_ugc_subscribe_item` @ 0x140019510, 39 B, ok
+- `gml_Script_steam_ugc_unsubscribe_item` @ 0x140019540, 39 B, ok
+- `gml_Script_steam_ugc_set_callback_user_subscribed_items_list_changed` @ 0x140019570, 39 B, ok
+- `gml_Script_steam_ugc_update_item_preview_file` @ 0x1400195a0, 39 B, ok
+- `gml_Script_steam_ugc_update_item_preview_video` @ 0x1400195d0, 39 B, ok
+- `gml_Script_steam_ugc_get_workshop_eula_status` @ 0x140019600, 39 B, ok
+- `gml_Script_steam_ugc_get_num_supported_game_versions` @ 0x140019630, 39 B, ok
+- `gml_Script_steam_input_activate_action_set` @ 0x140019690, 39 B, ok
+- `gml_Script_steam_input_activate_action_set_layer` @ 0x1400196f0, 39 B, ok
+- `gml_Script_steam_input_deactivate_action_set_layer` @ 0x140019750, 39 B, ok
+- `gml_Script_steam_input_deactivate_all_action_set_layers` @ 0x140019780, 39 B, ok
+- `gml_Script_steam_input_get_active_action_set_layers` @ 0x1400197b0, 39 B, ok
+- `gml_Script_steam_input_get_analog_action_data` @ 0x1400197e0, 39 B, ok
+- `gml_Script_steam_input_get_analog_action_origins` @ 0x140019840, 39 B, ok
+- `gml_Script_steam_input_get_glyph_png_for_action_origin` @ 0x1400198a0, 39 B, ok
+- `gml_Script_steam_input_get_glyph_svg_for_action_origin` @ 0x140019930, 39 B, ok
+- `gml_Script_steam_input_get_current_action_set` @ 0x140019960, 39 B, ok
+- `gml_Script_steam_input_get_digital_action_data` @ 0x140019990, 39 B, ok
+- `gml_Script_steam_input_get_digital_action_origins` @ 0x1400199f0, 39 B, ok
+- `gml_Script_steam_input_get_gamepad_index_for_controller` @ 0x140019a20, 39 B, ok
+- `gml_Script_steam_input_get_input_type_for_handle` @ 0x140019a50, 39 B, ok
+- `gml_Script_steam_input_get_motion_data` @ 0x140019a80, 39 B, ok
+- `gml_Script_steam_input_get_string_for_action_origin` @ 0x140019ab0, 39 B, ok
+- `gml_Script_steam_input_set_dualsense_trigger_effect` @ 0x140019ae0, 39 B, ok
+- `gml_Script_steam_input_set_led_color` @ 0x140019b70, 39 B, ok
+- `gml_Script_steam_input_show_binding_panel` @ 0x140019c30, 39 B, ok
+- `gml_Script_steam_input_stop_analog_action_momentum` @ 0x140019c60, 39 B, ok
+- `gml_Script_steam_input_trigger_vibration` @ 0x140019c90, 39 B, ok
+- `gml_Script_steam_input_trigger_vibration_extended` @ 0x140019d20, 39 B, ok
+- `gml_Script_steam_input_get_action_origin_from_xbox_origin` @ 0x140019db0, 39 B, ok
+- `gml_Script_steam_input_translate_action_origin` @ 0x140019e10, 39 B, ok
+- `gml_Script_steam_input_get_device_binding_revision` @ 0x140019e70, 39 B, ok
+- `gml_Script_steam_input_get_remote_play_session_id` @ 0x140019ea0, 39 B, ok
+- `gml_Script_steam_input_set_callback_device_connected` @ 0x140019ed0, 39 B, ok
+- `gml_Script_steam_input_set_callback_device_disconnected` @ 0x140019f00, 39 B, ok
+- `gml_Script_steam_userstats_request_user_stats` @ 0x140019f30, 39 B, ok
+- `gml_Script_steam_userstats_user_stat_int` @ 0x140019f60, 39 B, ok
+- `gml_Script_steam_userstats_user_stat_float` @ 0x140019fc0, 39 B, ok
+- `gml_Script_steam_userstats_user_achievement` @ 0x140019ff0, 39 B, ok
+- `gml_Script_steam_userstats_user_achievement_and_unlock_time` @ 0x14001a050, 39 B, ok
+- `gml_Script_steam_userstats_find_or_create_leaderboard` @ 0x14001a0b0, 39 B, ok
+- `gml_Script_steam_userstats_find_leaderboard` @ 0x14001a140, 39 B, ok
+- `gml_Script_steam_userstats_leaderboard_name` @ 0x14001a1a0, 39 B, ok
+- `gml_Script_steam_userstats_leaderboard_entry_count` @ 0x14001a1d0, 39 B, ok
+- `gml_Script_steam_userstats_leaderboard_sort_method` @ 0x14001a200, 39 B, ok
+- `gml_Script_steam_userstats_leaderboard_display_type` @ 0x14001a230, 39 B, ok
+- `gml_Script_steam_userstats_download_leaderboard_entries` @ 0x14001a260, 39 B, ok
+- `gml_Script_steam_userstats_download_leaderboard_entries_for_users` @ 0x14001a320, 39 B, ok
+- `gml_Script_steam_userstats_downloaded_leaderboard_entry` @ 0x14001a3e0, 39 B, ok
+- `gml_Script_steam_userstats_upload_leaderboard_score` @ 0x14001a440, 39 B, ok
+- `gml_Script_steam_userstats_attach_leaderboard_ugc` @ 0x14001a530, 39 B, ok
+- `gml_Script_steam_userstats_number_of_current_players` @ 0x14001a590, 39 B, ok
+- `gml_Script_steam_userstats_request_global_achievement_percentages` @ 0x14001a5c0, 39 B, ok
+- `gml_Script_steam_userstats_request_global_stats` @ 0x14001a620, 39 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_received` @ 0x14001a650, 39 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_stored` @ 0x14001a680, 39 B, ok
+- `gml_Script_steam_userstats_set_callback_user_achievement_stored` @ 0x14001a6b0, 39 B, ok
+- `gml_Script_steam_userstats_set_callback_user_achievement_icon_fetched` @ 0x14001a6e0, 39 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_unloaded` @ 0x14001a710, 39 B, ok
+- `gml_Script_steam_music_set_callback_playback_status_has_changed` @ 0x14001a740, 39 B, ok
+- `gml_Script_steam_music_set_callback_volume_has_changed` @ 0x14001a770, 39 B, ok
+- `gml_Script_steam_timeline_add_instantaneous_timeline_event` @ 0x14001a7a0, 39 B, ok
+- `gml_Script_steam_timeline_add_range_timeline_event` @ 0x14001a890, 39 B, ok
+- `gml_Script_steam_timeline_start_range_timeline_event` @ 0x14001a8f0, 39 B, ok
+- `gml_Script_steam_timeline_update_range_timeline_event` @ 0x14001a950, 39 B, ok
+- `gml_Script_steam_timeline_end_range_timeline_event` @ 0x14001a980, 39 B, ok
+- `gml_Script_steam_timeline_remove_timeline_event` @ 0x14001a9e0, 39 B, ok
+- `gml_Script_steam_timeline_does_event_recording_exist` @ 0x14001aa10, 39 B, ok
+- `gml_Script_steam_timeline_does_game_phase_recording_exist` @ 0x14001aa70, 39 B, ok
+- `gml_Script_steam_timeline_set_timeline_game_mode` @ 0x14001aaa0, 39 B, ok
+- `gml_Script_steam_timeline_open_overlay_to_timeline_event` @ 0x14001aad0, 39 B, ok
+- `gml_Script_steam_inventory_add_promo_item` @ 0x14001ab30, 39 B, ok
+- `gml_Script_steam_inventory_add_promo_items` @ 0x14001ab90, 39 B, ok
+- `gml_Script_steam_inventory_check_result_steam_id` @ 0x14001ac20, 39 B, ok
+- `gml_Script_steam_inventory_consume_item` @ 0x14001acb0, 39 B, ok
+- `gml_Script_steam_inventory_deserialize_result` @ 0x14001ad40, 39 B, ok
+- `gml_Script_steam_inventory_exchange_items` @ 0x14001ada0, 39 B, ok
+- `gml_Script_steam_inventory_generate_items` @ 0x14001ae90, 39 B, ok
+- `gml_Script_steam_inventory_request_eligible_promo_item_definition_ids` @ 0x14001aef0, 39 B, ok
+- `gml_Script_steam_inventory_get_items_by_id` @ 0x14001af50, 39 B, ok
+- `gml_Script_steam_inventory_serialize_result` @ 0x14001afb0, 39 B, ok
+- `gml_Script_steam_inventory_get_result_item_property` @ 0x14001b010, 39 B, ok
+- `gml_Script_steam_inventory_start_purchase` @ 0x14001b0a0, 39 B, ok
+- `gml_Script_steam_inventory_request_prices` @ 0x14001b0d0, 39 B, ok
+- `gml_Script_steam_inventory_remove_property` @ 0x14001b100, 39 B, ok
+- `gml_Script_steam_inventory_set_property_string` @ 0x14001b130, 39 B, ok
+- `gml_Script_steam_inventory_set_property_bool` @ 0x14001b160, 39 B, ok
+- `gml_Script_steam_inventory_set_property_int64` @ 0x14001b1c0, 39 B, ok
+- `gml_Script_steam_inventory_set_property_float` @ 0x14001b220, 39 B, ok
+- `gml_Script_steam_inventory_submit_update_properties` @ 0x14001b250, 39 B, ok
+- `gml_Script_steam_inventory_transfer_item_quantity` @ 0x14001b2b0, 39 B, ok
+- `gml_Script_steam_inventory_trigger_item_drop` @ 0x14001b310, 39 B, ok
+- `gml_Script_steam_inventory_grant_promo_items` @ 0x14001b340, 39 B, ok
+- `gml_Script_steam_inventory_set_callback_result_ready` @ 0x14001b370, 39 B, ok
+- `gml_Script_steam_inventory_set_callback_full_update` @ 0x14001b3a0, 39 B, ok
+- `gml_Script_steam_inventory_set_callback_definition_update` @ 0x14001b3d0, 39 B, ok
+- `gml_Script_steam_remote_storage_set_callback_published_file_subscribed` @ 0x14001b400, 39 B, ok
+- `gml_Script_steam_remote_storage_set_callback_published_file_unsubscribed` @ 0x14001b430, 39 B, ok
+- `gml_Script_steam_remote_storage_set_callback_local_file_change` @ 0x14001b460, 39 B, ok
+- `gml_Script_steam_remote_storage_file_write` @ 0x14001b490, 39 B, ok
+- `gml_Script_steam_remote_storage_file_write_async` @ 0x14001b4c0, 39 B, ok
+- `gml_Script_steam_remote_storage_file_read` @ 0x14001b4f0, 39 B, ok
+- `gml_Script_steam_remote_storage_set_sync_platforms` @ 0x14001b520, 39 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_write_chunk` @ 0x14001b5b0, 39 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_close` @ 0x14001b5e0, 39 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_cancel` @ 0x14001b610, 39 B, ok
+- `gml_Script_steam_remote_storage_get_ugc_details` @ 0x14001b640, 39 B, ok
+- `gml_Script_steam_remote_storage_ugc_read` @ 0x14001b670, 39 B, ok
+- `gml_Script_steam_remote_storage_file_share` @ 0x14001b700, 39 B, ok
+- `gml_Script_steam_remote_storage_ugc_download` @ 0x14001b730, 39 B, ok
+- `gml_Script_steam_remote_storage_ugc_download_to_location` @ 0x14001b760, 39 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_data_update` @ 0x14001b7c0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_chat_update` @ 0x14001b7f0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_chat_msg` @ 0x14001b820, 39 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_game_created` @ 0x14001b850, 39 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_invite` @ 0x14001b880, 39 B, ok
+- `gml_Script_steam_matchmaking_create_lobby` @ 0x14001b8e0, 39 B, ok
+- `gml_Script_steam_matchmaking_join_lobby` @ 0x14001b970, 39 B, ok
+- `gml_Script_steam_matchmaking_request_lobby_list` @ 0x14001b9a0, 39 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_string_filter` @ 0x14001b9d0, 39 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_numerical_filter` @ 0x14001ba30, 39 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_distance_filter` @ 0x14001ba90, 39 B, ok
+- `gml_Script_steam_matchmaking_leave_lobby` @ 0x14001bac0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_owner` @ 0x14001baf0, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_owner` @ 0x14001bb50, 39 B, ok
+- `gml_Script_steam_matchmaking_get_num_lobby_members` @ 0x14001bb80, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_member_by_index` @ 0x14001bbb0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_data` @ 0x14001bc10, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data` @ 0x14001bc40, 39 B, ok
+- `gml_Script_steam_matchmaking_delete_lobby_data` @ 0x14001bc70, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data_count` @ 0x14001bca0, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data_by_index` @ 0x14001bcd0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_member_data` @ 0x14001bd00, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_member_data` @ 0x14001bd30, 39 B, ok
+- `gml_Script_steam_matchmaking_send_lobby_chat_msg` @ 0x14001bd90, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_chat_entry` @ 0x14001bdf0, 39 B, ok
+- `gml_Script_steam_matchmaking_request_lobby_data` @ 0x14001be80, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_joinable` @ 0x14001beb0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_type` @ 0x14001bf10, 39 B, ok
+- `gml_Script_steam_matchmaking_invite_user_to_lobby` @ 0x14001bf40, 39 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_game_server` @ 0x14001bfa0, 39 B, ok
+- `gml_Script_steam_matchmaking_set_linked_lobby` @ 0x14001c060, 39 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_game_server` @ 0x14001c0c0, 39 B, ok
+- `gml_Script_steam_networking_messages_set_callback_session_request` @ 0x14001c0f0, 39 B, ok
+- `gml_Script_steam_networking_messages_set_callback_session_failed` @ 0x14001c120, 39 B, ok
+- `gml_Script_steam_networking_messages_send_message_to_user` @ 0x14001c180, 39 B, ok
+- `gml_Script_steam_networking_messages_receive_messages_on_channel` @ 0x14001c240, 39 B, ok
+- `gml_Script_steam_networking_messages_accept_session_with_user` @ 0x14001c2a0, 39 B, ok
+- `gml_Script_steam_networking_messages_close_session_with_user` @ 0x14001c2d0, 39 B, ok
+- `gml_Script_steam_networking_messages_close_channel_with_user` @ 0x14001c300, 39 B, ok
+- `gml_Script_steam_networking_sockets_set_callback_connection_status_changed` @ 0x14001c330, 39 B, ok
+- `gml_Script_steam_networking_sockets_close_connection` @ 0x14001c390, 39 B, ok
+- `gml_Script_steam_networking_sockets_set_connection_user_data` @ 0x14001c450, 39 B, ok
+- `gml_Script_steam_networking_sockets_send_message_to_connection` @ 0x14001c4b0, 39 B, ok
+- `gml_Script_steam_networking_sockets_receive_messages_on_connection` @ 0x14001c4e0, 39 B, ok
+- `gml_Script_steam_networking_sockets_connect_p2p` @ 0x14001c510, 39 B, ok
+- `gml_Script_steam_networking_sockets_receive_messages_on_poll_group` @ 0x14001c5a0, 39 B, ok
+- `gml_Script_steam_parties_set_callback_reservation_notification` @ 0x14001c5d0, 39 B, ok
+- `gml_Script_steam_parties_set_callback_available_beacon_locations_updated` @ 0x14001c600, 39 B, ok
+- `gml_Script_steam_parties_set_callback_active_beacons_updated` @ 0x14001c630, 39 B, ok
+- `gml_Script_experience_price_mult` @ 0x1400b1480, 1449 B, ok
+- `gml_Script_mushroom_type_cost` @ 0x1400b1a30, 690 B, ok
+- `gml_Script_mushroom_type_cost_base` @ 0x1400b1cf0, 2754 B, ok
+- `gml_Script_mushroom_type_water_cost` @ 0x1400b27e0, 690 B, ok
+- `gml_Script_mushroom_type_water_cost_base` @ 0x1400b2aa0, 3902 B, ok
+- `gml_Script_mushroom_type_affordable` @ 0x1400b3a00, 751 B, ok
+- `gml_Script_mushroom_type_unlock_id` @ 0x1400b3cf0, 972 B, ok
+- `gml_Script_mushroom_type_name_key` @ 0x1400b40e0, 599 B, ok
+- `gml_Script_mushroom_type_sprite` @ 0x1400b4340, 1400 B, ok
+- `gml_Script_shroom_sheet_cells` @ 0x1400b48e0, 1016 B, ok
+- `gml_Script_mushroom_type_variants` @ 0x1400b4ce0, 526 B, ok
+- `gml_Script_mushroom_cell_width` @ 0x1400b4ef0, 786 B, ok
+- `gml_Script_mushroom_variant` @ 0x1400b5210, 1286 B, ok
+- `gml_Script_shroom_grow_scale` @ 0x1400b5720, 2606 B, ok
+- `gml_Script_mushroom_cell_left` @ 0x1400b6150, 1088 B, ok
+- `gml_Script_mushroom_sprite_now` @ 0x1400b6590, 843 B, ok
+- `gml_Script_mushroom_draw` @ 0x1400b68e0, 7605 B, ok
+- `gml_Script_mushroom_type_unlocked` @ 0x1400b86a0, 526 B, ok
+- `gml_Script_predator_period` @ 0x1400b88b0, 994 B, ok
+- `gml_Script_predator_yield` @ 0x1400b8ca0, 703 B, ok
+- `gml_Script_repeller_max_charges` @ 0x1400b8f60, 536 B, ok
+- `gml_Script_squirrel_grab` @ 0x140115360, 2343 B, ok
+- `gml_Script_squirrels_step` @ 0x140115c90, 15465 B, ok
+- `gml_Script_SteamFriendsClanChatMessage` @ 0x14038be10, 653 B, ok
+- `gml_Script_SteamFriendsFriendGamePlayed` @ 0x14038c0a0, 853 B, ok
+- `gml_Script_SteamFriendsFriendMessage` @ 0x14038c400, 553 B, ok
+- `gml_Script_SteamFriendsPersonaStateChange` @ 0x14038c630, 553 B, ok
+- `gml_Script_SteamFriendsGameOverlayActivated` @ 0x14038c860, 653 B, ok
+- `gml_Script_SteamFriendsGameRichPresenceJoinRequested` @ 0x14038caf0, 552 B, ok
+- `gml_Script_SteamFriendsGameLobbyJoinRequested` @ 0x14038cd20, 552 B, ok
+- `gml_Script_SteamFriendsFriendRichPresenceUpdate` @ 0x14038cf50, 552 B, ok
+- `gml_Script_SteamFriendsGameServerChangeRequested` @ 0x14038d180, 552 B, ok
+- `gml_Script_SteamAppsFileDetailsResult` @ 0x14038d3b0, 752 B, ok
+- `gml_Script_SteamAppsDlcData` @ 0x14038d6a0, 652 B, ok
+- `gml_Script_SteamAppsIsTimedTrialResult` @ 0x14038d930, 552 B, ok
+- `gml_Script_SteamAppsNumBetas` @ 0x14038db60, 652 B, ok
+- `gml_Script_SteamAppsBetaInfo` @ 0x14038ddf0, 853 B, ok
+- `gml_Script_SteamAppsDlcDownloadProgress` @ 0x14038e150, 552 B, ok
+- `gml_Script_SteamAppsDlcInstalled` @ 0x14038e380, 443 B, ok
+- `gml_Script_SteamScreenshotsScreenshotReady` @ 0x14038e540, 552 B, ok
+- `gml_Script_SteamUserStoreAuthUrlResponse` @ 0x14038e770, 443 B, ok
+- `gml_Script_SteamUserEncryptedAppTicketResponse` @ 0x14038e930, 448 B, ok
+- `gml_Script_SteamUserDurationControl` @ 0x14038eaf0, 1137 B, ok
+- `gml_Script_SteamUserMarketEligibilityResponse` @ 0x14038ef70, 853 B, ok
+- `gml_Script_SteamUserAuthSessionTicket` @ 0x14038f2d0, 552 B, ok
+- `gml_Script_SteamUserGetAuthSessionTicketResponse` @ 0x14038f500, 553 B, ok
+- `gml_Script_SteamUserAvailableVoice` @ 0x14038f730, 652 B, ok
+- `gml_Script_SteamUserGetVoiceResult` @ 0x14038f9c0, 652 B, ok
+- `gml_Script_SteamUserDecompressVoiceResult` @ 0x14038fc50, 553 B, ok
+- `gml_Script_SteamUserGetTicketForWebApiResponse` @ 0x14038fe80, 652 B, ok
+- `gml_Script_SteamUserValidateAuthTicketResponse` @ 0x140390110, 653 B, ok
+- `gml_Script_SteamUserSteamServersDisconnected` @ 0x1403903a0, 448 B, ok
+- `gml_Script_SteamUserSteamServerConnectFailure` @ 0x140390560, 552 B, ok
+- `gml_Script_SteamUserClientGameServerDeny` @ 0x140390790, 852 B, ok
+- `gml_Script_SteamUserMicroTxnAuthorizationResponse` @ 0x140390af0, 652 B, ok
+- `gml_Script_SteamUtilsCheckFileSignatureResult` @ 0x140390d80, 448 B, ok
+- `gml_Script_SteamUtilsLowBatteryPower` @ 0x140390f40, 448 B, ok
+- `gml_Script_SteamUtilsSteamApiCallCompleted` @ 0x140391100, 652 B, ok
+- `gml_Script_SteamUtilsImageSize` @ 0x140391390, 552 B, ok
+- `gml_Script_SteamUtilsFilterTextResult` @ 0x1403915c0, 552 B, ok
+- `gml_Script_SteamUtilsGamepadTextInputDismissed` @ 0x1403917f0, 552 B, ok
+- `gml_Script_SteamUtilsWarningMessage` @ 0x140391a20, 553 B, ok
+- `gml_Script_SteamUgcItemDownloadInfo` @ 0x140391c50, 553 B, ok
+- `gml_Script_SteamUgcItemInstallInfo` @ 0x140391e80, 653 B, ok
+- `gml_Script_SteamUgcItemUpdateProgress` @ 0x140392110, 652 B, ok
+- `gml_Script_SteamUgcQueryResult` @ 0x1403923a0, 2979 B, ok
+- `gml_Script_SteamUgcAdditionalPreview` @ 0x140392f50, 653 B, ok
+- `gml_Script_SteamUgcKeyValueTag` @ 0x1403931e0, 553 B, ok
+- `gml_Script_SteamUgcItemInstalled` @ 0x140393410, 553 B, ok
+- `gml_Script_SteamUgcUserSubscribedItemsListChanged` @ 0x140393640, 443 B, ok
+- `gml_Script_SteamUgcQueryCompleted` @ 0x140393800, 853 B, ok
+- `gml_Script_SteamUgcCreateItemResult` @ 0x140393b60, 653 B, ok
+- `gml_Script_SteamUgcSubmitItemUpdateResult` @ 0x140393df0, 553 B, ok
+- `gml_Script_SteamUgcSubscribeItemResult` @ 0x140394020, 552 B, ok
+- `gml_Script_SteamUgcUnsubscribeItemResult` @ 0x140394250, 552 B, ok
+- `gml_Script_SteamUgcFavoriteItemsListChanged` @ 0x140394480, 652 B, ok
+- `gml_Script_SteamUgcSetUserItemVoteResult` @ 0x140394710, 652 B, ok
+- `gml_Script_SteamUgcGetUserItemVoteResult` @ 0x1403949a0, 853 B, ok
+- `gml_Script_SteamUgcSupportedGameVersionData` @ 0x140394d00, 553 B, ok
+- `gml_Script_SteamUgcDeleteItemResult` @ 0x140394f30, 553 B, ok
+- `gml_Script_SteamUgcAddAppDependencyResult` @ 0x140395160, 653 B, ok
+- `gml_Script_SteamUgcRemoveAppDependencyResult` @ 0x1403953f0, 652 B, ok
+- `gml_Script_SteamUgcAddUGCDependencyResult` @ 0x140395680, 652 B, ok
+- `gml_Script_SteamUgcRemoveUGCDependencyResult` @ 0x140395910, 652 B, ok
+- `gml_Script_SteamUgcGetAppDependenciesResult` @ 0x140395ba0, 853 B, ok
+- `gml_Script_SteamUgcStartPlaytimeTrackingResult` @ 0x140395f00, 443 B, ok
+- `gml_Script_SteamUgcStopPlaytimeTrackingResult` @ 0x1403960c0, 448 B, ok
+- `gml_Script_SteamUgcDownloadItemResult` @ 0x140396280, 652 B, ok
+- `gml_Script_SteamUgcWorkshopEULAStatusResult` @ 0x140396510, 943 B, ok
+- `gml_Script_SteamInputAnalogActionData` @ 0x1403968c0, 768 B, ok
+- `gml_Script_SteamInputDigitalActionData` @ 0x140396bc0, 552 B, ok
+- `gml_Script_SteamInputMotionData` @ 0x140396df0, 1330 B, ok
+- `gml_Script_SteamInputActionOrigins` @ 0x140397330, 443 B, ok
+- `gml_Script_SteamInputDeviceBindingRevision` @ 0x1403974f0, 553 B, ok
+- `gml_Script_SteamInputDeviceEvent` @ 0x140397720, 448 B, ok
+- `gml_Script_SteamUserStatsAchievementAndUnlockTime` @ 0x1403978e0, 553 B, ok
+- `gml_Script_SteamUserStatsMostAchievedAchievementInfo` @ 0x140397b10, 753 B, ok
+- `gml_Script_SteamUserStatsDownloadedLeaderboardEntry` @ 0x140397e10, 853 B, ok
+- `gml_Script_SteamUserStatsLeaderboardFindResult` @ 0x140398170, 553 B, ok
+- `gml_Script_SteamUserStatsScoresDownloadedResult` @ 0x1403983a0, 653 B, ok
+- `gml_Script_SteamUserStatsScoreUploadedResult` @ 0x140398630, 943 B, ok
+- `gml_Script_SteamUserStatsNumberOfCurrentPlayersResult` @ 0x1403989e0, 552 B, ok
+- `gml_Script_SteamUserStatsGlobalAchievementPercentagesReadyResult` @ 0x140398c10, 553 B, ok
+- `gml_Script_SteamUserStatsGlobalStatsReceivedResult` @ 0x140398e40, 552 B, ok
+- `gml_Script_SteamUserStatsAttachLeaderboardUgcResult` @ 0x140399070, 552 B, ok
+- `gml_Script_SteamUserStatsAchievementIconFetched` @ 0x1403992a0, 753 B, ok
+- `gml_Script_SteamUserStatsUnloaded` @ 0x1403995a0, 443 B, ok
+- `gml_Script_SteamUserStatsUserStatsReceived` @ 0x140399760, 653 B, ok
+- `gml_Script_SteamUserStatsUserStatsStored` @ 0x1403999f0, 553 B, ok
+- `gml_Script_SteamUserStatsUserAchievementStored` @ 0x140399c20, 853 B, ok
+- `gml_Script_SteamUserStatsIntMinMax` @ 0x140399f80, 553 B, ok
+- `gml_Script_SteamUserStatsFloatMinMax` @ 0x14039a1b0, 553 B, ok
+- `gml_Script_SteamMusicPlaybackStatusHasChanged` @ 0x14039a3e0, 448 B, ok
+- `gml_Script_SteamMusicVolumeHasChanged` @ 0x14039a5a0, 443 B, ok
+- `gml_Script_SteamTimelineGamePhaseRecordingExists` @ 0x14039a760, 852 B, ok
+- `gml_Script_SteamTimelineEventRecordingExists` @ 0x14039aac0, 553 B, ok
+- `gml_Script_SteamInventoryItemDefQuantity` @ 0x14039acf0, 552 B, ok
+- `gml_Script_SteamInventoryItemInstanceQuantity` @ 0x14039af20, 552 B, ok
+- `gml_Script_SteamInventoryItemWithPrice` @ 0x14039b150, 652 B, ok
+- `gml_Script_SteamInventoryItemDetails` @ 0x14039b3e0, 752 B, ok
+- `gml_Script_SteamInventoryDeserializeResult` @ 0x14039b6d0, 552 B, ok
+- `gml_Script_SteamInventoryItemPrice` @ 0x14039b900, 552 B, ok
+- `gml_Script_SteamInventoryResultReady` @ 0x14039bb30, 552 B, ok
+- `gml_Script_SteamInventoryFullUpdate` @ 0x14039bd60, 443 B, ok
+- `gml_Script_SteamInventoryStartPurchaseResult` @ 0x14039bf20, 652 B, ok
+- `gml_Script_SteamInventoryEligiblePromoItemDefIdsResult` @ 0x14039c1b0, 653 B, ok
+- `gml_Script_SteamInventoryRequestPricesResult` @ 0x14039c440, 553 B, ok
+- `gml_Script_SteamRemoteStorageFileNameAndSize` @ 0x14039c670, 553 B, ok
+- `gml_Script_SteamRemoteStorageQuota` @ 0x14039c8a0, 552 B, ok
+- `gml_Script_SteamRemoteStorageUgcDetails` @ 0x14039cad0, 852 B, ok
+- `gml_Script_SteamRemoteStorageFileShareResult` @ 0x14039ce30, 653 B, ok
+- `gml_Script_SteamRemoteStorageFileWriteAsyncResult` @ 0x14039d0c0, 443 B, ok
+- `gml_Script_SteamRemoteStorageDownloadUgcResult` @ 0x14039d280, 942 B, ok
+- `gml_Script_SteamRemoteStoragePublishedFileSubscribed` @ 0x14039d630, 553 B, ok
+- `gml_Script_SteamRemoteStoragePublishedFileUnsubscribed` @ 0x14039d860, 553 B, ok
+- `gml_Script_SteamMatchmakingLobbyCreated` @ 0x14039da90, 553 B, ok
+- `gml_Script_SteamMatchmakingLobbyEnter` @ 0x14039dcc0, 752 B, ok
+- `gml_Script_SteamMatchmakingLobbyMatchList` @ 0x14039dfb0, 443 B, ok
+- `gml_Script_SteamMatchmakingLobbyDataUpdate` @ 0x14039e170, 652 B, ok
+- `gml_Script_SteamMatchmakingLobbyChatUpdate` @ 0x14039e400, 752 B, ok
+- `gml_Script_SteamMatchmakingLobbyChatMsg` @ 0x14039e6f0, 752 B, ok
+- `gml_Script_SteamMatchmakingLobbyGameCreated` @ 0x14039e9e0, 753 B, ok
+- `gml_Script_SteamMatchmakingLobbyInvite` @ 0x14039ece0, 653 B, ok
+- `gml_Script_SteamMatchmakingLobbyDataEntry` @ 0x14039ef70, 553 B, ok
+- `gml_Script_SteamMatchmakingLobbyChatEntry` @ 0x14039f1a0, 653 B, ok
+- `gml_Script_SteamMatchmakingLobbyGameServer` @ 0x14039f430, 653 B, ok
+- `gml_Script_SteamMatchmakingFavoriteGame` @ 0x14039f6c0, 942 B, ok
+- `gml_Script_SteamNetworkingMessagesSessionRequest` @ 0x14039fa70, 448 B, ok
+- `gml_Script_SteamNetworkingMessagesSessionFailed` @ 0x14039fc30, 652 B, ok
+- `gml_Script_SteamNetworkingMessage` @ 0x14039fec0, 1234 B, ok
+- `gml_Script_SteamNetworkingSocketsConnectionInfo` @ 0x1403a03a0, 1137 B, ok
+- `gml_Script_SteamPartiesBeaconLocation` @ 0x1403a0820, 552 B, ok
+- `gml_Script_SteamPartiesCreateBeaconResult` @ 0x1403a0a50, 553 B, ok
+- `gml_Script_SteamPartiesJoinPartyResult` @ 0x1403a0c80, 753 B, ok
+- `gml_Script_SteamPartiesChangeNumOpenSlotsResult` @ 0x1403a0f80, 448 B, ok
+- `gml_Script_SteamPartiesReservationNotification` @ 0x1403a1140, 553 B, ok
+- `gml_Script_SteamPartiesBeaconDetails` @ 0x1403a1370, 752 B, ok
+- `gml_Script_SteamNetworkingSocketsStatusChanged` @ 0x1403a1660, 653 B, ok
+- `gml_Script___SteamId_decode` @ 0x1403a4ae0, 6821 B, ok
+- `gml_Script___SteamFriendsGetFollowerCountResult_decode` @ 0x1403a7330, 1959 B, ok
+- `gml_Script___SteamFriendsIsFollowingResult_decode` @ 0x1403a8880, 2127 B, ok
+- `gml_Script___SteamFriendsEnumerateFollowingListResult_decode` @ 0x1403aa410, 2903 B, ok
+- `gml_Script___SteamFriendsRequestClanOfficerListResult_decode` @ 0x1403abd10, 2127 B, ok
+- `gml_Script___SteamFriendsDownloadClanActivityCountsResult_decode` @ 0x1403acc90, 1498 B, ok
+- `gml_Script___SteamFriendsAvatarImageLoaded_decode` @ 0x1403ae350, 2280 B, ok
+- `gml_Script___SteamFriendsClanActivityCounts_decode` @ 0x1403af9e0, 1959 B, ok
+- `gml_Script___SteamFriendsClanChatMessage_encode` @ 0x1403b0190, 3742 B, ok
+- `gml_Script___SteamFriendsClanChatMessage_decode` @ 0x1403b1030, 2197 B, ok
+- `gml_Script___SteamFriendsFriendGamePlayed_encode` @ 0x1403b18d0, 5142 B, ok
+- `gml_Script___SteamFriendsFriendGamePlayed_decode` @ 0x1403b2cf0, 2601 B, ok
+- `gml_Script___SteamFriendsFriendMessage_encode` @ 0x1403b3720, 3381 B, ok
+- `gml_Script___SteamFriendsFriendMessage_decode` @ 0x1403b4460, 2213 B, ok
+- `gml_Script___SteamFriendsPersonaStateChange_encode` @ 0x1403b4d10, 2646 B, ok
+- `gml_Script___SteamFriendsPersonaStateChange_decode` @ 0x1403b5770, 1638 B, ok
+- `gml_Script___SteamFriendsGameOverlayActivated_encode` @ 0x1403b5de0, 3478 B, ok
+- `gml_Script___SteamFriendsGameOverlayActivated_decode` @ 0x1403b6b80, 2275 B, ok
+- `gml_Script___SteamFriendsGameRichPresenceJoinRequested_encode` @ 0x1403b7470, 2894 B, ok
+- `gml_Script___SteamFriendsGameRichPresenceJoinRequested_decode` @ 0x1403b7fc0, 1876 B, ok
+- `gml_Script___SteamFriendsGameLobbyJoinRequested_encode` @ 0x1403b8720, 2646 B, ok
+- `gml_Script___SteamFriendsGameLobbyJoinRequested_decode` @ 0x1403b9180, 1638 B, ok
+- `gml_Script___SteamFriendsFriendRichPresenceUpdate_encode` @ 0x1403b97f0, 2646 B, ok
+- `gml_Script___SteamFriendsFriendRichPresenceUpdate_decode` @ 0x1403ba250, 1638 B, ok
+- `gml_Script___SteamFriendsGameServerChangeRequested_encode` @ 0x1403ba8c0, 3118 B, ok
+- `gml_Script___SteamFriendsGameServerChangeRequested_decode` @ 0x1403bb4f0, 2114 B, ok
+- `gml_Script___SteamAppsFileDetailsResult_encode` @ 0x1403bbd40, 4574 B, ok
+- `gml_Script___SteamAppsFileDetailsResult_decode` @ 0x1403bcf20, 2518 B, ok
+- `gml_Script___SteamAppsDlcData_encode` @ 0x1403bd900, 3742 B, ok
+- `gml_Script___SteamAppsDlcData_decode` @ 0x1403be7a0, 2365 B, ok
+- `gml_Script___SteamAppsIsTimedTrialResult_encode` @ 0x1403bf0e0, 2646 B, ok
+- `gml_Script___SteamAppsIsTimedTrialResult_decode` @ 0x1403bfb40, 1638 B, ok
+- `gml_Script___SteamAppsNumBetas_encode` @ 0x1403c01b0, 3478 B, ok
+- `gml_Script___SteamAppsNumBetas_decode` @ 0x1403c0f50, 1959 B, ok
+- `gml_Script___SteamAppsBetaInfo_encode` @ 0x1403c1700, 5630 B, ok
+- `gml_Script___SteamAppsBetaInfo_decode` @ 0x1403c2d00, 3077 B, ok
+- `gml_Script___SteamAppsDlcDownloadProgress_encode` @ 0x1403c3910, 2646 B, ok
+- `gml_Script___SteamAppsDlcDownloadProgress_decode` @ 0x1403c4370, 1638 B, ok
+- `gml_Script___SteamAppsDlcInstalled_encode` @ 0x1403c49e0, 1830 B, ok
+- `gml_Script___SteamAppsDlcInstalled_decode` @ 0x1403c5110, 1308 B, ok
+- `gml_Script___SteamScreenshotsScreenshotReady_encode` @ 0x1403c5630, 2646 B, ok
+- `gml_Script___SteamScreenshotsScreenshotReady_decode` @ 0x1403c6090, 1638 B, ok
+- `gml_Script___SteamUserStoreAuthUrlResponse_encode` @ 0x1403c6700, 2062 B, ok
+- `gml_Script___SteamUserStoreAuthUrlResponse_decode` @ 0x1403c6f10, 1555 B, ok
+- `gml_Script___SteamUserEncryptedAppTicketResponse_encode` @ 0x1403c7530, 1830 B, ok
+- `gml_Script___SteamUserEncryptedAppTicketResponse_decode` @ 0x1403c7c60, 1308 B, ok
+- `gml_Script___SteamUserDurationControl_encode` @ 0x1403c8180, 7670 B, ok
+- `gml_Script___SteamUserDurationControl_decode` @ 0x1403c9f80, 3732 B, ok
+- `gml_Script___SteamUserMarketEligibilityResponse_encode` @ 0x1403cae20, 5142 B, ok
+- `gml_Script___SteamUserMarketEligibilityResponse_decode` @ 0x1403cc240, 2769 B, ok
+- `gml_Script___SteamUserAuthSessionTicket_encode` @ 0x1403ccd20, 2646 B, ok
+- `gml_Script___SteamUserAuthSessionTicket_decode` @ 0x1403cd780, 1638 B, ok
+- `gml_Script___SteamUserGetAuthSessionTicketResponse_encode` @ 0x1403cddf0, 2646 B, ok
+- `gml_Script___SteamUserGetAuthSessionTicketResponse_decode` @ 0x1403ce850, 1638 B, ok
+- `gml_Script___SteamUserAvailableVoice_encode` @ 0x1403ceec0, 3478 B, ok
+- `gml_Script___SteamUserAvailableVoice_decode` @ 0x1403cfc60, 1959 B, ok
+- `gml_Script___SteamUserGetVoiceResult_encode` @ 0x1403d0410, 3478 B, ok
+- `gml_Script___SteamUserGetVoiceResult_decode` @ 0x1403d11b0, 1959 B, ok
+- `gml_Script___SteamUserDecompressVoiceResult_encode` @ 0x1403d1960, 2646 B, ok
+- `gml_Script___SteamUserDecompressVoiceResult_decode` @ 0x1403d23c0, 1638 B, ok
+- `gml_Script___SteamUserGetTicketForWebApiResponse_encode` @ 0x1403d2a30, 3478 B, ok
+- `gml_Script___SteamUserGetTicketForWebApiResponse_decode` @ 0x1403d37d0, 1959 B, ok
+- `gml_Script___SteamUserValidateAuthTicketResponse_encode` @ 0x1403d3f80, 3478 B, ok
+- `gml_Script___SteamUserValidateAuthTicketResponse_decode` @ 0x1403d4d20, 1959 B, ok
+- `gml_Script___SteamUserSteamServersDisconnected_encode` @ 0x1403d54d0, 1830 B, ok
+- `gml_Script___SteamUserSteamServersDisconnected_decode` @ 0x1403d5c00, 1308 B, ok
+- `gml_Script___SteamUserSteamServerConnectFailure_encode` @ 0x1403d6120, 2646 B, ok
+- `gml_Script___SteamUserSteamServerConnectFailure_decode` @ 0x1403d6b80, 1817 B, ok
+- `gml_Script___SteamUserClientGameServerDeny_encode` @ 0x1403d72a0, 5142 B, ok
+- `gml_Script___SteamUserClientGameServerDeny_decode` @ 0x1403d86c0, 2769 B, ok
+- `gml_Script___SteamUserMicroTxnAuthorizationResponse_encode` @ 0x1403d91a0, 3478 B, ok
+- `gml_Script___SteamUserMicroTxnAuthorizationResponse_decode` @ 0x1403d9f40, 2127 B, ok
+- `gml_Script___SteamUtilsCheckFileSignatureResult_encode` @ 0x1403da790, 1830 B, ok
+- `gml_Script___SteamUtilsCheckFileSignatureResult_decode` @ 0x1403daec0, 1308 B, ok
+- `gml_Script___SteamUtilsLowBatteryPower_encode` @ 0x1403db3e0, 1830 B, ok
+- `gml_Script___SteamUtilsLowBatteryPower_decode` @ 0x1403dbb10, 1308 B, ok
+- `gml_Script___SteamUtilsSteamApiCallCompleted_encode` @ 0x1403dc030, 3478 B, ok
+- `gml_Script___SteamUtilsSteamApiCallCompleted_decode` @ 0x1403dcdd0, 1959 B, ok
+- `gml_Script___SteamUtilsImageSize_encode` @ 0x1403dd580, 2646 B, ok
+- `gml_Script___SteamUtilsImageSize_decode` @ 0x1403ddfe0, 1638 B, ok
+- `gml_Script___SteamUtilsFilterTextResult_encode` @ 0x1403de650, 2894 B, ok
+- `gml_Script___SteamUtilsFilterTextResult_decode` @ 0x1403df1a0, 1876 B, ok
+- `gml_Script___SteamUtilsGamepadTextInputDismissed_encode` @ 0x1403df900, 2646 B, ok
+- `gml_Script___SteamUtilsGamepadTextInputDismissed_decode` @ 0x1403e0360, 1817 B, ok
+- `gml_Script___SteamUtilsWarningMessage_encode` @ 0x1403e0a80, 2894 B, ok
+- `gml_Script___SteamUtilsWarningMessage_decode` @ 0x1403e15d0, 1876 B, ok
+- `gml_Script___SteamUgcItemDownloadInfo_encode` @ 0x1403e1d30, 2646 B, ok
+- `gml_Script___SteamUgcItemDownloadInfo_decode` @ 0x1403e2790, 1638 B, ok
+- `gml_Script___SteamUgcItemInstallInfo_encode` @ 0x1403e2e00, 3742 B, ok
+- `gml_Script___SteamUgcItemInstallInfo_decode` @ 0x1403e3ca0, 2197 B, ok
+- `gml_Script___SteamUgcItemUpdateProgress_encode` @ 0x1403e4540, 3478 B, ok
+- `gml_Script___SteamUgcItemUpdateProgress_decode` @ 0x1403e52e0, 1959 B, ok
+- `gml_Script___SteamUgcQueryResult_encode` @ 0x1403e5a90, 17416 B, ok
+- `gml_Script___SteamUgcQueryResult_decode` @ 0x1403e9ea0, 11310 B, ok
+- `gml_Script___SteamUgcAdditionalPreview_encode` @ 0x1403ecad0, 3966 B, ok
+- `gml_Script___SteamUgcAdditionalPreview_decode` @ 0x1403eda50, 2435 B, ok
+- `gml_Script___SteamUgcKeyValueTag_encode` @ 0x1403ee3e0, 3118 B, ok
+- `gml_Script___SteamUgcKeyValueTag_decode` @ 0x1403ef010, 2114 B, ok
+- `gml_Script___SteamUgcItemInstalled_encode` @ 0x1403ef860, 2646 B, ok
+- `gml_Script___SteamUgcItemInstalled_decode` @ 0x1403f02c0, 1638 B, ok
+- `gml_Script___SteamUgcUserSubscribedItemsListChanged_encode` @ 0x1403f0930, 1830 B, ok
+- `gml_Script___SteamUgcUserSubscribedItemsListChanged_decode` @ 0x1403f1060, 1308 B, ok
+- `gml_Script___SteamUgcQueryCompleted_encode` @ 0x1403f1580, 5142 B, ok
+- `gml_Script___SteamUgcQueryCompleted_decode` @ 0x1403f29a0, 2769 B, ok
+- `gml_Script___SteamUgcCreateItemResult_encode` @ 0x1403f3480, 3478 B, ok
+- `gml_Script___SteamUgcCreateItemResult_decode` @ 0x1403f4220, 2127 B, ok
+- `gml_Script___SteamUgcSubmitItemUpdateResult_encode` @ 0x1403f4a70, 2646 B, ok
+- `gml_Script___SteamUgcSubmitItemUpdateResult_decode` @ 0x1403f54d0, 1817 B, ok
+- `gml_Script___SteamUgcSubscribeItemResult_encode` @ 0x1403f5bf0, 2646 B, ok
+- `gml_Script___SteamUgcSubscribeItemResult_decode` @ 0x1403f6650, 1638 B, ok
+- `gml_Script___SteamUgcUnsubscribeItemResult_encode` @ 0x1403f6cc0, 2646 B, ok
+- `gml_Script___SteamUgcUnsubscribeItemResult_decode` @ 0x1403f7720, 1638 B, ok
+- `gml_Script___SteamUgcFavoriteItemsListChanged_encode` @ 0x1403f7d90, 3478 B, ok
+- `gml_Script___SteamUgcFavoriteItemsListChanged_decode` @ 0x1403f8b30, 2127 B, ok
+- `gml_Script___SteamUgcSetUserItemVoteResult_encode` @ 0x1403f9380, 3478 B, ok
+- `gml_Script___SteamUgcSetUserItemVoteResult_decode` @ 0x1403fa120, 2127 B, ok
+- `gml_Script___SteamUgcGetUserItemVoteResult_encode` @ 0x1403fa970, 5142 B, ok
+- `gml_Script___SteamUgcGetUserItemVoteResult_decode` @ 0x1403fbd90, 3062 B, ok
+- `gml_Script___SteamUgcSupportedGameVersionData_encode` @ 0x1403fc990, 3118 B, ok
+- `gml_Script___SteamUgcSupportedGameVersionData_decode` @ 0x1403fd5c0, 2114 B, ok
+- `gml_Script___SteamUgcDeleteItemResult_encode` @ 0x1403fde10, 2646 B, ok
+- `gml_Script___SteamUgcDeleteItemResult_decode` @ 0x1403fe870, 1638 B, ok
+- `gml_Script___SteamUgcAddAppDependencyResult_encode` @ 0x1403feee0, 3478 B, ok
+- `gml_Script___SteamUgcAddAppDependencyResult_decode` @ 0x1403ffc80, 1959 B, ok
+- `gml_Script___SteamUgcRemoveAppDependencyResult_encode` @ 0x140400430, 3478 B, ok
+- `gml_Script___SteamUgcRemoveAppDependencyResult_decode` @ 0x1404011d0, 1959 B, ok
+- `gml_Script___SteamUgcAddUGCDependencyResult_encode` @ 0x140401980, 3478 B, ok
+- `gml_Script___SteamUgcAddUGCDependencyResult_decode` @ 0x140402720, 1959 B, ok
+- `gml_Script___SteamUgcRemoveUGCDependencyResult_encode` @ 0x140402ed0, 3478 B, ok
+- `gml_Script___SteamUgcRemoveUGCDependencyResult_decode` @ 0x140403c70, 1959 B, ok
+- `gml_Script___SteamUgcGetAppDependenciesResult_encode` @ 0x140404420, 6624 B, ok
+- `gml_Script___SteamUgcGetAppDependenciesResult_decode` @ 0x140405e00, 3564 B, ok
+- `gml_Script___SteamUgcStartPlaytimeTrackingResult_encode` @ 0x140406bf0, 1830 B, ok
+- `gml_Script___SteamUgcStartPlaytimeTrackingResult_decode` @ 0x140407320, 1308 B, ok
+- `gml_Script___SteamUgcStopPlaytimeTrackingResult_encode` @ 0x140407840, 1830 B, ok
+- `gml_Script___SteamUgcStopPlaytimeTrackingResult_decode` @ 0x140407f70, 1308 B, ok
+- `gml_Script___SteamUgcDownloadItemResult_encode` @ 0x140408490, 3478 B, ok
+- `gml_Script___SteamUgcDownloadItemResult_decode` @ 0x140409230, 1959 B, ok
+- `gml_Script___SteamUgcWorkshopEULAStatusResult_encode` @ 0x1404099e0, 6006 B, ok
+- `gml_Script___SteamUgcWorkshopEULAStatusResult_decode` @ 0x14040b160, 3234 B, ok
+- `gml_Script___SteamInputAnalogActionData_encode` @ 0x14040be10, 4678 B, ok
+- `gml_Script___SteamInputAnalogActionData_decode` @ 0x14040d060, 2596 B, ok
+- `gml_Script___SteamInputDigitalActionData_encode` @ 0x14040da90, 2646 B, ok
+- `gml_Script___SteamInputDigitalActionData_decode` @ 0x14040e4f0, 1954 B, ok
+- `gml_Script___SteamInputMotionData_encode` @ 0x14040eca0, 9366 B, ok
+- `gml_Script___SteamInputMotionData_decode` @ 0x140411140, 4206 B, ok
+- `gml_Script___SteamInputActionOrigins_encode` @ 0x1404121b0, 3264 B, ok
+- `gml_Script___SteamInputActionOrigins_decode` @ 0x140412e70, 2247 B, ok
+- `gml_Script___SteamInputDeviceBindingRevision_encode` @ 0x140413740, 2646 B, ok
+- `gml_Script___SteamInputDeviceBindingRevision_decode` @ 0x1404141a0, 1638 B, ok
+- `gml_Script___SteamInputDeviceEvent_encode` @ 0x140414810, 1830 B, ok
+- `gml_Script___SteamInputDeviceEvent_decode` @ 0x140414f40, 1308 B, ok
+- `gml_Script___SteamUserStatsAchievementAndUnlockTime_encode` @ 0x140415460, 2646 B, ok
+- `gml_Script___SteamUserStatsAchievementAndUnlockTime_decode` @ 0x140415ec0, 1817 B, ok
+- `gml_Script___SteamUserStatsMostAchievedAchievementInfo_encode` @ 0x1404165e0, 4574 B, ok
+- `gml_Script___SteamUserStatsMostAchievedAchievementInfo_decode` @ 0x1404177c0, 2686 B, ok
+- `gml_Script___SteamUserStatsDownloadedLeaderboardEntry_encode` @ 0x140418240, 6624 B, ok
+- `gml_Script___SteamUserStatsDownloadedLeaderboardEntry_decode` @ 0x140419c20, 3564 B, ok
+- `gml_Script___SteamUserStatsLeaderboardFindResult_encode` @ 0x14041aa10, 2646 B, ok
+- `gml_Script___SteamUserStatsLeaderboardFindResult_decode` @ 0x14041b470, 1817 B, ok
+- `gml_Script___SteamUserStatsScoresDownloadedResult_encode` @ 0x14041bb90, 3478 B, ok
+- `gml_Script___SteamUserStatsScoresDownloadedResult_decode` @ 0x14041c930, 1959 B, ok
+- `gml_Script___SteamUserStatsScoreUploadedResult_encode` @ 0x14041d0e0, 6006 B, ok
+- `gml_Script___SteamUserStatsScoreUploadedResult_decode` @ 0x14041e860, 3234 B, ok
+- `gml_Script___SteamUserStatsNumberOfCurrentPlayersResult_encode` @ 0x14041f510, 2646 B, ok
+- `gml_Script___SteamUserStatsNumberOfCurrentPlayersResult_decode` @ 0x14041ff70, 1817 B, ok
+- `gml_Script___SteamUserStatsGlobalAchievementPercentagesReadyResult_encode` @ 0x140420690, 2646 B, ok
+- `gml_Script___SteamUserStatsGlobalAchievementPercentagesReadyResult_decode` @ 0x1404210f0, 1638 B, ok
+- `gml_Script___SteamUserStatsGlobalStatsReceivedResult_encode` @ 0x140421760, 2646 B, ok
+- `gml_Script___SteamUserStatsGlobalStatsReceivedResult_decode` @ 0x1404221c0, 1638 B, ok
+- `gml_Script___SteamUserStatsAttachLeaderboardUgcResult_encode` @ 0x140422830, 2646 B, ok
+- `gml_Script___SteamUserStatsAttachLeaderboardUgcResult_decode` @ 0x140423290, 1638 B, ok
+- `gml_Script___SteamUserStatsAchievementIconFetched_encode` @ 0x140423900, 4574 B, ok
+- `gml_Script___SteamUserStatsAchievementIconFetched_decode` @ 0x140424ae0, 2686 B, ok
+- `gml_Script___SteamUserStatsUnloaded_encode` @ 0x140425560, 1830 B, ok
+- `gml_Script___SteamUserStatsUnloaded_decode` @ 0x140425c90, 1308 B, ok
+- `gml_Script___SteamUserStatsUserStatsReceived_encode` @ 0x1404261b0, 3478 B, ok
+- `gml_Script___SteamUserStatsUserStatsReceived_decode` @ 0x140426f50, 1959 B, ok
+- `gml_Script___SteamUserStatsUserStatsStored_encode` @ 0x140427700, 2646 B, ok
+- `gml_Script___SteamUserStatsUserStatsStored_decode` @ 0x140428160, 1638 B, ok
+- `gml_Script___SteamUserStatsUserAchievementStored_encode` @ 0x1404287d0, 5390 B, ok
+- `gml_Script___SteamUserStatsUserAchievementStored_decode` @ 0x140429ce0, 3007 B, ok
+- `gml_Script___SteamUserStatsIntMinMax_encode` @ 0x14042a8a0, 2646 B, ok
+- `gml_Script___SteamUserStatsIntMinMax_decode` @ 0x14042b300, 1638 B, ok
+- `gml_Script___SteamUserStatsFloatMinMax_encode` @ 0x14042b970, 2646 B, ok
+- `gml_Script___SteamUserStatsFloatMinMax_decode` @ 0x14042c3d0, 1638 B, ok
+- `gml_Script___SteamMusicPlaybackStatusHasChanged_encode` @ 0x14042ca40, 1830 B, ok
+- `gml_Script___SteamMusicPlaybackStatusHasChanged_decode` @ 0x14042d170, 1308 B, ok
+- `gml_Script___SteamMusicVolumeHasChanged_encode` @ 0x14042d690, 1830 B, ok
+- `gml_Script___SteamMusicVolumeHasChanged_decode` @ 0x14042ddc0, 1308 B, ok
+- `gml_Script___SteamTimelineGamePhaseRecordingExists_encode` @ 0x14042e2e0, 5390 B, ok
+- `gml_Script___SteamTimelineGamePhaseRecordingExists_decode` @ 0x14042f7f0, 2839 B, ok
+- `gml_Script___SteamTimelineEventRecordingExists_encode` @ 0x140430310, 2646 B, ok
+- `gml_Script___SteamTimelineEventRecordingExists_decode` @ 0x140430d70, 1817 B, ok
+- `gml_Script___SteamInventoryItemDefQuantity_encode` @ 0x140431490, 2646 B, ok
+- `gml_Script___SteamInventoryItemDefQuantity_decode` @ 0x140431ef0, 1638 B, ok
+- `gml_Script___SteamInventoryItemInstanceQuantity_encode` @ 0x140432560, 2646 B, ok
+- `gml_Script___SteamInventoryItemInstanceQuantity_decode` @ 0x140432fc0, 1638 B, ok
+- `gml_Script___SteamInventoryItemWithPrice_encode` @ 0x140433630, 3478 B, ok
+- `gml_Script___SteamInventoryItemWithPrice_decode` @ 0x1404343d0, 1959 B, ok
+- `gml_Script___SteamInventoryItemDetails_encode` @ 0x140434b80, 4310 B, ok
+- `gml_Script___SteamInventoryItemDetails_decode` @ 0x140435c60, 2280 B, ok
+- `gml_Script___SteamInventoryDeserializeResult_encode` @ 0x140436550, 2646 B, ok
+- `gml_Script___SteamInventoryDeserializeResult_decode` @ 0x140436fb0, 1638 B, ok
+- `gml_Script___SteamInventoryItemPrice_encode` @ 0x140437620, 2646 B, ok
+- `gml_Script___SteamInventoryItemPrice_decode` @ 0x140438080, 1638 B, ok
+- `gml_Script___SteamInventoryResultReady_encode` @ 0x1404386f0, 2646 B, ok
+- `gml_Script___SteamInventoryResultReady_decode` @ 0x140439150, 1638 B, ok
+- `gml_Script___SteamInventoryFullUpdate_encode` @ 0x1404397c0, 1830 B, ok
+- `gml_Script___SteamInventoryFullUpdate_decode` @ 0x140439ef0, 1308 B, ok
+- `gml_Script___SteamInventoryStartPurchaseResult_encode` @ 0x14043a410, 3478 B, ok
+- `gml_Script___SteamInventoryStartPurchaseResult_decode` @ 0x14043b1b0, 1959 B, ok
+- `gml_Script___SteamInventoryEligiblePromoItemDefIdsResult_encode` @ 0x14043b960, 3478 B, ok
+- `gml_Script___SteamInventoryEligiblePromoItemDefIdsResult_decode` @ 0x14043c700, 2127 B, ok
+- `gml_Script___SteamInventoryRequestPricesResult_encode` @ 0x14043cf50, 2894 B, ok
+- `gml_Script___SteamInventoryRequestPricesResult_decode` @ 0x14043daa0, 1876 B, ok
+- `gml_Script___SteamRemoteStorageFileNameAndSize_encode` @ 0x14043e200, 2894 B, ok
+- `gml_Script___SteamRemoteStorageFileNameAndSize_decode` @ 0x14043ed50, 1876 B, ok
+- `gml_Script___SteamRemoteStorageQuota_encode` @ 0x14043f4b0, 2646 B, ok
+- `gml_Script___SteamRemoteStorageQuota_decode` @ 0x14043ff10, 1638 B, ok
+- `gml_Script___SteamRemoteStorageUgcDetails_encode` @ 0x140440580, 5390 B, ok
+- `gml_Script___SteamRemoteStorageUgcDetails_decode` @ 0x140441a90, 2839 B, ok
+- `gml_Script___SteamRemoteStorageFileShareResult_encode` @ 0x1404425b0, 3742 B, ok
+- `gml_Script___SteamRemoteStorageFileShareResult_decode` @ 0x140443450, 2197 B, ok
+- `gml_Script___SteamRemoteStorageFileWriteAsyncResult_encode` @ 0x140443cf0, 1830 B, ok
+- `gml_Script___SteamRemoteStorageFileWriteAsyncResult_decode` @ 0x140444420, 1308 B, ok
+- `gml_Script___SteamRemoteStorageDownloadUgcResult_encode` @ 0x140444940, 6238 B, ok
+- `gml_Script___SteamRemoteStorageDownloadUgcResult_decode` @ 0x1404461a0, 3160 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileSubscribed_encode` @ 0x140446e00, 2646 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileSubscribed_decode` @ 0x140447860, 1638 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileUnsubscribed_encode` @ 0x140447ed0, 2646 B, ok
+- `gml_Script___SteamRemoteStoragePublishedFileUnsubscribed_decode` @ 0x140448930, 1638 B, ok
+- `gml_Script___SteamMatchmakingLobbyCreated_encode` @ 0x140448fa0, 2646 B, ok
+- `gml_Script___SteamMatchmakingLobbyCreated_decode` @ 0x140449a00, 1638 B, ok
+- `gml_Script___SteamMatchmakingLobbyEnter_encode` @ 0x14044a070, 4310 B, ok
+- `gml_Script___SteamMatchmakingLobbyEnter_decode` @ 0x14044b150, 2448 B, ok
+- `gml_Script___SteamMatchmakingLobbyMatchList_encode` @ 0x14044bae0, 1830 B, ok
+- `gml_Script___SteamMatchmakingLobbyMatchList_decode` @ 0x14044c210, 1308 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataUpdate_encode` @ 0x14044c730, 3478 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataUpdate_decode` @ 0x14044d4d0, 2127 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatUpdate_encode` @ 0x14044dd20, 4310 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatUpdate_decode` @ 0x14044ee00, 2280 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatMsg_encode` @ 0x14044f6f0, 4310 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatMsg_decode` @ 0x1404507d0, 2280 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameCreated_encode` @ 0x1404510c0, 4310 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameCreated_decode` @ 0x1404521a0, 2280 B, ok
+- `gml_Script___SteamMatchmakingLobbyInvite_encode` @ 0x140452a90, 3742 B, ok
+- `gml_Script___SteamMatchmakingLobbyInvite_decode` @ 0x140453930, 2197 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataEntry_encode` @ 0x1404541d0, 3118 B, ok
+- `gml_Script___SteamMatchmakingLobbyDataEntry_decode` @ 0x140454e00, 2114 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatEntry_encode` @ 0x140455650, 3478 B, ok
+- `gml_Script___SteamMatchmakingLobbyChatEntry_decode` @ 0x1404563f0, 1959 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameServer_encode` @ 0x140456ba0, 3478 B, ok
+- `gml_Script___SteamMatchmakingLobbyGameServer_decode` @ 0x140457940, 1959 B, ok
+- `gml_Script___SteamMatchmakingFavoriteGame_encode` @ 0x1404580f0, 6006 B, ok
+- `gml_Script___SteamMatchmakingFavoriteGame_decode` @ 0x140459870, 2922 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionRequest_encode` @ 0x14045a3e0, 1830 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionRequest_decode` @ 0x14045ab10, 1308 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionFailed_encode` @ 0x14045b030, 3742 B, ok
+- `gml_Script___SteamNetworkingMessagesSessionFailed_decode` @ 0x14045bed0, 2197 B, ok
+- `gml_Script___SteamNetworkingMessage_encode` @ 0x14045c770, 8518 B, ok
+- `gml_Script___SteamNetworkingMessage_decode` @ 0x14045e8c0, 3885 B, ok
+- `gml_Script___SteamNetworkingSocketsConnectionInfo_encode` @ 0x14045f7f0, 8366 B, ok
+- `gml_Script___SteamNetworkingSocketsConnectionInfo_decode` @ 0x1404618a0, 4278 B, ok
+- `gml_Script___SteamPartiesBeaconLocation_encode` @ 0x140462960, 2646 B, ok
+- `gml_Script___SteamPartiesBeaconLocation_decode` @ 0x1404633c0, 1638 B, ok
+- `gml_Script___SteamPartiesCreateBeaconResult_encode` @ 0x140463a30, 2646 B, ok
+- `gml_Script___SteamPartiesCreateBeaconResult_decode` @ 0x140464490, 1638 B, ok
+- `gml_Script___SteamPartiesJoinPartyResult_encode` @ 0x140464b00, 4574 B, ok
+- `gml_Script___SteamPartiesJoinPartyResult_decode` @ 0x140465ce0, 2518 B, ok
+- `gml_Script___SteamPartiesChangeNumOpenSlotsResult_encode` @ 0x1404666c0, 1830 B, ok
+- `gml_Script___SteamPartiesChangeNumOpenSlotsResult_decode` @ 0x140466df0, 1308 B, ok
+- `gml_Script___SteamPartiesReservationNotification_encode` @ 0x140467310, 2646 B, ok
+- `gml_Script___SteamPartiesReservationNotification_decode` @ 0x140467d70, 1638 B, ok
+- `gml_Script___SteamPartiesBeaconDetails_encode` @ 0x1404683e0, 4574 B, ok
+- `gml_Script___SteamPartiesBeaconDetails_decode` @ 0x1404695c0, 2518 B, ok
+- `gml_Script___SteamNetworkingSocketsStatusChanged_encode` @ 0x140469fa0, 3982 B, ok
+- `gml_Script___SteamNetworkingSocketsStatusChanged_decode` @ 0x14046af30, 2140 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_invite_dialog` @ 0x14046b790, 2062 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_store` @ 0x14046bfa0, 2890 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_user` @ 0x14046caf0, 3112 B, ok
+- `gml_Script_steam_friends_activate_game_overlay_to_web_page` @ 0x14046d720, 3112 B, ok
+- `gml_Script_steam_friends_close_clan_chat_window_in_steam` @ 0x14046e350, 2170 B, ok
+- `gml_Script_steam_friends_download_clan_activity_counts` @ 0x14046ebd0, 4844 B, ok
+- `gml_Script_steam_friends_enumerate_following_list` @ 0x14046fec0, 3299 B, ok
+- `gml_Script_steam_friends_set_callback_avatar_image_loaded` @ 0x140470bb0, 2457 B, ok
+- `gml_Script_steam_friends_get_chat_member_by_index` @ 0x140471550, 3868 B, ok
+- `gml_Script_steam_friends_get_clan_activity_counts` @ 0x140472470, 3319 B, ok
+- `gml_Script_steam_friends_get_clan_chat_member_count` @ 0x140473170, 2062 B, ok
+- `gml_Script_steam_friends_get_clan_chat_message` @ 0x140473980, 3929 B, ok
+- `gml_Script_steam_friends_get_clan_name` @ 0x1404748e0, 2062 B, ok
+- `gml_Script_steam_friends_get_clan_officer_by_index` @ 0x1404750f0, 3868 B, ok
+- `gml_Script_steam_friends_get_clan_officer_count` @ 0x140476010, 2062 B, ok
+- `gml_Script_steam_friends_get_clan_owner` @ 0x140476820, 3019 B, ok
+- `gml_Script_steam_friends_get_clan_tag` @ 0x1404773f0, 2062 B, ok
+- `gml_Script_steam_friends_get_coplay_friend` @ 0x140477c00, 1593 B, ok
+- `gml_Script_steam_friends_get_follower_count` @ 0x140478240, 3299 B, ok
+- `gml_Script_steam_friends_get_friend_by_index` @ 0x140478f30, 3868 B, ok
+- `gml_Script_steam_friends_get_friend_coplay_game` @ 0x140479e50, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_coplay_time` @ 0x14047a660, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_count` @ 0x14047ae70, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_count_from_source` @ 0x14047b680, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_from_source_by_index` @ 0x14047be90, 3868 B, ok
+- `gml_Script_steam_friends_get_friend_game_played` @ 0x14047cdb0, 3319 B, ok
+- `gml_Script_steam_friends_get_friend_message` @ 0x14047dab0, 3929 B, ok
+- `gml_Script_steam_friends_get_friend_persona_name` @ 0x14047ea10, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_persona_name_history` @ 0x14047f220, 2890 B, ok
+- `gml_Script_steam_friends_get_friend_persona_state` @ 0x14047fd70, 3019 B, ok
+- `gml_Script_steam_friends_get_friend_relationship` @ 0x140480940, 3019 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence` @ 0x140481510, 3120 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence_key_by_index` @ 0x140482140, 2890 B, ok
+- `gml_Script_steam_friends_get_friend_rich_presence_key_count` @ 0x140482c90, 2062 B, ok
+- `gml_Script_steam_friends_get_friend_steam_level` @ 0x1404834a0, 2062 B, ok
+- `gml_Script_steam_friends_get_large_friend_avatar` @ 0x140483cb0, 2062 B, ok
+- `gml_Script_steam_friends_get_medium_friend_avatar` @ 0x1404844c0, 2062 B, ok
+- `gml_Script_steam_friends_get_friends_group_members_list` @ 0x140484cd0, 2374 B, ok
+- `gml_Script_steam_friends_get_persona_state` @ 0x140485620, 1501 B, ok
+- `gml_Script_steam_friends_get_player_nickname` @ 0x140485c00, 2062 B, ok
+- `gml_Script_steam_friends_get_small_friend_avatar` @ 0x140486410, 2062 B, ok
+- `gml_Script_steam_friends_has_friend` @ 0x140486c20, 2997 B, ok
+- `gml_Script_steam_friends_invite_user_to_game` @ 0x1404877e0, 3214 B, ok
+- `gml_Script_steam_friends_is_clan_chat_admin` @ 0x140488470, 2997 B, ok
+- `gml_Script_steam_friends_is_clan_public` @ 0x140489030, 2170 B, ok
+- `gml_Script_steam_friends_is_clan_official_game_group` @ 0x1404898b0, 2170 B, ok
+- `gml_Script_steam_friends_is_clan_chat_window_open_in_steam` @ 0x14048a130, 2170 B, ok
+- `gml_Script_steam_friends_is_following` @ 0x14048a9b0, 3299 B, ok
+- `gml_Script_steam_friends_request_clan_officer_list` @ 0x14048b6a0, 3299 B, ok
+- `gml_Script_steam_friends_request_friend_rich_presence` @ 0x14048c390, 2062 B, ok
+- `gml_Script_steam_friends_request_user_information` @ 0x14048cba0, 2997 B, ok
+- `gml_Script_steam_friends_set_in_game_voice_speaking` @ 0x14048d760, 2890 B, ok
+- `gml_Script_steam_friends_set_played_with` @ 0x14048e2b0, 2062 B, ok
+- `gml_Script_steam_friends_set_callback_persona_state_change` @ 0x14048eac0, 2457 B, ok
+- `gml_Script_steam_friends_set_callback_game_overlay_activated` @ 0x14048f460, 2457 B, ok
+- `gml_Script_steam_friends_set_callback_game_rich_presence_join_requested` @ 0x14048fe00, 2457 B, ok
+- `gml_Script_steam_friends_set_callback_game_lobby_join_requested` @ 0x1404907a0, 2457 B, ok
+- `gml_Script_steam_friends_set_callback_friend_rich_presence_update` @ 0x140491140, 2457 B, ok
+- `gml_Script_steam_friends_set_callback_game_server_change_requested` @ 0x140491ae0, 2457 B, ok
+- `gml_Script_steam_apps_get_dlc_data_by_index` @ 0x140492480, 1874 B, ok
+- `gml_Script_steam_apps_is_timed_trial` @ 0x140492be0, 1782 B, ok
+- `gml_Script_steam_apps_get_app_install_dir` @ 0x1404932e0, 1949 B, ok
+- `gml_Script_steam_apps_get_app_owner` @ 0x140493a80, 1501 B, ok
+- `gml_Script_steam_apps_get_current_beta_name` @ 0x140494060, 1855 B, ok
+- `gml_Script_steam_apps_get_num_betas` @ 0x1404947a0, 1594 B, ok
+- `gml_Script_steam_apps_get_beta_info` @ 0x140494de0, 1874 B, ok
+- `gml_Script_steam_apps_get_dlc_download_progress` @ 0x140495540, 1874 B, ok
+- `gml_Script_steam_apps_get_app_ownership_ticket_data` @ 0x140495ca0, 3362 B, ok
+- `gml_Script_steam_apps_get_file_details` @ 0x1404969d0, 3517 B, ok
+- `gml_Script_steam_apps_get_installed_depots` @ 0x140497790, 2443 B, ok
+- `gml_Script_steam_apps_get_launch_command_line` @ 0x140498120, 1855 B, ok
+- `gml_Script_steam_apps_set_callback_dlc_installed` @ 0x140498860, 2457 B, ok
+- `gml_Script_steam_screenshots_add_vr_screenshot_to_library` @ 0x140499200, 4164 B, ok
+- `gml_Script_steam_screenshots_tag_published_file` @ 0x14049a250, 2997 B, ok
+- `gml_Script_steam_screenshots_tag_user` @ 0x14049ae10, 2997 B, ok
+- `gml_Script_steam_screenshots_write_screenshot` @ 0x14049b9d0, 6577 B, ok
+- `gml_Script_steam_screenshots_set_callback_screenshot_ready` @ 0x14049d390, 2457 B, ok
+- `gml_Script_steam_screenshots_set_callback_screenshot_requested` @ 0x14049dd30, 2457 B, ok
+- `gml_Script_steam_user_advertise_game` @ 0x14049e6d0, 3720 B, ok
+- `gml_Script_steam_user_begin_auth_session` @ 0x14049f560, 6734 B, ok
+- `gml_Script_steam_user_set_duration_control_online_state` @ 0x1404a0fb0, 2170 B, ok
+- `gml_Script_steam_user_decompress_voice` @ 0x1404a1830, 8121 B, ok
+- `gml_Script_steam_user_end_auth_session` @ 0x1404a37f0, 2062 B, ok
+- `gml_Script_steam_user_get_auth_session_ticket` @ 0x1404a4000, 4982 B, ok
+- `gml_Script_steam_user_get_steam_id` @ 0x1404a5380, 1501 B, ok
+- `gml_Script_steam_user_decode_steam_id` @ 0x1404a5960, 3106 B, ok
+- `gml_Script_steam_user_get_available_voice` @ 0x1404a6590, 1594 B, ok
+- `gml_Script_steam_user_get_voice` @ 0x1404a6bd0, 7394 B, ok
+- `gml_Script_steam_user_request_encrypted_app_ticket` @ 0x1404a88c0, 6140 B, ok
+- `gml_Script_steam_user_get_encrypted_app_ticket` @ 0x1404aa0c0, 3690 B, ok
+- `gml_Script_steam_user_request_auth_ticket_for_web_api` @ 0x1404aaf30, 3517 B, ok
+- `gml_Script_steam_user_fetch_auth_ticket_for_web_api` @ 0x1404abcf0, 3465 B, ok
+- `gml_Script_steam_user_get_duration_control` @ 0x1404aca80, 2457 B, ok
+- `gml_Script_steam_user_request_store_auth_url` @ 0x1404ad420, 3517 B, ok
+- `gml_Script_steam_user_get_market_eligibility` @ 0x1404ae1e0, 2457 B, ok
+- `gml_Script_steam_user_track_app_usage_event` @ 0x1404aeb80, 3950 B, ok
+- `gml_Script_steam_user_user_has_license_for_app` @ 0x1404afaf0, 3868 B, ok
+- `gml_Script_steam_user_set_callback_steam_servers_connected` @ 0x1404b0a10, 2457 B, ok
+- `gml_Script_steam_user_set_callback_steam_server_connect_failure` @ 0x1404b13b0, 2457 B, ok
+- `gml_Script_steam_user_set_callback_steam_servers_disconnected` @ 0x1404b1d50, 2457 B, ok
+- `gml_Script_steam_user_set_callback_client_game_server_deny` @ 0x1404b26f0, 2457 B, ok
+- `gml_Script_steam_user_set_callback_licenses_updated` @ 0x1404b3090, 2457 B, ok
+- `gml_Script_steam_user_set_callback_microtxn_authorization_response` @ 0x1404b3a30, 2457 B, ok
+- `gml_Script_steam_user_set_callback_get_auth_session_ticket_response` @ 0x1404b43d0, 2457 B, ok
+- `gml_Script_steam_user_set_callback_validate_auth_ticket_response` @ 0x1404b4d70, 2457 B, ok
+- `gml_Script_steam_utils_check_file_signature` @ 0x1404b5710, 3517 B, ok
+- `gml_Script_steam_utils_get_api_call_failure_reason` @ 0x1404b64d0, 3019 B, ok
+- `gml_Script_steam_utils_get_api_call_result` @ 0x1404b70a0, 5518 B, ok
+- `gml_Script_steam_utils_set_callback_ip_country` @ 0x1404b8630, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_low_battery_power` @ 0x1404b8fd0, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_steam_api_call_completed` @ 0x1404b9970, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_app_resuming_from_suspend` @ 0x1404ba310, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_steam_shutdown` @ 0x1404bacb0, 2457 B, ok
+- `gml_Script_steam_utils_get_connected_universe` @ 0x1404bb650, 1501 B, ok
+- `gml_Script_steam_utils_get_entered_gamepad_text_input` @ 0x1404bbc30, 1855 B, ok
+- `gml_Script_steam_utils_get_image_rgba` @ 0x1404bc370, 3465 B, ok
+- `gml_Script_steam_utils_get_image_size` @ 0x1404bd100, 1874 B, ok
+- `gml_Script_steam_utils_is_api_call_completed` @ 0x1404bd860, 3368 B, ok
+- `gml_Script_steam_utils_filter_text` @ 0x1404be590, 5165 B, ok
+- `gml_Script_steam_utils_set_overlay_notification_position` @ 0x1404bf9c0, 2062 B, ok
+- `gml_Script_steam_utils_show_gamepad_text_input` @ 0x1404c01d0, 5907 B, ok
+- `gml_Script_steam_utils_show_floating_gamepad_text_input` @ 0x1404c18f0, 5478 B, ok
+- `gml_Script_steam_utils_set_callback_gamepad_text_input_dismissed` @ 0x1404c2e60, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_floating_gamepad_text_input_dismissed` @ 0x1404c3800, 2457 B, ok
+- `gml_Script_steam_utils_set_callback_warning_message` @ 0x1404c41a0, 2457 B, ok
+- `gml_Script_steam_ugc_add_app_dependency` @ 0x1404c4b40, 4117 B, ok
+- `gml_Script_steam_ugc_add_dependency` @ 0x1404c5b60, 4117 B, ok
+- `gml_Script_steam_ugc_add_excluded_tag` @ 0x1404c6b80, 3214 B, ok
+- `gml_Script_steam_ugc_add_item_key_value_tag` @ 0x1404c7810, 4253 B, ok
+- `gml_Script_steam_ugc_add_item_preview_file` @ 0x1404c88b0, 4043 B, ok
+- `gml_Script_steam_ugc_add_item_preview_video` @ 0x1404c9880, 3214 B, ok
+- `gml_Script_steam_ugc_add_item_to_favorites` @ 0x1404ca510, 4117 B, ok
+- `gml_Script_steam_ugc_add_required_key_value_tag` @ 0x1404cb530, 4253 B, ok
+- `gml_Script_steam_ugc_add_required_tag` @ 0x1404cc5d0, 3214 B, ok
+- `gml_Script_steam_ugc_add_required_tag_group` @ 0x1404cd260, 4720 B, ok
+- `gml_Script_steam_ugc_create_item` @ 0x1404ce4d0, 4117 B, ok
+- `gml_Script_steam_ugc_create_query_all_ugc_request` @ 0x1404cf4f0, 6361 B, ok
+- `gml_Script_steam_ugc_create_query_ugc_details_request` @ 0x1404d0dd0, 4482 B, ok
+- `gml_Script_steam_ugc_create_query_user_ugc_request` @ 0x1404d1f60, 8015 B, ok
+- `gml_Script_steam_ugc_delete_item` @ 0x1404d3eb0, 3299 B, ok
+- `gml_Script_steam_ugc_download_item` @ 0x1404d4ba0, 2997 B, ok
+- `gml_Script_steam_ugc_get_app_dependencies` @ 0x1404d5760, 3299 B, ok
+- `gml_Script_steam_ugc_get_item_download_info` @ 0x1404d6450, 3319 B, ok
+- `gml_Script_steam_ugc_get_item_install_info` @ 0x1404d7150, 3319 B, ok
+- `gml_Script_steam_ugc_get_item_state` @ 0x1404d7e50, 3019 B, ok
+- `gml_Script_steam_ugc_get_item_update_progress` @ 0x1404d8a20, 3106 B, ok
+- `gml_Script_steam_ugc_get_subscribed_items` @ 0x1404d9650, 2443 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_result` @ 0x1404d9fe0, 4128 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_tags` @ 0x1404db000, 2890 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_tag` @ 0x1404dbb50, 5022 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_tag_display_name` @ 0x1404dcef0, 5022 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_preview_url` @ 0x1404de290, 4200 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_metadata` @ 0x1404df300, 4200 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_children` @ 0x1404e0370, 5512 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_statistic` @ 0x1404e1900, 4680 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_additional_previews` @ 0x1404e2b50, 2890 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_additional_preview` @ 0x1404e36a0, 4957 B, ok
+- `gml_Script_steam_ugc_get_supported_game_version_data` @ 0x1404e4a00, 4957 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_num_key_value_tags` @ 0x1404e5d60, 2890 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_key_value_tag` @ 0x1404e68b0, 4957 B, ok
+- `gml_Script_steam_ugc_get_query_ugc_content_descriptors` @ 0x1404e7c10, 5512 B, ok
+- `gml_Script_steam_ugc_remove_app_dependency` @ 0x1404e91a0, 4117 B, ok
+- `gml_Script_steam_ugc_remove_dependency` @ 0x1404ea1c0, 4117 B, ok
+- `gml_Script_steam_ugc_remove_item_from_favorites` @ 0x1404eb1e0, 4117 B, ok
+- `gml_Script_steam_ugc_remove_all_item_key_value_tags` @ 0x1404ec200, 2170 B, ok
+- `gml_Script_steam_ugc_remove_item_key_value_tags` @ 0x1404eca80, 3214 B, ok
+- `gml_Script_steam_ugc_remove_item_preview` @ 0x1404ed710, 2997 B, ok
+- `gml_Script_steam_ugc_add_content_descriptor` @ 0x1404ee2d0, 2997 B, ok
+- `gml_Script_steam_ugc_remove_content_descriptor` @ 0x1404eee90, 2997 B, ok
+- `gml_Script_steam_ugc_set_required_game_versions` @ 0x1404efa50, 4253 B, ok
+- `gml_Script_steam_ugc_send_query_ugc_request` @ 0x1404f0af0, 3299 B, ok
+- `gml_Script_steam_ugc_release_query_ugc_request` @ 0x1404f17e0, 2062 B, ok
+- `gml_Script_steam_ugc_set_callback_item_installed` @ 0x1404f1ff0, 2457 B, ok
+- `gml_Script_steam_ugc_set_callback_download_item_result` @ 0x1404f2990, 2457 B, ok
+- `gml_Script_steam_ugc_set_allow_cached_response` @ 0x1404f3330, 2997 B, ok
+- `gml_Script_steam_ugc_set_cloud_file_name_filter` @ 0x1404f3ef0, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_content` @ 0x1404f4b80, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_description` @ 0x1404f5810, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_metadata` @ 0x1404f64a0, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_preview` @ 0x1404f7130, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_tags` @ 0x1404f7dc0, 4720 B, ok
+- `gml_Script_steam_ugc_set_item_title` @ 0x1404f9030, 3214 B, ok
+- `gml_Script_steam_ugc_set_item_update_language` @ 0x1404f9cc0, 3214 B, ok
+- `gml_Script_steam_ugc_get_user_content_descriptor_preferences` @ 0x1404fa950, 2374 B, ok
+- `gml_Script_steam_ugc_set_items_disabled_locally` @ 0x1404fb2a0, 4396 B, ok
+- `gml_Script_steam_ugc_set_item_visibility` @ 0x1404fc3d0, 2997 B, ok
+- `gml_Script_steam_ugc_set_language` @ 0x1404fcf90, 3214 B, ok
+- `gml_Script_steam_ugc_set_match_any_tag` @ 0x1404fdc20, 2997 B, ok
+- `gml_Script_steam_ugc_set_ranked_by_trend_days` @ 0x1404fe7e0, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_additional_previews` @ 0x1404ff3a0, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_children` @ 0x1404fff60, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_key_value_tags` @ 0x140500b20, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_long_description` @ 0x1405016e0, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_metadata` @ 0x1405022a0, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_only_ids` @ 0x140502e60, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_playtime_stats` @ 0x140503a20, 2997 B, ok
+- `gml_Script_steam_ugc_set_return_total_only` @ 0x1405045e0, 2997 B, ok
+- `gml_Script_steam_ugc_set_search_text` @ 0x1405051a0, 3214 B, ok
+- `gml_Script_steam_ugc_set_subscriptions_load_order` @ 0x140505e30, 3574 B, ok
+- `gml_Script_steam_ugc_set_user_item_vote` @ 0x140506c30, 4117 B, ok
+- `gml_Script_steam_ugc_get_user_item_vote` @ 0x140507c50, 3299 B, ok
+- `gml_Script_steam_ugc_start_item_update` @ 0x140508940, 3868 B, ok
+- `gml_Script_steam_ugc_start_playtime_tracking` @ 0x140509860, 4746 B, ok
+- `gml_Script_steam_ugc_stop_playtime_tracking` @ 0x14050aaf0, 4746 B, ok
+- `gml_Script_steam_ugc_stop_playtime_tracking_for_all_items` @ 0x14050bd80, 2457 B, ok
+- `gml_Script_steam_ugc_submit_item_update` @ 0x14050c720, 4337 B, ok
+- `gml_Script_steam_ugc_subscribe_item` @ 0x14050d820, 3299 B, ok
+- `gml_Script_steam_ugc_unsubscribe_item` @ 0x14050e510, 3299 B, ok
+- `gml_Script_steam_ugc_set_callback_user_subscribed_items_list_changed` @ 0x14050f200, 2457 B, ok
+- `gml_Script_steam_ugc_update_item_preview_file` @ 0x14050fba0, 4041 B, ok
+- `gml_Script_steam_ugc_update_item_preview_video` @ 0x140510b70, 4041 B, ok
+- `gml_Script_steam_ugc_get_workshop_eula_status` @ 0x140511b40, 2457 B, ok
+- `gml_Script_steam_ugc_get_num_supported_game_versions` @ 0x1405124e0, 2890 B, ok
+- `gml_Script_steam_input_activate_action_set` @ 0x140513030, 2890 B, ok
+- `gml_Script_steam_input_activate_action_set_layer` @ 0x140513b80, 2890 B, ok
+- `gml_Script_steam_input_deactivate_action_set_layer` @ 0x1405146d0, 2890 B, ok
+- `gml_Script_steam_input_deactivate_all_action_set_layers` @ 0x140515220, 2062 B, ok
+- `gml_Script_steam_input_get_active_action_set_layers` @ 0x140515a30, 3839 B, ok
+- `gml_Script_steam_input_get_action_set_handle` @ 0x140516930, 1593 B, ok
+- `gml_Script_steam_input_get_analog_action_data` @ 0x140516f70, 3929 B, ok
+- `gml_Script_steam_input_get_analog_action_handle` @ 0x140517ed0, 1593 B, ok
+- `gml_Script_steam_input_get_analog_action_origins` @ 0x140518510, 4797 B, ok
+- `gml_Script_steam_input_get_glyph_png_for_action_origin` @ 0x1405197d0, 5022 B, ok
+- `gml_Script_steam_input_get_glyph_svg_for_action_origin` @ 0x14051ab70, 4195 B, ok
+- `gml_Script_steam_input_get_connected_controllers` @ 0x14051bbe0, 2271 B, ok
+- `gml_Script_steam_input_get_controller_for_gamepad_index` @ 0x14051c4c0, 1593 B, ok
+- `gml_Script_steam_input_get_current_action_set` @ 0x14051cb00, 3019 B, ok
+- `gml_Script_steam_input_get_digital_action_data` @ 0x14051d6d0, 3929 B, ok
+- `gml_Script_steam_input_get_digital_action_handle` @ 0x14051e630, 1593 B, ok
+- `gml_Script_steam_input_get_digital_action_origins` @ 0x14051ec70, 4797 B, ok
+- `gml_Script_steam_input_get_gamepad_index_for_controller` @ 0x14051ff30, 2062 B, ok
+- `gml_Script_steam_input_get_input_type_for_handle` @ 0x140520740, 3019 B, ok
+- `gml_Script_steam_input_get_motion_data` @ 0x140521310, 3106 B, ok
+- `gml_Script_steam_input_get_string_for_action_origin` @ 0x140521f40, 3366 B, ok
+- `gml_Script_steam_input_set_dualsense_trigger_effect` @ 0x140522c70, 4411 B, ok
+- `gml_Script_steam_input_set_led_color` @ 0x140523db0, 5374 B, ok
+- `gml_Script_steam_input_show_binding_panel` @ 0x1405252b0, 2170 B, ok
+- `gml_Script_steam_input_stop_analog_action_momentum` @ 0x140525b30, 2890 B, ok
+- `gml_Script_steam_input_trigger_vibration` @ 0x140526680, 3720 B, ok
+- `gml_Script_steam_input_trigger_vibration_extended` @ 0x140527510, 5374 B, ok
+- `gml_Script_steam_input_get_action_origin_from_xbox_origin` @ 0x140528a10, 3868 B, ok
+- `gml_Script_steam_input_translate_action_origin` @ 0x140529930, 3868 B, ok
+- `gml_Script_steam_input_get_device_binding_revision` @ 0x14052a850, 3319 B, ok
+- `gml_Script_steam_input_get_remote_play_session_id` @ 0x14052b550, 2062 B, ok
+- `gml_Script_steam_input_set_callback_device_connected` @ 0x14052bd60, 2457 B, ok
+- `gml_Script_steam_input_set_callback_device_disconnected` @ 0x14052c700, 2457 B, ok
+- `gml_Script_steam_userstats_get_stat_int` @ 0x14052d0a0, 1790 B, ok
+- `gml_Script_steam_userstats_get_stat_float` @ 0x14052d7a0, 1790 B, ok
+- `gml_Script_steam_userstats_get_achievement` @ 0x14052dea0, 1933 B, ok
+- `gml_Script_steam_userstats_achievement_and_unlock_time` @ 0x14052e630, 1874 B, ok
+- `gml_Script_steam_userstats_request_user_stats` @ 0x14052ed90, 3299 B, ok
+- `gml_Script_steam_userstats_user_stat_int` @ 0x14052fa80, 4255 B, ok
+- `gml_Script_steam_userstats_user_stat_float` @ 0x140530b20, 4255 B, ok
+- `gml_Script_steam_userstats_user_achievement` @ 0x140531bc0, 4397 B, ok
+- `gml_Script_steam_userstats_user_achievement_and_unlock_time` @ 0x140532cf0, 4338 B, ok
+- `gml_Script_steam_userstats_find_or_create_leaderboard` @ 0x140533df0, 5163 B, ok
+- `gml_Script_steam_userstats_find_leaderboard` @ 0x140535220, 3517 B, ok
+- `gml_Script_steam_userstats_leaderboard_name` @ 0x140535fe0, 2062 B, ok
+- `gml_Script_steam_userstats_leaderboard_entry_count` @ 0x1405367f0, 2062 B, ok
+- `gml_Script_steam_userstats_leaderboard_sort_method` @ 0x140537000, 3019 B, ok
+- `gml_Script_steam_userstats_leaderboard_display_type` @ 0x140537bd0, 3019 B, ok
+- `gml_Script_steam_userstats_download_leaderboard_entries` @ 0x1405387a0, 5771 B, ok
+- `gml_Script_steam_userstats_download_leaderboard_entries_for_users` @ 0x140539e30, 5573 B, ok
+- `gml_Script_steam_userstats_downloaded_leaderboard_entry` @ 0x14053b400, 4128 B, ok
+- `gml_Script_steam_userstats_upload_leaderboard_score` @ 0x14053c420, 7220 B, ok
+- `gml_Script_steam_userstats_attach_leaderboard_ugc` @ 0x14053e060, 4117 B, ok
+- `gml_Script_steam_userstats_number_of_current_players` @ 0x14053f080, 2457 B, ok
+- `gml_Script_steam_userstats_request_global_achievement_percentages` @ 0x14053fa20, 2457 B, ok
+- `gml_Script_steam_userstats_most_achieved_achievement_info` @ 0x1405403c0, 1782 B, ok
+- `gml_Script_steam_userstats_next_most_achieved_achievement_info` @ 0x140540ac0, 1874 B, ok
+- `gml_Script_steam_userstats_request_global_stats` @ 0x140541220, 3299 B, ok
+- `gml_Script_steam_userstats_global_stat_int64` @ 0x140541f10, 1790 B, ok
+- `gml_Script_steam_userstats_global_stat_double` @ 0x140542610, 1790 B, ok
+- `gml_Script_steam_userstats_global_stat_history_int64` @ 0x140542d10, 2374 B, ok
+- `gml_Script_steam_userstats_global_stat_history_double` @ 0x140543660, 2374 B, ok
+- `gml_Script_steam_userstats_achievement_progress_int` @ 0x140543fb0, 1874 B, ok
+- `gml_Script_steam_userstats_achievement_progress_float` @ 0x140544710, 1874 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_received` @ 0x140544e70, 2457 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_stored` @ 0x140545810, 2457 B, ok
+- `gml_Script_steam_userstats_set_callback_user_achievement_stored` @ 0x1405461b0, 2457 B, ok
+- `gml_Script_steam_userstats_set_callback_user_achievement_icon_fetched` @ 0x140546b50, 2457 B, ok
+- `gml_Script_steam_userstats_set_callback_user_stats_unloaded` @ 0x1405474f0, 2457 B, ok
+- `gml_Script_steam_music_get_playback_status` @ 0x140547e90, 1501 B, ok
+- `gml_Script_steam_music_set_callback_playback_status_has_changed` @ 0x140548470, 2457 B, ok
+- `gml_Script_steam_music_set_callback_volume_has_changed` @ 0x140548e10, 2457 B, ok
+- `gml_Script_steam_timeline_add_instantaneous_timeline_event` @ 0x1405497b0, 7830 B, ok
+- `gml_Script_steam_timeline_add_range_timeline_event` @ 0x14054b650, 8657 B, ok
+- `gml_Script_steam_timeline_start_range_timeline_event` @ 0x14054d830, 7830 B, ok
+- `gml_Script_steam_timeline_update_range_timeline_event` @ 0x14054f6d0, 6845 B, ok
+- `gml_Script_steam_timeline_end_range_timeline_event` @ 0x140551190, 2890 B, ok
+- `gml_Script_steam_timeline_remove_timeline_event` @ 0x140551ce0, 2062 B, ok
+- `gml_Script_steam_timeline_does_event_recording_exist` @ 0x1405524f0, 3299 B, ok
+- `gml_Script_steam_timeline_does_game_phase_recording_exist` @ 0x1405531e0, 3517 B, ok
+- `gml_Script_steam_timeline_set_timeline_game_mode` @ 0x140553fa0, 2062 B, ok
+- `gml_Script_steam_timeline_open_overlay_to_timeline_event` @ 0x1405547b0, 2062 B, ok
+- `gml_Script_steam_inventory_add_promo_item` @ 0x140554fc0, 3299 B, ok
+- `gml_Script_steam_inventory_add_promo_items` @ 0x140555cb0, 4746 B, ok
+- `gml_Script_steam_inventory_check_result_steam_id` @ 0x140556f40, 2997 B, ok
+- `gml_Script_steam_inventory_consume_item` @ 0x140557b00, 4117 B, ok
+- `gml_Script_steam_inventory_deserialize_result` @ 0x140558b20, 6202 B, ok
+- `gml_Script_steam_inventory_exchange_items` @ 0x14055a360, 7523 B, ok
+- `gml_Script_steam_inventory_generate_items` @ 0x14055c0d0, 5066 B, ok
+- `gml_Script_steam_inventory_get_result_items` @ 0x14055d4a0, 2676 B, ok
+- `gml_Script_steam_inventory_get_result_status` @ 0x14055df20, 1593 B, ok
+- `gml_Script_steam_inventory_request_eligible_promo_item_definition_ids` @ 0x14055e560, 2457 B, ok
+- `gml_Script_steam_inventory_get_eligible_promo_item_definition_ids` @ 0x14055ef00, 2374 B, ok
+- `gml_Script_steam_inventory_get_item_definition_ids` @ 0x14055f850, 2374 B, ok
+- `gml_Script_steam_inventory_get_items_by_id` @ 0x1405601a0, 4746 B, ok
+- `gml_Script_steam_inventory_serialize_result` @ 0x140561430, 4515 B, ok
+- `gml_Script_steam_inventory_get_result_item_property_keys_array` @ 0x1405625e0, 2601 B, ok
+- `gml_Script_steam_inventory_get_result_item_property` @ 0x140563010, 5237 B, ok
+- `gml_Script_steam_inventory_start_purchase` @ 0x140564490, 5066 B, ok
+- `gml_Script_steam_inventory_request_prices` @ 0x140565860, 2457 B, ok
+- `gml_Script_steam_inventory_get_items_with_prices` @ 0x140566200, 2353 B, ok
+- `gml_Script_steam_inventory_start_update_properties` @ 0x140566b40, 1501 B, ok
+- `gml_Script_steam_inventory_remove_property` @ 0x140567120, 4041 B, ok
+- `gml_Script_steam_inventory_set_property_string` @ 0x1405680f0, 5080 B, ok
+- `gml_Script_steam_inventory_set_property_bool` @ 0x1405694d0, 4870 B, ok
+- `gml_Script_steam_inventory_set_property_int64` @ 0x14056a7e0, 4870 B, ok
+- `gml_Script_steam_inventory_set_property_float` @ 0x14056baf0, 4870 B, ok
+- `gml_Script_steam_inventory_submit_update_properties` @ 0x14056ce00, 3299 B, ok
+- `gml_Script_steam_inventory_transfer_item_quantity` @ 0x14056daf0, 4944 B, ok
+- `gml_Script_steam_inventory_trigger_item_drop` @ 0x14056ee40, 3299 B, ok
+- `gml_Script_steam_inventory_grant_promo_items` @ 0x14056fb30, 2457 B, ok
+- `gml_Script_steam_inventory_get_item_definition_property` @ 0x1405704d0, 2012 B, ok
+- `gml_Script_steam_inventory_get_item_definition_property_keys` @ 0x140570cb0, 2518 B, ok
+- `gml_Script_steam_inventory_get_item_price` @ 0x140571690, 1874 B, ok
+- `gml_Script_steam_inventory_set_callback_result_ready` @ 0x140571df0, 2457 B, ok
+- `gml_Script_steam_inventory_set_callback_full_update` @ 0x140572790, 2457 B, ok
+- `gml_Script_steam_inventory_set_callback_definition_update` @ 0x140573130, 2457 B, ok
+- `gml_Script_steam_remote_storage_set_callback_published_file_subscribed` @ 0x140573ad0, 2457 B, ok
+- `gml_Script_steam_remote_storage_set_callback_published_file_unsubscribed` @ 0x140574470, 2457 B, ok
+- `gml_Script_steam_remote_storage_set_callback_local_file_change` @ 0x140574e10, 2457 B, ok
+- `gml_Script_steam_remote_storage_file_write` @ 0x1405757b0, 6067 B, ok
+- `gml_Script_steam_remote_storage_file_write_async` @ 0x140576f70, 7184 B, ok
+- `gml_Script_steam_remote_storage_file_read` @ 0x140578b80, 3580 B, ok
+- `gml_Script_steam_remote_storage_get_file_timestamp` @ 0x140579980, 1593 B, ok
+- `gml_Script_steam_remote_storage_get_file_name_and_size` @ 0x140579fc0, 1874 B, ok
+- `gml_Script_steam_remote_storage_get_quota` @ 0x14057a720, 1782 B, ok
+- `gml_Script_steam_remote_storage_set_sync_platforms` @ 0x14057ae20, 3214 B, ok
+- `gml_Script_steam_remote_storage_get_sync_platforms` @ 0x14057bab0, 1593 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_open` @ 0x14057c0f0, 1593 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_write_chunk` @ 0x14057c730, 5857 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_close` @ 0x14057de20, 2170 B, ok
+- `gml_Script_steam_remote_storage_file_write_stream_cancel` @ 0x14057e6a0, 2170 B, ok
+- `gml_Script_steam_remote_storage_get_cached_ugc_handle` @ 0x14057ef20, 1593 B, ok
+- `gml_Script_steam_remote_storage_get_ugc_details` @ 0x14057f560, 3319 B, ok
+- `gml_Script_steam_remote_storage_ugc_read` @ 0x140580260, 5010 B, ok
+- `gml_Script_steam_remote_storage_file_share` @ 0x140581600, 3517 B, ok
+- `gml_Script_steam_remote_storage_ugc_download` @ 0x1405823c0, 4117 B, ok
+- `gml_Script_steam_remote_storage_ugc_download_to_location` @ 0x1405833e0, 5164 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_data_update` @ 0x140584810, 2457 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_chat_update` @ 0x1405851b0, 2457 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_chat_msg` @ 0x140585b50, 2457 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_game_created` @ 0x1405864f0, 2457 B, ok
+- `gml_Script_steam_matchmaking_set_callback_lobby_invite` @ 0x140586e90, 2457 B, ok
+- `gml_Script_steam_matchmaking_create_lobby` @ 0x140587830, 4117 B, ok
+- `gml_Script_steam_matchmaking_join_lobby` @ 0x140588850, 3299 B, ok
+- `gml_Script_steam_matchmaking_request_lobby_list` @ 0x140589540, 2457 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_string_filter` @ 0x140589ee0, 4156 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_numerical_filter` @ 0x14058af20, 3942 B, ok
+- `gml_Script_steam_matchmaking_add_request_lobby_list_distance_filter` @ 0x14058be90, 2062 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_by_index` @ 0x14058c6a0, 1593 B, ok
+- `gml_Script_steam_matchmaking_leave_lobby` @ 0x14058cce0, 2062 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_owner` @ 0x14058d4f0, 2997 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_owner` @ 0x14058e0b0, 3019 B, ok
+- `gml_Script_steam_matchmaking_get_num_lobby_members` @ 0x14058ec80, 2062 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_member_by_index` @ 0x14058f490, 3868 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_data` @ 0x1405903b0, 4253 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data` @ 0x140591450, 3120 B, ok
+- `gml_Script_steam_matchmaking_delete_lobby_data` @ 0x140592080, 3214 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data_count` @ 0x140592d10, 2062 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_data_by_index` @ 0x140593520, 4128 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_member_data` @ 0x140594540, 4164 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_member_data` @ 0x140595590, 3950 B, ok
+- `gml_Script_steam_matchmaking_send_lobby_chat_msg` @ 0x140596500, 5857 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_chat_entry` @ 0x140597bf0, 5462 B, ok
+- `gml_Script_steam_matchmaking_request_lobby_data` @ 0x140599150, 2170 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_joinable` @ 0x1405999d0, 2997 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_type` @ 0x14059a590, 2997 B, ok
+- `gml_Script_steam_matchmaking_invite_user_to_lobby` @ 0x14059b150, 2997 B, ok
+- `gml_Script_steam_matchmaking_set_lobby_game_server` @ 0x14059bd10, 4547 B, ok
+- `gml_Script_steam_matchmaking_set_linked_lobby` @ 0x14059cee0, 2997 B, ok
+- `gml_Script_steam_matchmaking_get_lobby_game_server` @ 0x14059daa0, 3319 B, ok
+- `gml_Script_steam_matchmaking_get_favorite_game` @ 0x14059e7a0, 1874 B, ok
+- `gml_Script_steam_networking_messages_set_callback_session_request` @ 0x14059ef00, 2457 B, ok
+- `gml_Script_steam_networking_messages_set_callback_session_failed` @ 0x14059f8a0, 2457 B, ok
+- `gml_Script_steam_networking_messages_send_message_to_user` @ 0x1405a0240, 7409 B, ok
+- `gml_Script_steam_networking_messages_receive_messages_on_channel` @ 0x1405a1f40, 6063 B, ok
+- `gml_Script_steam_networking_messages_accept_session_with_user` @ 0x1405a36f0, 2170 B, ok
+- `gml_Script_steam_networking_messages_close_session_with_user` @ 0x1405a3f70, 2170 B, ok
+- `gml_Script_steam_networking_messages_close_channel_with_user` @ 0x1405a47f0, 2997 B, ok
+- `gml_Script_steam_networking_sockets_set_callback_connection_status_changed` @ 0x1405a53b0, 2457 B, ok
+- `gml_Script_steam_networking_sockets_accept_connection` @ 0x1405a5d50, 1593 B, ok
+- `gml_Script_steam_networking_sockets_close_connection` @ 0x1405a6390, 4870 B, ok
+- `gml_Script_steam_networking_sockets_set_connection_user_data` @ 0x1405a76a0, 2997 B, ok
+- `gml_Script_steam_networking_sockets_get_connection_user_data` @ 0x1405a8260, 1593 B, ok
+- `gml_Script_steam_networking_sockets_send_message_to_connection` @ 0x1405a88a0, 7568 B, ok
+- `gml_Script_steam_networking_sockets_flush_messages_on_connection` @ 0x1405aa630, 1593 B, ok
+- `gml_Script_steam_networking_sockets_receive_messages_on_connection` @ 0x1405aac70, 6063 B, ok
+- `gml_Script_steam_networking_sockets_get_connection_info` @ 0x1405ac420, 1874 B, ok
+- `gml_Script_steam_networking_sockets_create_socket_pair` @ 0x1405acb80, 2374 B, ok
+- `gml_Script_steam_networking_sockets_connect_p2p` @ 0x1405ad4d0, 2890 B, ok
+- `gml_Script_steam_networking_sockets_receive_messages_on_poll_group` @ 0x1405ae020, 6063 B, ok
+- `gml_Script_steam_parties_set_callback_reservation_notification` @ 0x1405af7d0, 2457 B, ok
+- `gml_Script_steam_parties_set_callback_available_beacon_locations_updated` @ 0x1405b0170, 2457 B, ok
+- `gml_Script_steam_parties_set_callback_active_beacons_updated` @ 0x1405b0b10, 2457 B, ok
+- `gml_Script_steam_parties_get_num_available_beacon_locations` @ 0x1405b14b0, 1698 B, ok
+- `gml_Script_steam_parties_get_available_beacon_locations` @ 0x1405b1b60, 2353 B, ok
+- `gml_Script_anon__1944__gml_Object_obj_forest_controller_Create_0` @ 0x1405d4820, 1245 B, ok
+- `gml_Script____struct___374__gml_Object_obj_forest_controller_Create_0` @ 0x1405d4d00, 518 B, ok
+- `gml_Script____struct___375__gml_Object_obj_forest_controller_Create_0` @ 0x1405d4f10, 518 B, ok
+- `gml_Script____struct___376__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5120, 518 B, ok
+- `gml_Script____struct___377__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5330, 518 B, ok
+- `gml_Script____struct___378__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5540, 518 B, ok
+- `gml_Script____struct___379__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5750, 518 B, ok
+- `gml_Script____struct___380__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5960, 518 B, ok
+- `gml_Script____struct___381__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5b70, 518 B, ok
+- `gml_Script____struct___382__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5d80, 518 B, ok
+- `gml_Script____struct___383__gml_Object_obj_forest_controller_Create_0` @ 0x1405d5f90, 518 B, ok
+- `gml_Script____struct___384__gml_Object_obj_forest_controller_Create_0` @ 0x1405d61a0, 518 B, ok
+- `gml_Script____struct___385__gml_Object_obj_forest_controller_Create_0` @ 0x1405d63b0, 518 B, ok
+- `gml_Script____struct___386__gml_Object_obj_forest_controller_Create_0` @ 0x1405d65c0, 518 B, ok
+- `gml_Script____struct___387__gml_Object_obj_forest_controller_Create_0` @ 0x1405d67d0, 508 B, ok
+- `gml_Script____struct___388__gml_Object_obj_forest_controller_Create_0` @ 0x1405d69d0, 518 B, ok
+- `gml_Script____struct___389__gml_Object_obj_forest_controller_Create_0` @ 0x1405d6be0, 508 B, ok
+- `gml_Script____struct___390__gml_Object_obj_forest_controller_Create_0` @ 0x1405d6de0, 631 B, ok
+- `gml_Script____struct___391__gml_Object_obj_forest_controller_Create_0` @ 0x1405d7060, 631 B, ok
+- `gml_Script____struct___392__gml_Object_obj_forest_controller_Create_0` @ 0x1405d72e0, 631 B, ok
+- `gml_Script____struct___393__gml_Object_obj_forest_controller_Create_0` @ 0x1405d7560, 631 B, ok
+- `gml_Script____struct___394__gml_Object_obj_forest_controller_Create_0` @ 0x1405d77e0, 631 B, ok
+- `gml_Script____struct___395__gml_Object_obj_forest_controller_Create_0` @ 0x1405d7a60, 631 B, ok
+- `gml_Script____struct___396__gml_Object_obj_forest_controller_Create_0` @ 0x1405d7ce0, 622 B, ok
+- `gml_Script____struct___397__gml_Object_obj_forest_controller_Create_0` @ 0x1405d7f50, 631 B, ok
+- `gml_Script____struct___398__gml_Object_obj_forest_controller_Create_0` @ 0x1405d81d0, 631 B, ok
+- `gml_Script____struct___399__gml_Object_obj_forest_controller_Create_0` @ 0x1405d8450, 631 B, ok
+- `gml_Script_anon__4485__gml_Object_obj_forest_controller_Create_0` @ 0x1405d86d0, 3560 B, ok
+- `gml_Script_anon__5146__gml_Object_obj_forest_controller_Create_0` @ 0x1405d94c0, 1243 B, ok
+- `gml_Script_anon__5590__gml_Object_obj_forest_controller_Create_0` @ 0x1405d99a0, 3295 B, ok
+- `gml_Script_anon__6104__gml_Object_obj_forest_controller_Create_0` @ 0x1405da680, 3295 B, ok
+- `gml_Script____struct___400__gml_Object_obj_forest_controller_Create_0` @ 0x1405db360, 565 B, ok
+- `gml_Script____struct___401__gml_Object_obj_forest_controller_Create_0` @ 0x1405db5a0, 518 B, ok
+- `gml_Script____struct___402__gml_Object_obj_forest_controller_Create_0` @ 0x1405db7b0, 518 B, ok
+- `gml_Script____struct___403__gml_Object_obj_forest_controller_Create_0` @ 0x1405db9c0, 518 B, ok
+- `gml_Script____struct___404__gml_Object_obj_forest_controller_Create_0` @ 0x1405dbbd0, 518 B, ok
+- `gml_Script____struct___405__gml_Object_obj_forest_controller_Create_0` @ 0x1405dbde0, 518 B, ok
+- `gml_Script____struct___406__gml_Object_obj_forest_controller_Create_0` @ 0x1405dbff0, 518 B, ok
+- `gml_Script____struct___407__gml_Object_obj_forest_controller_Create_0` @ 0x1405dc200, 518 B, ok
+- `gml_Script_anon__7254__gml_Object_obj_forest_controller_Create_0` @ 0x1405dc410, 1011 B, ok
+- `gml_Script_anon__7714__gml_Object_obj_forest_controller_Create_0` @ 0x1405dc810, 3467 B, ok
+- `gml_Script____struct___408__gml_Object_obj_forest_controller_Create_0` @ 0x1405dd5a0, 609 B, ok
+- `gml_Script____struct___409__gml_Object_obj_forest_controller_Create_0` @ 0x1405dd810, 489 B, ok
+- `gml_Script____struct___410__gml_Object_obj_forest_controller_Create_0` @ 0x1405dda00, 609 B, ok
+- `gml_Script____struct___411__gml_Object_obj_forest_controller_Create_0` @ 0x1405ddc70, 489 B, ok
+- `gml_Script____struct___412__gml_Object_obj_forest_controller_Create_0` @ 0x1405dde60, 609 B, ok
+- `gml_Script____struct___413__gml_Object_obj_forest_controller_Create_0` @ 0x1405de0d0, 531 B, ok
+- `gml_Script____struct___414__gml_Object_obj_forest_controller_Create_0` @ 0x1405de2f0, 489 B, ok
+- `gml_Script____struct___415__gml_Object_obj_forest_controller_Create_0` @ 0x1405de4e0, 489 B, ok
+- `gml_Script____struct___416__gml_Object_obj_forest_controller_Create_0` @ 0x1405de6d0, 647 B, ok
+- `gml_Script____struct___417__gml_Object_obj_forest_controller_Create_0` @ 0x1405de960, 531 B, ok
+- `gml_Script____struct___418__gml_Object_obj_forest_controller_Create_0` @ 0x1405deb80, 489 B, ok
+- `gml_Script____struct___419__gml_Object_obj_forest_controller_Create_0` @ 0x1405ded70, 531 B, ok
+- `gml_Script____struct___420__gml_Object_obj_forest_controller_Create_0` @ 0x1405def90, 489 B, ok
+- `gml_Script____struct___421__anon__9461__gml_Object_obj_forest_controller_Create_0` @ 0x1405df180, 606 B, ok
+- `gml_Script_anon__9461__gml_Object_obj_forest_controller_Create_0` @ 0x1405df3e0, 2977 B, ok
+- `gml_Script____struct___422__anon__9873__gml_Object_obj_forest_controller_Create_0` @ 0x1405dff90, 707 B, ok
+- `gml_Script____struct___423__anon__9873__gml_Object_obj_forest_controller_Create_0` @ 0x1405e0260, 808 B, ok
+- `gml_Script_anon__9873__gml_Object_obj_forest_controller_Create_0` @ 0x1405e0590, 3160 B, ok
+- `gml_Script_anon__10580__gml_Object_obj_forest_controller_Create_0` @ 0x1405e11f0, 538 B, ok
+- `gml_Script_anon__10906__gml_Object_obj_forest_controller_Create_0` @ 0x1405e1410, 1834 B, ok
+- `gml_Script_anon__11222__gml_Object_obj_forest_controller_Create_0` @ 0x1405e1b40, 3287 B, ok
+- `gml_Script_anon__12392__gml_Object_obj_forest_controller_Create_0` @ 0x1405e2820, 983 B, ok
+- `gml_Script____struct___425__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e2c00, 778 B, ok
+- `gml_Script____struct___426__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e2f10, 778 B, ok
+- `gml_Script____struct___427__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e3220, 652 B, ok
+- `gml_Script____struct___428__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e34b0, 652 B, ok
+- `gml_Script____struct___429__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e3740, 652 B, ok
+- `gml_Script____struct___430__anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e39d0, 892 B, ok
+- `gml_Script_anon__12537__gml_Object_obj_forest_controller_Create_0` @ 0x1405e3d50, 16339 B, ok
+- `gml_Script_anon__18383__gml_Object_obj_forest_controller_Create_0` @ 0x1405e7d30, 5730 B, ok
+- `gml_Script_anon__19468__gml_Object_obj_forest_controller_Create_0` @ 0x1405e93a0, 3449 B, ok
+- `gml_Script_anon__20014__gml_Object_obj_forest_controller_Create_0` @ 0x1405ea120, 2944 B, ok
+- `gml_Script____struct___431__gml_Object_obj_hud_Create_0` @ 0x1405fc500, 421 B, ok
+- `gml_Script_anon__1101__gml_Object_obj_hud_Create_0` @ 0x1405fc6b0, 759 B, ok
+- `gml_Script_anon__1399__gml_Object_obj_hud_Create_0` @ 0x1405fc9b0, 2380 B, ok
+- `gml_Script_anon__1832__gml_Object_obj_hud_Create_0` @ 0x1405fd300, 3131 B, ok
+- `gml_Script____struct___433_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fdf40, 524 B, ok
+- `gml_Script____struct___434_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fe150, 524 B, ok
+- `gml_Script____struct___435_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fe360, 519 B, ok
+- `gml_Script____struct___436_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fe570, 489 B, ok
+- `gml_Script____struct___437_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fe760, 489 B, ok
+- `gml_Script____struct___438_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fe950, 489 B, ok
+- `gml_Script____struct___439_____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405feb40, 432 B, ok
+- `gml_Script____struct___432__gml_Object_obj_hud_Create_0` @ 0x1405fecf0, 4102 B, ok
+- `gml_Script_anon__3164__gml_Object_obj_hud_Create_0` @ 0x1405ffd00, 4680 B, ok
+- `gml_Script____struct___440__anon__4046__gml_Object_obj_hud_Create_0` @ 0x140600f50, 631 B, ok
+- `gml_Script_anon__4046__gml_Object_obj_hud_Create_0` @ 0x1406011d0, 1970 B, ok
+- `gml_Script____struct___441__anon__4298__gml_Object_obj_hud_Create_0` @ 0x140601990, 631 B, ok
+- `gml_Script_anon__4298__gml_Object_obj_hud_Create_0` @ 0x140601c10, 1970 B, ok
+- `gml_Script_anon__4545__gml_Object_obj_hud_Create_0` @ 0x1406023d0, 3242 B, ok
+- `gml_Script_anon__5249__gml_Object_obj_hud_Create_0` @ 0x140603080, 3168 B, ok
+- `gml_Script____struct___442__gml_Object_obj_hud_Create_0` @ 0x140603f80, 1404 B, ok
+- `gml_Script____struct___443__gml_Object_obj_hud_Create_0` @ 0x140604500, 705 B, ok
+- `gml_Script_anon__6977__gml_Object_obj_hud_Create_0` @ 0x1406047d0, 814 B, ok
+- `gml_Script_anon__7067__gml_Object_obj_hud_Create_0` @ 0x140604b00, 1164 B, ok
+- `gml_Script_anon__7246__gml_Object_obj_hud_Create_0` @ 0x140604f90, 4932 B, ok
+- `gml_Script_anon__8098__gml_Object_obj_hud_Create_0` @ 0x1406062e0, 4297 B, ok
+- `gml_Script_anon__9094__gml_Object_obj_hud_Create_0` @ 0x140607650, 303 B, ok
+- `gml_Script_anon__9334__gml_Object_obj_hud_Create_0` @ 0x140607780, 917 B, ok
+- `gml_Script_anon__9561__gml_Object_obj_hud_Create_0` @ 0x140607b20, 1370 B, ok
+- `gml_Script_anon__9983__gml_Object_obj_hud_Create_0` @ 0x140608080, 1665 B, ok
+- `gml_Script____struct___444__anon__10241__gml_Object_obj_hud_Create_0` @ 0x140608710, 650 B, ok
+- `gml_Script_anon__10241__gml_Object_obj_hud_Create_0` @ 0x1406089a0, 2706 B, ok
+- `gml_Script_anon__10507__gml_Object_obj_hud_Create_0` @ 0x140609440, 1966 B, ok
+- `gml_Script_anon__10774__gml_Object_obj_hud_Create_0` @ 0x140609bf0, 383 B, ok
+- `gml_Script____struct___445__anon__10901__gml_Object_obj_hud_Create_0` @ 0x140609d70, 674 B, ok
+- `gml_Script_anon__10901__gml_Object_obj_hud_Create_0` @ 0x14060a020, 1745 B, ok
+- `gml_Script_anon__11140__gml_Object_obj_hud_Create_0` @ 0x14060a700, 1883 B, ok
+- `gml_Script_anon__11820__gml_Object_obj_hud_Create_0` @ 0x14060ae60, 503 B, ok
+- `gml_Script_anon__11912__gml_Object_obj_hud_Create_0` @ 0x14060b060, 377 B, ok
+- `gml_Script_anon__12865__gml_Object_obj_hud_Create_0` @ 0x14060b1e0, 1185 B, ok
+- `gml_Script____struct___446__anon__13059__gml_Object_obj_hud_Create_0` @ 0x14060b690, 650 B, ok
+- `gml_Script_anon__13059__gml_Object_obj_hud_Create_0` @ 0x14060b920, 2039 B, ok
+- `gml_Script_anon__13634__gml_Object_obj_hud_Create_0` @ 0x14060c120, 1128 B, ok
+- `gml_Script_anon__13863__gml_Object_obj_hud_Create_0` @ 0x14060c590, 271 B, ok
+- `gml_Script____struct___447__anon__13992__gml_Object_obj_hud_Create_0` @ 0x14060c6a0, 674 B, ok
+- `gml_Script_anon__13992__gml_Object_obj_hud_Create_0` @ 0x14060c950, 3099 B, ok
+- `gml_Script_anon__14519__gml_Object_obj_hud_Create_0` @ 0x14060d570, 3112 B, ok
+- `gml_Script_anon__14951__gml_Object_obj_hud_Create_0` @ 0x14060e1a0, 1637 B, ok
+- `gml_Script_anon__15291__gml_Object_obj_hud_Create_0` @ 0x14060e810, 366 B, ok
+- `gml_Script____struct___448__anon__15409__gml_Object_obj_hud_Create_0` @ 0x14060e980, 674 B, ok
+- `gml_Script_anon__15409__gml_Object_obj_hud_Create_0` @ 0x14060ec30, 3099 B, ok
+- `gml_Script____struct___449__anon__16043__gml_Object_obj_hud_Create_0` @ 0x14060f850, 674 B, ok
+- `gml_Script_anon__16043__gml_Object_obj_hud_Create_0` @ 0x14060fb00, 2321 B, ok
+- `gml_Script____struct___450__anon__16388__gml_Object_obj_hud_Create_0` @ 0x140610420, 674 B, ok
+- `gml_Script_anon__16388__gml_Object_obj_hud_Create_0` @ 0x1406106d0, 2471 B, ok
+- `gml_Script____struct___451__anon__16771__gml_Object_obj_hud_Create_0` @ 0x140611080, 592 B, ok
+- `gml_Script_anon__16771__gml_Object_obj_hud_Create_0` @ 0x1406112d0, 1053 B, ok
+- `gml_Script____struct___452__anon__16960__gml_Object_obj_hud_Create_0` @ 0x1406116f0, 674 B, ok
+- `gml_Script_anon__16960__gml_Object_obj_hud_Create_0` @ 0x1406119a0, 1480 B, ok
+- `gml_Script____struct___453__anon__17165__gml_Object_obj_hud_Create_0` @ 0x140611f70, 674 B, ok
+- `gml_Script_anon__17165__gml_Object_obj_hud_Create_0` @ 0x140612220, 1480 B, ok
+- `gml_Script____struct___454__anon__17388__gml_Object_obj_hud_Create_0` @ 0x1406127f0, 674 B, ok
+- `gml_Script_anon__17388__gml_Object_obj_hud_Create_0` @ 0x140612aa0, 1480 B, ok
+- `gml_Script____struct___455__anon__17592__gml_Object_obj_hud_Create_0` @ 0x140613070, 674 B, ok
+- `gml_Script_anon__17592__gml_Object_obj_hud_Create_0` @ 0x140613320, 1480 B, ok
+- `gml_Script____struct___456__anon__17796__gml_Object_obj_hud_Create_0` @ 0x1406138f0, 621 B, ok
+- `gml_Script_anon__17796__gml_Object_obj_hud_Create_0` @ 0x140613b60, 1000 B, ok
+- `gml_Script_anon__17990__gml_Object_obj_hud_Create_0` @ 0x140613f50, 407 B, ok
+- `gml_Script____struct___457__anon__18060__gml_Object_obj_hud_Create_0` @ 0x1406140f0, 506 B, ok
+- `gml_Script_anon__18060__gml_Object_obj_hud_Create_0` @ 0x1406142f0, 2785 B, ok
+- `gml_Script_anon__18562__gml_Object_obj_hud_Create_0` @ 0x140614de0, 3257 B, ok
+- `gml_Script_anon__19008__gml_Object_obj_hud_Create_0` @ 0x140615aa0, 1512 B, ok
+- `gml_Script____struct___458__anon__19273__gml_Object_obj_hud_Create_0` @ 0x140616090, 650 B, ok
+- `gml_Script_anon__19273__gml_Object_obj_hud_Create_0` @ 0x140616320, 9419 B, ok
+- `gml_Script_anon__20896__gml_Object_obj_hud_Create_0` @ 0x1406187f0, 571 B, ok
+- `gml_Script_anon__20995__gml_Object_obj_hud_Create_0` @ 0x140618a30, 1238 B, ok
+- `gml_Script_anon__21307__gml_Object_obj_hud_Create_0` @ 0x140618f10, 3161 B, ok
+- `gml_Script____struct___459__gml_Object_obj_hud_Draw_75` @ 0x140627350, 506 B, ok
+- `gml_Script____struct___460__gml_Object_obj_hud_Draw_75` @ 0x140627550, 506 B, ok
+- `gml_Script____struct___461__gml_Object_obj_hud_Draw_75` @ 0x140627750, 506 B, ok
+- `gml_Script____struct___462__gml_Object_obj_hud_Draw_75` @ 0x140627950, 506 B, ok
+- `gml_Script____struct___463__gml_Object_obj_hud_Draw_75` @ 0x140627b50, 506 B, ok
+- `gml_Script____struct___464__gml_Object_obj_hud_Draw_75` @ 0x140627d50, 565 B, ok
+- `gml_Script____struct___465__gml_Object_obj_hud_Draw_75` @ 0x140627f90, 506 B, ok
+- `gml_Script_anon__238__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064cb30, 1531 B, ok
+- `gml_Script_anon__1762__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064d130, 270 B, ok
+- `gml_Script_anon__1897__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064d240, 945 B, ok
+- `gml_Script_anon__2138__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064d600, 524 B, ok
+- `gml_Script_anon__2406__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064d810, 1441 B, ok
+- `gml_Script_anon__2806__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064ddc0, 2655 B, ok
+- `gml_Script_anon__3225__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064e820, 3582 B, ok
+- `gml_Script_anon__4008__gml_Object_obj_mycelium_controller_Create_0` @ 0x14064f620, 3199 B, ok
+- `gml_Script_anon__5108__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406502a0, 2031 B, ok
+- `gml_Script_anon__5711__gml_Object_obj_mycelium_controller_Create_0` @ 0x140650a90, 1309 B, ok
+- `gml_Script____struct___466__anon__6019__gml_Object_obj_mycelium_controller_Create_0` @ 0x140650fb0, 783 B, ok
+- `gml_Script_anon__6019__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406512c0, 5343 B, ok
+- `gml_Script_anon__6802__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406527a0, 3343 B, ok
+- `gml_Script_anon__7134__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406534b0, 1984 B, ok
+- `gml_Script_anon__7351__gml_Object_obj_mycelium_controller_Create_0` @ 0x140653c70, 1067 B, ok
+- `gml_Script_anon__7521__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406540a0, 1909 B, ok
+- `gml_Script_anon__7725__gml_Object_obj_mycelium_controller_Create_0` @ 0x140654820, 3104 B, ok
+- `gml_Script_anon__8392__gml_Object_obj_mycelium_controller_Create_0` @ 0x140655440, 757 B, ok
+- `gml_Script_anon__8636__gml_Object_obj_mycelium_controller_Create_0` @ 0x140655740, 834 B, ok
+- `gml_Script_anon__8801__gml_Object_obj_mycelium_controller_Create_0` @ 0x140655a90, 1824 B, ok
+- `gml_Script_anon__9236__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406561b0, 1297 B, ok
+- `gml_Script____struct___467__anon__9512__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406566d0, 506 B, ok
+- `gml_Script_anon__9512__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406568d0, 1983 B, ok
+- `gml_Script____struct___468__anon__10006__gml_Object_obj_mycelium_controller_Create_0` @ 0x140657090, 467 B, ok
+- `gml_Script____struct___469__anon__10006__gml_Object_obj_mycelium_controller_Create_0` @ 0x140657270, 467 B, ok
+- `gml_Script_anon__10006__gml_Object_obj_mycelium_controller_Create_0` @ 0x140657450, 1292 B, ok
+- `gml_Script____struct___470__anon__10257__gml_Object_obj_mycelium_controller_Create_0` @ 0x140657960, 456 B, ok
+- `gml_Script_anon__10257__gml_Object_obj_mycelium_controller_Create_0` @ 0x140657b30, 1491 B, ok
+- `gml_Script____struct___471__anon__10512__gml_Object_obj_mycelium_controller_Create_0` @ 0x140658110, 783 B, ok
+- `gml_Script_anon__10512__gml_Object_obj_mycelium_controller_Create_0` @ 0x140658420, 2602 B, ok
+- `gml_Script_anon__10910__gml_Object_obj_mycelium_controller_Create_0` @ 0x140658e50, 1221 B, ok
+- `gml_Script____struct___472__anon__11304__gml_Object_obj_mycelium_controller_Create_0` @ 0x140659320, 707 B, ok
+- `gml_Script_anon__11304__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406595f0, 3285 B, ok
+- `gml_Script_anon__11972__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065a2d0, 472 B, ok
+- `gml_Script_anon__12049__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065a4b0, 2349 B, ok
+- `gml_Script____struct___473__anon__12632__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065ade0, 611 B, ok
+- `gml_Script____struct___474__anon__12632__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065b050, 531 B, ok
+- `gml_Script_anon__12632__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065b270, 2161 B, ok
+- `gml_Script____struct___475__anon__13119__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065baf0, 674 B, ok
+- `gml_Script_anon__13119__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065bda0, 3630 B, ok
+- `gml_Script____struct___476__anon__13668__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065cbd0, 711 B, ok
+- `gml_Script____struct___477__anon__13668__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065cea0, 711 B, ok
+- `gml_Script____struct___478__anon__13668__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065d170, 649 B, ok
+- `gml_Script_anon__13668__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065d400, 4961 B, ok
+- `gml_Script____struct___479__anon__14604__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065e770, 606 B, ok
+- `gml_Script____struct___480__anon__14604__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065e9d0, 611 B, ok
+- `gml_Script_anon__14604__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065ec40, 1590 B, ok
+- `gml_Script_anon__14901__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065f280, 2770 B, ok
+- `gml_Script_anon__15353__gml_Object_obj_mycelium_controller_Create_0` @ 0x14065fd60, 1361 B, ok
+- `gml_Script_anon__15583__gml_Object_obj_mycelium_controller_Create_0` @ 0x140660300, 1227 B, ok
+- `gml_Script_anon__15952__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406607d0, 5085 B, ok
+- `gml_Script____struct___481__anon__17079__gml_Object_obj_mycelium_controller_Create_0` @ 0x140661bb0, 427 B, ok
+- `gml_Script____struct___482__anon__17079__gml_Object_obj_mycelium_controller_Create_0` @ 0x140661d60, 427 B, ok
+- `gml_Script_anon__17079__gml_Object_obj_mycelium_controller_Create_0` @ 0x140661f10, 2116 B, ok
+- `gml_Script_anon__18320__gml_Object_obj_mycelium_controller_Create_0` @ 0x140662760, 1041 B, ok
+- `gml_Script_anon__18703__gml_Object_obj_mycelium_controller_Create_0` @ 0x140662b80, 2795 B, ok
+- `gml_Script____struct___483__anon__19580__gml_Object_obj_mycelium_controller_Create_0` @ 0x140663670, 419 B, ok
+- `gml_Script_anon__19580__gml_Object_obj_mycelium_controller_Create_0` @ 0x140663820, 2618 B, ok
+- `gml_Script_anon__20040__gml_Object_obj_mycelium_controller_Create_0` @ 0x140664260, 2335 B, ok
+- `gml_Script____struct___484__anon__21041__gml_Object_obj_mycelium_controller_Create_0` @ 0x140664b80, 780 B, ok
+- `gml_Script____struct___485__anon__21041__gml_Object_obj_mycelium_controller_Create_0` @ 0x140664e90, 780 B, ok
+- `gml_Script_anon__21041__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406651a0, 11338 B, ok
+- `gml_Script____struct___486__anon__23310__gml_Object_obj_mycelium_controller_Create_0` @ 0x140667e70, 1033 B, ok
+- `gml_Script_anon__23310__gml_Object_obj_mycelium_controller_Create_0` @ 0x140668280, 9078 B, ok
+- `gml_Script____struct___487__anon__25115__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066a600, 499 B, ok
+- `gml_Script____struct___488__anon__25115__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066a800, 499 B, ok
+- `gml_Script____struct___489__anon__25115__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066aa00, 1616 B, ok
+- `gml_Script_anon__25115__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066b050, 7470 B, ok
+- `gml_Script_anon__26361__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066cd80, 5247 B, ok
+- `gml_Script_anon__27346__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066e200, 624 B, ok
+- `gml_Script____struct___490__anon__27471__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066e470, 1072 B, ok
+- `gml_Script_anon__27471__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066e8a0, 4207 B, ok
+- `gml_Script____struct___491__anon__28384__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066f910, 1175 B, ok
+- `gml_Script_anon__28384__gml_Object_obj_mycelium_controller_Create_0` @ 0x14066fdb0, 3446 B, ok
+- `gml_Script____struct___492__anon__29233__gml_Object_obj_mycelium_controller_Create_0` @ 0x140670b30, 1242 B, ok
+- `gml_Script_anon__29233__gml_Object_obj_mycelium_controller_Create_0` @ 0x140671010, 2987 B, ok
+- `gml_Script_anon__29888__gml_Object_obj_mycelium_controller_Create_0` @ 0x140671bc0, 8252 B, ok
+- `gml_Script_anon__31845__gml_Object_obj_mycelium_controller_Create_0` @ 0x140673c00, 6657 B, ok
+- `gml_Script_anon__32773__gml_Object_obj_mycelium_controller_Create_0` @ 0x140675610, 953 B, ok
+- `gml_Script____struct___495__anon__32963__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406759d0, 606 B, ok
+- `gml_Script_anon__32963__gml_Object_obj_mycelium_controller_Create_0` @ 0x140675c30, 17878 B, ok
+- `gml_Script____struct___496__anon__36616__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067a210, 506 B, ok
+- `gml_Script____struct___497__anon__36616__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067a410, 506 B, ok
+- `gml_Script_anon__36616__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067a610, 13775 B, ok
+- `gml_Script____struct___498__anon__39420__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067dbe0, 1256 B, ok
+- `gml_Script_anon__39420__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067e0d0, 4400 B, ok
+- `gml_Script____struct___499__anon__40328__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067f200, 606 B, ok
+- `gml_Script____struct___500__anon__40328__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067f460, 570 B, ok
+- `gml_Script_anon__40328__gml_Object_obj_mycelium_controller_Create_0` @ 0x14067f6a0, 9787 B, ok
+- `gml_Script____struct___502__anon__42245__gml_Object_obj_mycelium_controller_Create_0` @ 0x140681ce0, 1412 B, ok
+- `gml_Script_anon__42245__gml_Object_obj_mycelium_controller_Create_0` @ 0x140682270, 14961 B, ok
+- `gml_Script____struct___503__anon__47204__gml_Object_obj_mycelium_controller_Create_0` @ 0x140685cf0, 298 B, ok
+- `gml_Script____struct___504__anon__47204__gml_Object_obj_mycelium_controller_Create_0` @ 0x140685e20, 707 B, ok
+- `gml_Script_anon__47204__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406860f0, 3752 B, ok
+- `gml_Script____struct___505__anon__48225__gml_Object_obj_mycelium_controller_Create_0` @ 0x140686fa0, 764 B, ok
+- `gml_Script_anon__48225__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406872a0, 4445 B, ok
+- `gml_Script____struct___506__anon__49515__gml_Object_obj_mycelium_controller_Create_0` @ 0x140688400, 592 B, ok
+- `gml_Script_anon__49789__anon__49515__gml_Object_obj_mycelium_controller_Create_0` @ 0x140688650, 442 B, ok
+- `gml_Script_anon__49515__gml_Object_obj_mycelium_controller_Create_0` @ 0x140688810, 3101 B, ok
+- `gml_Script_anon__50255__gml_Object_obj_mycelium_controller_Create_0` @ 0x140689430, 1447 B, ok
+- `gml_Script____struct___507__anon__50824__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406899e0, 546 B, ok
+- `gml_Script_anon__50824__gml_Object_obj_mycelium_controller_Create_0` @ 0x140689c10, 3163 B, ok
+- `gml_Script_anon__52233__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068a870, 6212 B, ok
+- `gml_Script____struct___509__anon__54631__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068c0c0, 330 B, ok
+- `gml_Script_anon__54631__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068c210, 1791 B, ok
+- `gml_Script_anon__54952__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068c910, 1849 B, ok
+- `gml_Script_anon__55404__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068d050, 1805 B, ok
+- `gml_Script_anon__55774__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068d760, 3746 B, ok
+- `gml_Script_anon__57044__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068e610, 2268 B, ok
+- `gml_Script_anon__57586__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068eef0, 878 B, ok
+- `gml_Script_anon__58028__gml_Object_obj_mycelium_controller_Create_0` @ 0x14068f260, 18120 B, ok
+- `gml_Script_anon__62655__gml_Object_obj_mycelium_controller_Create_0` @ 0x140693930, 17454 B, ok
+- `gml_Script____struct___510__anon__67930__gml_Object_obj_mycelium_controller_Create_0` @ 0x140697d70, 980 B, ok
+- `gml_Script_anon__67930__gml_Object_obj_mycelium_controller_Create_0` @ 0x140698150, 15026 B, ok
+- `gml_Script_anon__71233__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069bc10, 1032 B, ok
+- `gml_Script____struct___511__anon__71572__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069c020, 448 B, ok
+- `gml_Script_anon__71572__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069c1e0, 1286 B, ok
+- `gml_Script_anon__71848__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069c6f0, 1283 B, ok
+- `gml_Script_anon__72092__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069cc00, 5073 B, ok
+- `gml_Script_anon__73025__gml_Object_obj_mycelium_controller_Create_0` @ 0x14069dfe0, 11490 B, ok
+- `gml_Script_anon__77430__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a0cd0, 1489 B, ok
+- `gml_Script_anon__78411__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a12b0, 12363 B, ok
+- `gml_Script_anon__80501__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a4300, 4465 B, ok
+- `gml_Script____struct___513__anon__81793__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a5640, 1277 B, ok
+- `gml_Script_anon__81793__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a5b40, 6946 B, ok
+- `gml_Script_anon__82902__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a7670, 8285 B, ok
+- `gml_Script_anon__84786__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a96d0, 2196 B, ok
+- `gml_Script_anon__85453__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406a9f70, 4442 B, ok
+- `gml_Script_anon__86877__anon__86458__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406ab0d0, 442 B, ok
+- `gml_Script_anon__86458__gml_Object_obj_mycelium_controller_Create_0` @ 0x1406ab290, 2782 B, ok
+- `gml_Script` @ 0x1406bff90, 833 B, ok
+- `gml_Script_` @ 0x1406f8690, 331 B, ok
+- `gml_Object_` @ 0x14078a2f0, 1635 B, ok
+- `gml_Script_` @ 0x14078c070, 122 B, ok
+
+## Встроенные функции по частоте
+
+| функция | вызовов | в функциях |
+|---|---|---|
+| `show_error` | 1181 | 498 |
+| `is_numeric` | 813 | 413 |
+| `buffer_read` | 688 | 275 |
+| `buffer_get_address` | 526 | 419 |
+| `buffer_tell` | 420 | 378 |
+| `floor` | 298 | 115 |
+| `buffer_seek` | 289 | 289 |
+| `array_push` | 237 | 138 |
+| `is_undefined` | 206 | 128 |
+| `buffer_get_size` | 174 | 157 |
+| `bool` | 142 | 126 |
+| `string_byte_length` | 130 | 100 |
+| `is_string` | 127 | 97 |
+| `is_callable` | 121 | 121 |
+| `lerp` | 91 | 48 |
+| `round` | 86 | 52 |
+| `struct_get_from_hash` | 83 | 45 |
+| `variable_global_exists` | 76 | 65 |
+| `point_distance` | 75 | 58 |
+| `is_bool` | 68 | 51 |
+| `sprite_get_height` | 60 | 49 |
+| `sprite_get_width` | 58 | 50 |
+| `string` | 56 | 23 |
+| `array_create` | 49 | 38 |
+| `ceil` | 46 | 24 |
+| `gpu_set_blendmode` | 41 | 21 |
+| `is_array` | 34 | 33 |
+| `instance_exists` | 29 | 20 |
+| `surface_exists` | 28 | 17 |
+| `buffer_exists` | 27 | 25 |
+| `draw_clear_alpha` | 26 | 18 |
+| `is_struct` | 24 | 22 |
+| `power` | 24 | 16 |
+| `get_timer` | 23 | 8 |
+| `surface_free` | 23 | 17 |
+| `display_get_gui_width` | 22 | 21 |
+| `draw_sprite_part_ext` | 22 | 20 |
+| `buffer_peek` | 22 | 13 |
+| `sprite_get_yoffset` | 21 | 20 |
+| `gpu_set_blendmode_ext` | 20 | 14 |
+| `display_get_gui_height` | 19 | 18 |
+| `buffer_create` | 18 | 16 |
+| `draw_vertex_color` | 18 | 3 |
+| `string_length` | 18 | 10 |
+| `surface_create` | 18 | 14 |
+| `sprite_get_xoffset` | 17 | 16 |
+| `buffer_delete` | 17 | 14 |
+| `draw_text_transformed` | 15 | 7 |
+| `audio_sound_gain` | 15 | 12 |
+| `point_in_rectangle` | 14 | 11 |
+| `draw_circle` | 14 | 7 |
+| `game_get_speed` | 13 | 11 |
+| `dsin` | 13 | 10 |
+| `array_delete` | 12 | 12 |
+| `draw_primitive_begin` | 12 | 8 |
+| `draw_primitive_end` | 12 | 8 |
+| `method` | 11 | 4 |
+| `sqrt` | 10 | 10 |
+| `buffer_get_surface` | 10 | 9 |
+| `vertex_delete_buffer` | 9 | 6 |
+| `draw_surface` | 9 | 4 |
+| `draw_line_width` | 9 | 7 |
+| `sprite_create_from_surface` | 9 | 6 |
+| `array_filter` | 9 | 3 |
+| `matrix_set` | 8 | 3 |
+| `min` | 8 | 6 |
+| `string_width` | 8 | 8 |
+| `string_height` | 8 | 7 |
+| `instance_find` | 8 | 7 |
+| `angle_difference` | 8 | 7 |
+| `audio_is_playing` | 8 | 6 |
+| `dcos` | 8 | 7 |
+| `string_char_at` | 8 | 7 |
+| `string_copy` | 8 | 5 |
+| `sprite_exists` | 7 | 7 |
+| `buffer_poke` | 7 | 5 |
+| `camera_get_view_y` | 7 | 7 |
+| `camera_get_view_width` | 7 | 7 |
+| `camera_get_view_height` | 7 | 7 |
+| `audio_stop_sound` | 7 | 5 |
+| `shader_get_uniform` | 7 | 1 |
+| `string_format` | 6 | 2 |
+| `max` | 6 | 6 |
+| `show_debug_message` | 6 | 3 |
+| `sprite_get_bbox_top` | 6 | 4 |
+| `camera_get_view_x` | 6 | 6 |
+| `draw_surface_ext` | 6 | 4 |
+| `ini_close` | 6 | 6 |
+| `ord` | 6 | 6 |
+| `mouse_check_button_pressed` | 5 | 4 |
+| `draw_text` | 5 | 5 |
+| `draw_line_width_color` | 5 | 1 |
+| `keyboard_check_pressed` | 5 | 3 |
+| `sprite_get_bbox_left` | 5 | 3 |
+| `array_sort` | 5 | 4 |
+| `audio_play_sound` | 5 | 5 |
+| `array_contains` | 5 | 5 |
+| `window_set_cursor` | 4 | 3 |
+| `draw_triangle` | 4 | 3 |
+| `buffer_resize` | 4 | 4 |
+| `array_concat` | 4 | 4 |
+| `vertex_freeze` | 4 | 4 |
+| `real` | 4 | 2 |
+| `string_replace_all` | 4 | 4 |
+| `font_delete` | 4 | 2 |
+| `font_exists` | 4 | 3 |
+| `file_exists` | 4 | 4 |
+| `draw_vertex` | 4 | 2 |
+| `draw_surface_stretched` | 4 | 1 |
+| `sprite_get_name` | 4 | 3 |
+| `draw_text_ext_transformed` | 4 | 1 |
+| `device_mouse_x_to_gui` | 3 | 3 |
+| `device_mouse_y_to_gui` | 3 | 3 |
+| `matrix_get` | 3 | 3 |
+| `matrix_build` | 3 | 3 |
+| `audio_emitter_create` | 3 | 3 |
+| `audio_emitter_free` | 3 | 3 |
+| `audio_emitter_position` | 3 | 3 |
+| `audio_play_sound_on` | 3 | 3 |
+| `sprite_get_bbox_right` | 3 | 3 |
+| `sprite_get_bbox_bottom` | 3 | 3 |
+| `vertex_create_buffer` | 3 | 3 |
+| `string_upper` | 3 | 3 |
+| `array_pop` | 3 | 3 |
+| `array_shuffle` | 3 | 3 |
+| `draw_sprite_general` | 3 | 3 |
+| `surface_get_width` | 3 | 3 |
+| `surface_get_height` | 3 | 3 |
+| `font_add` | 3 | 1 |
+| `string_count` | 3 | 1 |
+| `arctan2` | 3 | 3 |
+| `asset_get_index` | 3 | 2 |
+| `merge_color` | 3 | 1 |
+| `view_set_wport` | 2 | 2 |
+| `view_set_hport` | 2 | 2 |
+| `font_get_size` | 2 | 2 |
+| `mouse_check_button` | 2 | 1 |
+| `ds_map_find_value` | 2 | 2 |
+| `draw_get_halign` | 2 | 2 |
+| `draw_get_valign` | 2 | 2 |
+| `draw_roundrect_ext` | 2 | 2 |
+| `buffer_copy` | 2 | 2 |
+| `window_has_focus` | 2 | 2 |
+| `window_get_width` | 2 | 2 |
+| `window_get_height` | 2 | 2 |
+| `audio_sound_length` | 2 | 2 |
+| `gpu_set_blendmode_ext_sepalpha` | 2 | 2 |
+| `draw_get_font` | 2 | 2 |
+| `string_trim` | 2 | 1 |
+| `draw_surface_stretched_ext` | 2 | 1 |
+| `buffer_set_surface` | 2 | 2 |
+| `json_stringify` | 2 | 1 |
+| `array_copy` | 2 | 1 |
+| `dtan` | 2 | 2 |
+| `camera_destroy` | 1 | 1 |
+| `view_set_xport` | 1 | 1 |
+| `view_set_yport` | 1 | 1 |
+| `camera_create_view` | 1 | 1 |
+| `view_get_wport` | 1 | 1 |
+| `view_get_hport` | 1 | 1 |
+| `camera_set_view_pos` | 1 | 1 |
+| `application_surface_draw_enable` | 1 | 1 |
+| `draw_clear` | 1 | 1 |
+| `application_get_position` | 1 | 1 |
+| `draw_text_ext` | 1 | 1 |
+| `draw_line_color` | 1 | 1 |
+| `draw_rectangle_color` | 1 | 1 |
+| `time_source_create` | 1 | 1 |
+| `extension_exists` | 1 | 1 |
+| `is_ptr` | 1 | 1 |
+| `is_int32` | 1 | 1 |
+| `is_int64` | 1 | 1 |
+| `is_real` | 1 | 1 |
+| `struct_foreach` | 1 | 1 |
+| `array_foreach` | 1 | 1 |
+| `ds_map_delete` | 1 | 1 |
+| `method_call` | 1 | 1 |
+| `ds_map_create` | 1 | 1 |
+| `ptr` | 1 | 1 |
+| `int64` | 1 | 1 |
+| `audio_falloff_set_model` | 1 | 1 |
+| `audio_listener_position` | 1 | 1 |
+| `matrix_build_identity` | 1 | 1 |
+| `camera_set_view_size` | 1 | 1 |
+| `buffer_create_from_vertex_buffer` | 1 | 1 |
+| `vertex_create_buffer_from_buffer` | 1 | 1 |
+| `time_source_pause` | 1 | 1 |
+| `array_resize` | 1 | 1 |
+| `time_source_start` | 1 | 1 |
+| `window_get_fullscreen` | 1 | 1 |
+| `window_set_fullscreen` | 1 | 1 |
+| `surface_resize` | 1 | 1 |
+| `display_set_gui_size` | 1 | 1 |
+| `display_get_width` | 1 | 1 |
+| `display_get_height` | 1 | 1 |
+| `window_set_size` | 1 | 1 |
+| `window_center` | 1 | 1 |
+| `string_pos` | 1 | 1 |
+| `audio_sound_loop_start` | 1 | 1 |
+| `audio_sound_loop_end` | 1 | 1 |
+| `ini_write_string` | 1 | 1 |
+| `draw_get_color` | 1 | 1 |
+| `draw_get_alpha` | 1 | 1 |
+| `ini_read_string` | 1 | 1 |
+| `file_text_open_read` | 1 | 1 |
+| `file_text_eof` | 1 | 1 |
+| `file_text_read_string` | 1 | 1 |
+| `file_text_readln` | 1 | 1 |
+| `string_delete` | 1 | 1 |
+| `file_text_close` | 1 | 1 |
+| `os_get_language` | 1 | 1 |
+| `os_get_region` | 1 | 1 |
+| `frac` | 1 | 1 |
+| `draw_ellipse` | 1 | 1 |
+| `variable_global_get` | 1 | 1 |
+| `variable_global_set` | 1 | 1 |
+| `date_current_datetime` | 1 | 1 |
+| `buffer_load` | 1 | 1 |
+| `json_parse` | 1 | 1 |
+| `buffer_save` | 1 | 1 |
+| `file_delete` | 1 | 1 |
+| `file_rename` | 1 | 1 |
+| `sprite_add_from_surface` | 1 | 1 |
+| `string_split` | 1 | 1 |
+| `sprite_get_number` | 1 | 1 |
+| `variable_clone` | 1 | 1 |
