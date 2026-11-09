@@ -24,6 +24,7 @@ use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use myco_core::balance::{bal, vis};
 use myco_core::gml::{self, lengthdir_x, lengthdir_y, point_direction, point_distance};
+use myco_core::mushrooms::types::{sheet_cell_width, shroom_sheet_cells};
 use myco_core::progress::skilltree::{
     layout, upg_children, upg_def, upg_tree_pos, upg_tree_via, TreeNode, UpgKind,
 };
@@ -571,22 +572,6 @@ pub fn tree_icon_scale(spr: &str) -> f64 {
     }
 }
 
-/// `shroom_sheet_cells` (Task 9's row; an unmarked copy until T9 lands in myco_core).
-/// TODO(T9): replace with the canonical `shroom_sheet_cells` / `mushroom_cell_width`.
-fn shroom_sheet_cells(spr: &str) -> f64 {
-    match spr {
-        "sporeshroom"
-        | "explosiveshroom"
-        | "explosiveshroom_exploded"
-        | "predatorshroom"
-        | "diggershroom"
-        | "experienceshroom"
-        | "consumptorshroom" => 2.0,
-        "stinkyshroom" => 3.0,
-        _ => 1.0,
-    }
-}
-
 // port: tree_draw_icon
 /// A sprite centred at (x, y) fitted into `size`; `cropped` uses [`tree_icon_box`].
 #[allow(clippy::too_many_arguments)]
@@ -639,7 +624,7 @@ pub fn tree_draw_icon(
     let sc = if fit {
         size * tree_icon_scale(spr) / bw.max(bh)
     } else {
-        let cell_w = (sw / shroom_sheet_cells(spr)).trunc().max(1.0);
+        let cell_w = sheet_cell_width(spr, sw);
         size / cell_w.max(sh).max(1.0)
     };
     gm.sprite_part_ext(

@@ -244,7 +244,7 @@ fn mushrooms_and_water_roundtrip() {
     let m = &state.mushrooms[0];
     assert_eq!((m.kind, m.variant, m.host, m.carried_by), (1, 2, 4, -1));
     assert_eq!(m.flies.len(), 1);
-    assert_eq!(m.extra["regen_timer"], json!(7));
+    assert_eq!(m.regen_timer, Some(7.0)); // typed since Task 9
     let out = temp_dir("mush");
     write_slot(&out, 0, &state, &meta()).unwrap();
     assert_values_close(&v, &parse_file(&out.join("save_1.json")), "$");

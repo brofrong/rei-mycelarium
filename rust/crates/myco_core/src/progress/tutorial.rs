@@ -3,7 +3,6 @@
 //! camera animations live in [`TutorialRt`]. Drawing is the app's (Task 17); a tip that
 //! appears is also announced as `SimEvent::TutorialTip`.
 
-use super::upgrades::upg_is_owned;
 use crate::balance::{vis, wld};
 use crate::events::SimEvent;
 use crate::gml;
@@ -268,20 +267,11 @@ pub fn tutorial_state(sim: &Sim, tip: Tip) -> TipState {
         .unwrap_or(TipState::Hidden)
 }
 
-/// `mushroom_type_unlocked(t)` for any type (Task 9 ports it: the type's unlock upgrade is
-/// owned; `mushroom_type_unlock_id` 0..7).
+/// `mushroom_type_unlocked(t)` for any type 0..7.
 fn any_mushroom_unlocked(sim: &Sim) -> bool {
-    const UNLOCKS: [&str; 8] = [
-        "unlock_spore",
-        "unlock_predator",
-        "unlock_repeller",
-        "unlock_tree",
-        "unlock_digger",
-        "unlock_stinky",
-        "unlock_experience",
-        "unlock_parasitism",
-    ];
-    UNLOCKS.iter().any(|id| upg_is_owned(&sim.state, id))
+    crate::mushrooms::MushroomKind::ALL
+        .iter()
+        .any(|t| crate::mushrooms::mushroom_type_unlocked(&sim.state, *t))
 }
 
 fn event_xy(ev: &serde_json::Map<String, Value>, name: &str) -> Option<(f64, f64)> {

@@ -104,6 +104,7 @@ impl PendingInput {
             logo_open: self.logo_open,
             hud_hidden: self.hud_hidden,
             slot_naming: self.slot_naming,
+            placement: None,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;
