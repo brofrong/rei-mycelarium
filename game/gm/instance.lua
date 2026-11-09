@@ -197,6 +197,18 @@ function M.step()
   each("Step_2")
   if M.animate then M.animate(instances) end
   compact()
+  if pending_restart then
+    pending_restart = false
+    for _, inst in ipairs(instances) do
+      if live(inst) then inst.__destroyed = true; M.event_perform(inst, "CleanUp_0") end
+    end
+    compact()
+    local first = M.first_room
+    M.room = nil
+    pending_room = nil
+    M.apply_room(first)
+    return
+  end
   if pending_room then
     local r = pending_room
     pending_room = nil
@@ -248,11 +260,17 @@ end
 function M.define_room(name, def) rooms[name] = def end
 
 function M.room_goto(name) pending_room = name end
+
+-- game_restart: all instances (persistent too) are cleaned up and the first room starts
+-- again with Game Start; global variables survive, as in GameMaker.
+local pending_restart = false
+function M.game_restart() pending_restart = true end
 function M.room_restart() pending_room = M.room end
 
 function M.apply_room(name)
   local def = assert(rooms[name], "unknown room " .. tostring(name))
   local first = M.room == nil
+  if first then M.first_room = name end
   for _, inst in ipairs(instances) do
     if live(inst) then M.event_perform(inst, "Other_5") end -- Room End
   end
