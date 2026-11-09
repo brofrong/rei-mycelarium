@@ -57,6 +57,7 @@ local out = { view = VIEW }
 load_fixture("mushrooms.json")
 set_view()
 now()
+gm.random_set_seed(1)
 local SY = wld(global, global, "surface_height_px")
 
 -- 1. funcs ----------------------------------------------------------------------------------
