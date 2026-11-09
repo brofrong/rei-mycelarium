@@ -7,6 +7,16 @@ const ZERO_STATE: u64 = 88172645463325252;
 const MUL_OUT: u64 = 2685821657736338717;
 const TWO_POW_53: f64 = 9007199254740992.0;
 
+/// `array_shuffle` (GML; the LÖVE shim `game/gm/value.lua` draws from the game RNG the same
+/// way): Fisher–Yates from the end with `j = floor(random(1) * (i + 1))`.
+pub fn array_shuffle<T>(rng: &mut Rng, v: &mut [T]) {
+    let n = v.len();
+    for i in (1..n).rev() {
+        let j = (rng.random(1.0) * (i + 1) as f64).floor() as usize;
+        v.swap(i, j);
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rng {
     state: u64,

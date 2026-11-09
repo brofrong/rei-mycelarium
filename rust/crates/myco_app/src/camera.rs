@@ -10,13 +10,24 @@
 //!
 //! The picture occupies [`Cameras::picture`] (the `display_math.fit` rectangle inside the safe
 //! area, rounded to whole pixels so the Bevy viewport and the mouse mapping agree exactly).
-//! Zoom scales the world around the centre of `game_view`; logic always gets `game_view` (1×).
+//! Zoom scales the world around the centre of `game_view` ([`Cameras::render_center`]); logic
+//! always gets `game_view` (1×, `camera_view_x/y`: floored, shake applied).
+//!
+//! **Zoom** (Task 21, an addition to the original): the mouse wheel and the trackpad pinch move
+//! [`ZoomState::target`]; [`zoom_advance`] eases the zoom toward it (exponential, 0.12 s) and
+//! moves the logic camera so the world point under the cursor stays put. Limits: 2× in; out to
+//! the explored colony's bounding box plus 256 px, but 1× is always allowed (Review Focus 4).
+//! The render camera stays between the sky top (`surface_y − view_h`) and the world bottom.
+//! The intro, the cut-scenes and the title lock the zoom to 1×.
 
 use crate::display::{self, Fit, SafeArea, ViewLayout};
 use bevy::camera::{ScalingMode, Viewport};
+use bevy::input::gestures::PinchGesture;
+use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::math::DVec2;
 use bevy::prelude::*;
-use myco_core::sim::ViewRect;
+use myco_core::camera::CameraRt;
+use myco_core::sim::{Sim, ViewRect};
 
 #[derive(Resource, Clone, Debug, PartialEq)]
 pub struct Cameras {
@@ -31,6 +42,11 @@ pub struct Cameras {
     pub layout: ViewLayout,
     /// picture rectangle in physical window pixels (rounded fit)
     pub picture: Fit,
+    /// sub-pixel part of the logic camera's shaken position (`x + shake − view_x`): the zoomed
+    /// render camera adds it (at 1× the world is drawn on whole pixels, like `camera_view_x`)
+    pub sub: DVec2,
+    /// world y range the render camera stays in: (sky top `surface_y − view_h`, world bottom)
+    pub y_limits: Option<(f64, f64)>,
 }
 
 impl Default for Cameras {
@@ -64,6 +80,8 @@ impl Cameras {
             safe,
             layout: ViewLayout::default(),
             picture: Fit::default(),
+            sub: DVec2::ZERO,
+            y_limits: None,
         };
         c.set_window(win_w, win_h, scale_factor, safe);
         c
@@ -124,9 +142,42 @@ impl Cameras {
         self.game_view.y = cy - self.game_view.h / 2.0;
     }
 
-    /// The world rectangle the render camera shows (game view scaled by 1/zoom about its centre).
+    /// The 1× game view follows the logic camera (`camera_view_x/y`, after each step).
+    pub fn sync_game_view(&mut self, cam: &CameraRt) {
+        self.game_view.x = cam.view_x;
+        self.game_view.y = cam.view_y;
+        let fx = cam.x + cam.shake[0];
+        let fy = cam.y + cam.shake[1];
+        // the shaken position was clamped to the bounds: no sub-pixel part then
+        self.sub = DVec2::new(
+            if fx.floor() == cam.view_x { fx - cam.view_x } else { 0.0 },
+            if fy.floor() == cam.view_y { fy - cam.view_y } else { 0.0 },
+        );
+    }
+
+    /// Centre of the render camera: the game view's centre (plus the sub-pixel part when
+    /// zoomed), kept vertically inside [`y_limits`](Self::y_limits).
+    pub fn render_center(&self) -> (f64, f64) {
+        let (mut cx, mut cy) = self.game_view_center();
+        if self.zoom != 1.0 {
+            cx += self.sub.x;
+            cy += self.sub.y;
+        }
+        if let Some((top, bottom)) = self.y_limits {
+            let h = self.game_view.h / self.zoom;
+            cy = if h >= bottom - top {
+                (top + bottom) / 2.0
+            } else {
+                cy.clamp(top + h / 2.0, bottom - h / 2.0)
+            };
+        }
+        (cx, cy)
+    }
+
+    /// The world rectangle the render camera shows (game view scaled by 1/zoom about the render
+    /// centre).
     pub fn render_view(&self) -> ViewRect {
-        let (cx, cy) = self.game_view_center();
+        let (cx, cy) = self.render_center();
         let (w, h) = (self.game_view.w / self.zoom, self.game_view.h / self.zoom);
         ViewRect {
             x: cx - w / 2.0,
@@ -172,7 +223,7 @@ impl Cameras {
     }
 
     pub fn gui_to_world(&self, g: DVec2) -> DVec2 {
-        let (cx, cy) = self.game_view_center();
+        let (cx, cy) = self.render_center();
         DVec2::new(
             cx + (g.x - self.layout.view_w / 2.0) * self.game_view.w
                 / self.layout.view_w
@@ -184,7 +235,7 @@ impl Cameras {
     }
 
     pub fn world_to_gui(&self, w: DVec2) -> DVec2 {
-        let (cx, cy) = self.game_view_center();
+        let (cx, cy) = self.render_center();
         DVec2::new(
             self.layout.view_w / 2.0
                 + (w.x - cx) * self.zoom * self.layout.view_w / self.game_view.w,
@@ -223,9 +274,9 @@ impl Cameras {
         }
     }
 
-    /// World camera transform: the game view centre, y flipped.
+    /// World camera transform: the render centre, y flipped.
     pub fn world_transform(&self) -> Transform {
-        let (cx, cy) = self.game_view_center();
+        let (cx, cy) = self.render_center();
         Transform::from_xyz(cx as f32, -cy as f32, 0.0)
     }
 
@@ -275,8 +326,13 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Cameras>()
+            .init_resource::<ZoomState>()
             .add_systems(Startup, spawn_cameras)
             .add_systems(First, track_window)
+            .add_systems(
+                PreUpdate,
+                zoom_system.after(crate::sim_bridge::collect_input),
+            )
             .add_systems(
                 PostUpdate,
                 apply_cameras
@@ -286,6 +342,11 @@ impl Plugin for CameraPlugin {
     }
 }
 
+// port: gml_Object_obj_forest_controller_CleanUp_0
+/// The cameras (obj_forest_controller Create_0's `forest_camera` is the world camera here). Its
+/// CleanUp (`camera_destroy(forest_camera)` when the room ends) has nothing to free: the room
+/// lasts as long as the app (a `game_restart` rebuilds the `Sim`, not the cameras), and Bevy
+/// despawns the camera entities with the world.
 fn spawn_cameras(mut commands: Commands, cams: Res<Cameras>) {
     use bevy::camera::visibility::RenderLayers;
     // clears the whole window (bars around the picture) and draws nothing
@@ -386,6 +447,182 @@ fn apply_cameras(
         apply(&mut cam, &mut proj, fit(cams.gui_projection()));
         tf.set_if_neq(cams.gui_transform());
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Zoom (Task 21)
+
+/// Closest zoom: twice as near.
+pub const ZOOM_MAX: f64 = 2.0;
+/// Time constant of the zoom's exponential easing.
+pub const ZOOM_SMOOTH_SECONDS: f64 = 0.12;
+/// Margin around the explored colony at the farthest zoom.
+pub const ZOOM_PAD_PX: f64 = 256.0;
+/// Zoom factor per wheel notch.
+pub const ZOOM_WHEEL_STEP: f64 = 1.15;
+
+/// The zoom the render camera eases toward.
+#[derive(Resource, Clone, Debug, PartialEq)]
+pub struct ZoomState {
+    pub target: f64,
+}
+
+impl Default for ZoomState {
+    fn default() -> Self {
+        ZoomState { target: 1.0 }
+    }
+}
+
+/// World y range of the render camera: from the sky top (`surface_y − view_h`, but not above
+/// y = 0, where the forest backdrop starts and the 1× camera never goes) to the world bottom.
+pub fn render_y_limits(sim: &Sim, view_h: f64) -> (f64, f64) {
+    let p = &sim.world.params;
+    ((p.surface_y - view_h).max(0.0), p.bottom_y)
+}
+
+/// The zoom is held at 1×: the intro, a cut-scene (until it is gone) and the title.
+pub fn zoom_locked(sim: &Sim) -> bool {
+    sim.intro_active || myco_core::cine::cine_active(sim) || sim.title_open
+}
+
+/// Bounding box `[x1, y1, x2, y2]` of what the colony has explored: hyphae, knots, mushrooms.
+pub fn explored_bbox(sim: &Sim) -> Option<[f64; 4]> {
+    let mut bb: Option<[f64; 4]> = None;
+    let mut add = |x1: f64, y1: f64, x2: f64, y2: f64| {
+        if !(x1.is_finite() && y1.is_finite() && x2.is_finite() && y2.is_finite()) {
+            return;
+        }
+        bb = Some(match bb {
+            None => [x1, y1, x2, y2],
+            Some(b) => [b[0].min(x1), b[1].min(y1), b[2].max(x2), b[3].max(y2)],
+        });
+    };
+    for g in &sim.mycelium.growths {
+        for b in &g.branches {
+            if !b.points.is_empty() {
+                add(b.bx1, b.by1, b.bx2, b.by2);
+            }
+        }
+    }
+    for k in &sim.mycelium.knots {
+        add(k.x, k.y, k.x, k.y);
+    }
+    for m in &sim.state.mushrooms {
+        add(m.x, m.y, m.x, m.y);
+    }
+    bb
+}
+
+/// `(farthest, closest)` zoom: out until the explored bounding box plus [`ZOOM_PAD_PX`] fits the
+/// screen, but never past 1× in (1× is always allowed) and never so far that the view is taller
+/// than the sky top .. world bottom range; in to [`ZOOM_MAX`].
+pub fn zoom_limits(sim: &Sim, cams: &Cameras) -> (f64, f64) {
+    let (vw, vh) = (cams.game_view.w, cams.game_view.h);
+    let mut lo: f64 = 1.0;
+    if let Some([x1, y1, x2, y2]) = explored_bbox(sim) {
+        let fit = (vw / (x2 - x1 + 2.0 * ZOOM_PAD_PX)).min(vh / (y2 - y1 + 2.0 * ZOOM_PAD_PX));
+        lo = lo.min(fit);
+    }
+    let (top, bottom) = render_y_limits(sim, vh);
+    let range = bottom - top;
+    if range > 0.0 {
+        lo = lo.max((vh / range).min(1.0));
+    }
+    (lo, ZOOM_MAX)
+}
+
+/// A wheel notch / pinch: multiply the target zoom (limits apply in [`zoom_advance`]).
+pub fn zoom_wheel(zs: &mut ZoomState, factor: f64) {
+    if factor.is_finite() && factor > 0.0 {
+        zs.target *= factor;
+    }
+}
+
+/// One frame of zoom: ease toward the target (clamped to [`zoom_limits`]) and move the logic
+/// camera so the world point under `anchor` (screen, logical px) stays there. The logic camera
+/// stays inside `camera_bounds`, and the 1× game view keeps the render camera's centre (except
+/// where the render camera is held below the sky top / above the world bottom).
+pub fn zoom_advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, dt: f64, anchor: Vec2) {
+    cams.y_limits = Some(render_y_limits(sim, cams.game_view.h));
+    if zoom_locked(sim) {
+        cams.zoom = 1.0;
+        zs.target = 1.0;
+        return;
+    }
+    let (lo, hi) = zoom_limits(sim, cams);
+    zs.target = zs.target.clamp(lo, hi);
+    let z0 = cams.zoom;
+    let (l0, lt) = (z0.ln(), zs.target.ln());
+    let z1 = if (lt - l0).abs() < 1e-4 {
+        zs.target
+    } else {
+        (l0 + (lt - l0) * (1.0 - (-dt / ZOOM_SMOOTH_SECONDS).exp())).exp()
+    };
+    if z1 == z0 {
+        return;
+    }
+    let before = cams.screen_to_world(anchor);
+    cams.zoom = z1;
+    let after = cams.screen_to_world(anchor);
+    let d = before - after;
+    let (w, h) = (sim.camera.width, sim.camera.height);
+    let b = myco_core::camera::camera_bounds(sim, w, h);
+    let cam = &mut sim.camera;
+    let nx = myco_core::gml::clamp(cam.x + d.x, b.x1, b.x2);
+    let ny = myco_core::gml::clamp(cam.y + d.y, b.y1, b.y2);
+    let (dx, dy) = (nx - cam.x, ny - cam.y);
+    cam.x = nx;
+    cam.y = ny;
+    let fx = cams.game_view.x + cams.sub.x + dx;
+    let fy = cams.game_view.y + cams.sub.y + dy;
+    cam.view_x = fx.floor();
+    cam.view_y = fy.floor();
+    cams.game_view.x = cam.view_x;
+    cams.game_view.y = cam.view_y;
+    cams.sub = DVec2::new(fx - cam.view_x, fy - cam.view_y);
+}
+
+/// Wheel and pinch (and the autopilot's `zoom:` actions) → the zoom target, then
+/// [`zoom_advance`] at the cursor. Input is ignored while a menu, the tree, a popup or the pause
+/// is up.
+#[allow(clippy::too_many_arguments)]
+fn zoom_system(
+    time: Res<Time>,
+    mut wheel: MessageReader<MouseWheel>,
+    mut pinch: MessageReader<PinchGesture>,
+    mut zs: ResMut<ZoomState>,
+    mut cams: ResMut<Cameras>,
+    sim: Option<ResMut<crate::sim_bridge::SimRes>>,
+    blockers: Option<Res<crate::sim_bridge::UiBlockers>>,
+    pending: Option<ResMut<crate::sim_bridge::PendingInput>>,
+) {
+    let mut log = 0.0;
+    for ev in wheel.read() {
+        let notches = match ev.unit {
+            MouseScrollUnit::Line => ev.y as f64,
+            MouseScrollUnit::Pixel => ev.y as f64 / 40.0,
+        };
+        log += notches * ZOOM_WHEEL_STEP.ln();
+    }
+    for ev in pinch.read() {
+        log += ev.0 as f64;
+    }
+    let (Some(mut sim), Some(mut pending)) = (sim, pending) else {
+        return;
+    };
+    log += std::mem::take(&mut pending.zoom_log);
+    let blocked = blockers.is_some_and(|b| b.any()) || sim.0.pause_open;
+    if log != 0.0 && !blocked {
+        zoom_wheel(&mut zs, log.exp());
+    }
+    let pic = cams.picture;
+    let centre = Vec2::new(
+        ((pic.x + pic.w / 2.0) / cams.scale_factor) as f32,
+        ((pic.y + pic.h / 2.0) / cams.scale_factor) as f32,
+    );
+    let anchor = pending.cursor_override.or(pending.cursor).unwrap_or(centre);
+    let dt = time.delta_secs_f64();
+    zoom_advance(&mut cams, &mut sim.0, &mut zs, dt, anchor);
 }
 
 #[cfg(test)]

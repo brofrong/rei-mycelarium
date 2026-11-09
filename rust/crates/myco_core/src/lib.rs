@@ -4,6 +4,7 @@
 pub mod audio;
 pub mod balance;
 pub mod camera;
+pub mod cine;
 pub mod events;
 pub mod forest;
 pub mod game;

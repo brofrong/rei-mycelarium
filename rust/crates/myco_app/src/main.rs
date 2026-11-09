@@ -11,6 +11,7 @@ use myco_app::assets::{assets_root, AssetsPlugin};
 use myco_app::audio::GameAudioPlugin;
 use myco_app::autopilot::{seed_from_env, AutopilotPlugin};
 use myco_app::camera::CameraPlugin;
+use myco_app::cine::CinePlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::mycelium::MyceliumRenderPlugin;
@@ -36,6 +37,14 @@ fn comparison_hooks(mut sim: ResMut<SimRes>, mut done: Local<bool>) {
     }) {
         sim.camera.x = x;
         sim.camera.y = y;
+        // camera_bounds is real now (Task 21): grow the camera box so the forest step keeps the
+        // requested view (the LÖVE side neutralises camera_bounds through MYCO_PROBE)
+        let (w, h) = (sim.camera.width, sim.camera.height);
+        let b = &mut sim.state.state.cam_box;
+        b[0] = b[0].min(x);
+        b[1] = b[1].min(y);
+        b[2] = b[2].max(x + w);
+        b[3] = b[3].max(y + h);
     }
     if let Ok(id) = std::env::var("MYCO_CAVE_TAKE") {
         let cave = sim.world.cave_rects().iter().find(|c| c.id == id).cloned();
@@ -91,6 +100,7 @@ fn main() {
         MyceliumRenderPlugin,
         MenuPlugin,
         WorldRenderPlugin,
+        CinePlugin,
     ));
     app.add_systems(Update, comparison_hooks);
     if let Some(s) = screen {

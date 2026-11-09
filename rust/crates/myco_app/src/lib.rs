@@ -4,6 +4,7 @@ pub mod assets;
 pub mod audio;
 pub mod autopilot;
 pub mod camera;
+pub mod cine;
 pub mod display;
 pub mod logo;
 pub mod render;
