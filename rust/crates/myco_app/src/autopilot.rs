@@ -197,6 +197,8 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
     false
 }
 
+/// Runs the `MYCO_INPUT` actions due this fixed step (`SimSet::Prepare`); UI steps that read
+/// the pending input order themselves after it.
 pub fn run_script(
     mut ap: ResMut<Autopilot>,
     mut pending: ResMut<PendingInput>,

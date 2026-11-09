@@ -40,8 +40,14 @@ pub struct PendingInput {
     pub ui_captured: bool,
     pub tasks_panel_open: bool,
     pub tasks_popup_open: bool,
-    /// `global.menu_open`: the upgrade-tree screen is open (set by `ui::tree`)
+    /// `global.menu_open`, `debug_open`, `logo_open`, `hud_hidden` (ruling R15; the menus copy
+    /// them from `ui::UiFlags` / the logo state every step)
     pub menu_open: bool,
+    pub debug_open: bool,
+    pub logo_open: bool,
+    pub hud_hidden: bool,
+    /// a slot name is being typed (`hud_slot_naming != -1`; set by the menus)
+    pub slot_naming: bool,
 }
 
 impl PendingInput {
@@ -97,12 +103,11 @@ impl PendingInput {
             commands: std::mem::take(&mut self.commands),
             tasks_panel_open: self.tasks_panel_open,
             tasks_popup_open: self.tasks_popup_open,
-            // HUD/menu state the HUD tasks (T17) will provide
             menu_open: self.menu_open,
-            debug_open: false,
-            logo_open: false,
-            hud_hidden: false,
-            slot_naming: false,
+            debug_open: self.debug_open,
+            logo_open: self.logo_open,
+            hud_hidden: self.hud_hidden,
+            slot_naming: self.slot_naming,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;
@@ -120,9 +125,27 @@ pub struct StepHistory(pub Vec<StepInput>);
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct ForceFocus(pub bool);
 
-/// Set by the UI (`ui_blocking`, ruling R9): a menu is open, focus loss does not pause.
+/// A menu is open (`ui_blocking`, ruling R9): focus loss does not pause. A plain flag for code
+/// that owns it outright; nothing resets it. UI screens use [`UiBlockers`] instead.
 #[derive(Resource, Default, Clone, Copy, Debug)]
 pub struct UiBlocking(pub bool);
+
+/// Per-screen part of `ui_blocking()`: each screen writes its own flag every fixed step (so no
+/// system has to reset a shared flag, and order between screens does not matter);
+/// `focus_step` reads `UiBlocking.0 || UiBlockers::any()`.
+#[derive(Resource, Default, Clone, Copy, Debug)]
+pub struct UiBlockers {
+    /// title, slots, settings/pause, logo screen, debug, intro (Task 18)
+    pub menus: bool,
+    /// the upgrade-tree screen (Task 19)
+    pub tree: bool,
+}
+
+impl UiBlockers {
+    pub fn any(&self) -> bool {
+        self.menus || self.tree
+    }
+}
 
 /// Per-step mouse capture by UI screens (`global.ui_capture_mouse`, recomputed every step,
 /// ui_4.lua:1051). Each screen writes its own flag every step; `step_sim` ORs them into
@@ -131,11 +154,13 @@ pub struct UiBlocking(pub bool);
 pub struct UiCapture {
     /// the upgrade-tree screen is open (Task 19)
     pub tree: bool,
+    /// the title, slot, settings/pause or logo screen is up (Task 18)
+    pub menus: bool,
 }
 
 impl UiCapture {
     pub fn any(&self) -> bool {
-        self.tree
+        self.tree || self.menus
     }
 }
 
@@ -157,6 +182,7 @@ impl Plugin for SimBridgePlugin {
             .init_resource::<PendingInput>()
             .init_resource::<ForceFocus>()
             .init_resource::<UiBlocking>()
+            .init_resource::<UiBlockers>()
             .init_resource::<UiCapture>()
             .add_message::<SimEventMsg>()
             .configure_sets(
@@ -304,11 +330,17 @@ fn focus_step(
     windows: Query<&Window, With<PrimaryWindow>>,
     force: Res<ForceFocus>,
     blocking: Res<UiBlocking>,
+    blockers: Res<UiBlockers>,
     sim: Res<SimRes>,
     mut pending: ResMut<PendingInput>,
 ) {
     let focused = windows.single().map(|w| w.focused).unwrap_or(true);
-    if focused || force.0 || myco_core::balance::vis("pause_on_focus_loss") <= 0.0 || blocking.0 {
+    if focused
+        || force.0
+        || myco_core::balance::vis("pause_on_focus_loss") <= 0.0
+        || blocking.0
+        || blockers.any()
+    {
         return;
     }
     if !sim.0.pause_open && !pending.commands.contains(&Command::SetPaused(true)) {
