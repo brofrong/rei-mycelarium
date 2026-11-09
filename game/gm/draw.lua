@@ -226,6 +226,28 @@ function M.draw_roundrect_ext(x1, y1, x2, y2, rx, ry, outline)
 end
 
 function M.draw_circle(x, y, r, outline) apply(); lg.circle(outline and "line" or "fill", x, y, r) end
+-- Gradient circle: c1 at the centre, c2 at the edge.
+function M.draw_circle_colour(x, y, r, c1, c2, outline)
+  local r1, g1, b1 = dmath.bgr_to_rgb(c1)
+  local r2, g2, b2 = dmath.bgr_to_rgb(c2)
+  if outline then
+    lg.setColor(r2, g2, b2, state.alpha)
+    lg.circle("line", x, y, r)
+    return
+  end
+  local seg = math.max(16, math.min(96, math.floor(r)))
+  local verts = { { x, y, 0, 0, r1, g1, b1, state.alpha } }
+  for i = 0, seg do
+    local a = i / seg * math.pi * 2
+    verts[#verts + 1] = { x + math.cos(a) * r, y + math.sin(a) * r, 0, 0, r2, g2, b2, state.alpha }
+  end
+  local mesh = lg.newMesh(verts, "fan", "stream")
+  lg.setColor(1, 1, 1, 1)
+  lg.draw(mesh)
+  mesh:release()
+end
+M.draw_circle_color = M.draw_circle_colour
+
 function M.draw_ellipse(x1, y1, x2, y2, outline)
   apply()
   lg.ellipse(outline and "line" or "fill", (x1 + x2) / 2, (y1 + y2) / 2, math.abs(x2 - x1) / 2, math.abs(y2 - y1) / 2)
