@@ -64,5 +64,10 @@ return {
     c.list[1].k = 5
     assert(s.list[1].k == 1 and c.list[1].k == 5 and gm.is_struct(c) and gm.is_array(c.list))
   end,
+  new_runs_constructor_on_struct = function()
+    local function Point(self, other, x, y) self.x, self.y = x, y end
+    local p = gm.new(Point, 2, 3)
+    assert(gm.is_struct(p) and p.x == 2 and p.y == 3 and gm.instanceof(p) == Point)
+  end,
 }
 

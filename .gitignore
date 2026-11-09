@@ -6,3 +6,4 @@ game/assets
 .superpowers/
 __pycache__/
 .pytest_cache/
+re/lifted/

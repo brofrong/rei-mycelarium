@@ -167,6 +167,16 @@ end
 
 function M.is_struct(v) return getmetatable(v) == STRUCT end
 
+-- new Ctor(...) for GML constructor functions translated as fn(self, other, ...).
+local constructors = setmetatable({}, { __mode = "k" })
+function M.new(ctor, ...)
+  local s = M.struct({})
+  constructors[s] = ctor
+  ctor(s, nil, ...)
+  return s
+end
+function M.instanceof(s) return constructors[s] end
+
 function M.method(self, fn)
   if getmetatable(fn) == METHOD then fn = fn.fn end
   return setmetatable({ self = self, fn = fn }, METHOD)
