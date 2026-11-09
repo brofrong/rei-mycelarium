@@ -333,6 +333,11 @@ impl Plugin for CameraPlugin {
     }
 }
 
+// port: gml_Object_obj_forest_controller_CleanUp_0
+/// The cameras (obj_forest_controller Create_0's `forest_camera` is the world camera here). Its
+/// CleanUp (`camera_destroy(forest_camera)` when the room ends) has nothing to free: the room
+/// lasts as long as the app (a `game_restart` rebuilds the `Sim`, not the cameras), and Bevy
+/// despawns the camera entities with the world.
 fn spawn_cameras(mut commands: Commands, cams: Res<Cameras>) {
     use bevy::camera::visibility::RenderLayers;
     // clears the whole window (bars around the picture) and draws nothing

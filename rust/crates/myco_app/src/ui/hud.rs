@@ -236,6 +236,8 @@ pub struct HudState {
     pub units_imperial: bool,
     /// `global.animal_marker_hover` (marker source id)
     pub animal_marker_hover: Option<u64>,
+    /// the marker `camera_fly` flies to (`global.camera_fly.marker`; its source id)
+    pub fly_marker: Option<u64>,
     /// the cursor (GUI) of the last Begin Step
     pub mouse_gui: (f64, f64),
     /// cursor in the world of the last Begin Step (`mouse_x/y`)
@@ -289,6 +291,7 @@ impl HudState {
             hud_hidden: false,
             units_imperial: false,
             animal_marker_hover: None,
+            fly_marker: None,
             mouse_gui: (-1.0, -1.0),
             mouse_world: (0.0, 0.0),
         };
@@ -688,11 +691,22 @@ pub fn step_pre(
     } else {
         None
     };
+    // a running fly reads its marker live (`fly.marker.x/y` in the forest step): send where the
+    // marker is now (the markers move with their animals, and drift on once the animal is gone)
+    if sim.camera.fly.is_none() {
+        hud.fly_marker = None;
+    } else if let Some(m) = hud
+        .fly_marker
+        .and_then(|src| markers.list.iter().find(|m| m.src == src))
+    {
+        cmds.push(Command::CameraFlyTrack { x: m.x, y: m.y });
+    }
     if let Some(src) = hud.animal_marker_hover {
         if inp.click {
             if let Some(m) = markers.list.iter().find(|m| m.src == src) {
-                // camera_fly_to_marker (Task 21 keeps the target on the moving animal)
+                // camera_fly_to_marker
                 cmds.push(Command::CameraFlyTo { x: m.x, y: m.y });
+                hud.fly_marker = Some(src);
             }
         }
     }
@@ -704,7 +718,7 @@ pub fn step_pre(
         || hud.animal_marker_hover.is_some()
         || (!hud.hud_hidden && (hud.place_type.is_some() || hud.build_mouse_over(mx, my)));
     hud.ui_capture_mouse = capture;
-    // cine_step: the logic's (Task 21)
+    // cine_step and its gates: the logic's (`progress::hud_begin_step`)
     cmds
 }
 
@@ -1503,7 +1517,7 @@ fn draw_build(
 
 // port: gml_Object_obj_hud_Draw_75
 /// Draw_75, tooltip and popup part (after the title screens): the wind / points / cave hover
-/// tooltip, `cine_draw` (Task 21) and the tasks popup. The debug overlay (`global.debug_open`)
+/// tooltip, `cine_draw` ([`crate::cine::cine_draw`]) and the tasks popup. The debug overlay (`global.debug_open`)
 /// cannot open (its F1 toggle is compiled out in the original), pause / logo / tree are drawn
 /// by Tasks 18 / 19 in `HudDrawSet::Modal`. Together with [`draw_top`] and [`draw_main`] this
 /// is the whole in-game Draw GUI.
@@ -1570,7 +1584,7 @@ pub fn draw_tooltip(
         g.set_colour(COLOR_INK);
         hud_text(g, tx + pad, ty + pad, &tip, tsc);
     }
-    // cine_draw: Task 21
+    crate::cine::cine_draw(g, sim, gw, gh);
     ui_tasks::tasks_popup_draw(
         g,
         sim,

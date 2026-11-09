@@ -131,7 +131,7 @@ pub mod draw_order {
     pub const HUD: i32 = 300;
     /// title vignette, slots, credits, title menu (Task 18)
     pub const TITLE: i32 = 400;
-    /// hover tooltip, `cine_draw` (Task 21: 460), tasks popup
+    /// hover tooltip, `cine_draw`, tasks popup (one list: the popup draws over the cut-scene)
     pub const TOOLTIP: i32 = 450;
     /// the upgrade tree (Task 19), = `tree::TREE_DRAW_ORDER`
     pub const TREE: i32 = 500;

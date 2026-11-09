@@ -10,6 +10,7 @@ use myco_app::assets::{assets_root, AssetsPlugin};
 use myco_app::audio::GameAudioPlugin;
 use myco_app::autopilot::{seed_from_env, AutopilotPlugin};
 use myco_app::camera::CameraPlugin;
+use myco_app::cine::CinePlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
@@ -62,6 +63,7 @@ fn main() {
         ForestRenderPlugin,
         WeatherRenderPlugin,
         MenuPlugin,
+        CinePlugin,
     ));
     if let Some(s) = screen {
         app.insert_resource(s);
