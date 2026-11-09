@@ -13,6 +13,7 @@ use myco_app::camera::CameraPlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
+use myco_app::render::world::WorldRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
 use myco_app::ui::UiPlugin;
 use myco_core::save;
@@ -61,6 +62,7 @@ fn main() {
         UiPlugin,
         ForestRenderPlugin,
         WeatherRenderPlugin,
+        WorldRenderPlugin,
     ));
     if let Some(s) = screen {
         app.insert_resource(s);

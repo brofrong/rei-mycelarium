@@ -549,6 +549,13 @@ pub struct BatchTarget<'a, 'w, 's> {
 }
 
 impl BatchPool {
+    /// Despawn the pooled entities.
+    pub fn despawn(&mut self, commands: &mut Commands) {
+        for s in self.slots.drain(..) {
+            commands.entity(s.entity).despawn();
+        }
+    }
+
     /// Draw `batch` this frame (runs beyond it are hidden).
     pub fn sync(
         &mut self,
