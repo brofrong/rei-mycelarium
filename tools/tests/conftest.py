@@ -15,3 +15,19 @@ def datawin():
     if not path.exists():
         pytest.skip(f"game not installed at {path}")
     return DataWin.open(str(path))
+
+
+@pytest.fixture(scope="session")
+def out_dir(tmp_path_factory, datawin):
+    from myco_extract.extract import extract_all
+
+    out = tmp_path_factory.mktemp("assets")
+    extract_all(game_dir(), out, link=False)
+    return out
+
+
+@pytest.fixture(scope="session")
+def assets(out_dir):
+    import json
+
+    return {k: json.loads((out_dir / f"{k}.json").read_text()) for k in ["rooms", "objects", "sprites", "sounds", "fonts", "game"]}
