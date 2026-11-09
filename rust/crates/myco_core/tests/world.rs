@@ -293,6 +293,9 @@ fn sources(sim: &Sim) -> Value {
 }
 
 fn world_seed_matches(topic: &str, seed: i64) {
+    // R19: these goldens were captured with stones neutralized (world_lib.lua); drop this when
+    // world_* are re-captured after Tasks 6 and 7 merge
+    myco_core::world::stones::set_golden_neutral(true);
     let g = golden(topic);
     let mut sim = Sim::new_game(GameMode::Exploration, "Golden", Some(seed));
     params_eq(&sim.world, &g["params"]);
@@ -392,6 +395,9 @@ fn chunk_tiles_match_love_seed_7() {
 
 #[test]
 fn survival_layout_matches_love() {
+    // R19: these goldens were captured with stones neutralized (world_lib.lua); drop this when
+    // world_* are re-captured after Tasks 6 and 7 merge
+    myco_core::world::stones::set_golden_neutral(true);
     let g = golden("world_survival");
     // exploration: the ocean is infinite water; a spend dips the shown amount and refills
     let mut sim = Sim::new_game(GameMode::Exploration, "Golden", Some(31607));
@@ -463,6 +469,9 @@ pub fn fixture_state(name: &str) -> GameState {
 
 #[test]
 fn fixture_world_loads_identically() {
+    // R19: these goldens were captured with stones neutralized (world_lib.lua); drop this when
+    // world_* are re-captured after Tasks 6 and 7 merge
+    myco_core::world::stones::set_golden_neutral(true);
     let g = golden("world_fixture");
     let mut sim = Sim::from_save(fixture_state("exploration.json")).unwrap();
     params_eq(&sim.world, &g["params"]);

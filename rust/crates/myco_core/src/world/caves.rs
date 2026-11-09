@@ -30,3 +30,18 @@ pub fn world_cave_hits(
 pub fn world_cave_solid_any(_w: &WorldRt, _x: f64, _y: f64) -> bool {
     false
 }
+
+/// A cave rectangle (`world_cave_rects()` entries), world px.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct CaveRect {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+/// `world_cave_rects()` (Task 6): the cave rectangles; mazes and rock clusters open hollows
+/// around those they overlap (`maze_cave_hollows`). Neutral (none) until Task 6 ports it.
+pub fn world_cave_rects(_w: &mut WorldRt) -> Vec<CaveRect> {
+    Vec::new()
+}

@@ -15,6 +15,7 @@ pub mod food;
 pub mod gen;
 pub mod hash;
 pub mod lakes;
+pub mod maze;
 pub mod obstacles;
 pub mod soil;
 pub mod stones;
@@ -135,6 +136,12 @@ pub struct WorldRt {
     pub water_dip_hold: f64,
     /// chunks whose tiles, lakes or foods changed since the renderer last looked (R9a)
     pub dirty_chunks: BTreeSet<i64>,
+    /// `global.stones_moving`: (chunk, stone uid) of the rolling stones, oldest first
+    pub stones_moving: Vec<(i64, u64)>,
+    /// last runtime stone id handed out
+    pub next_stone_uid: u64,
+    /// `world_rock_clusters()`'s cache (with each cluster's built data)
+    pub rock_clusters: Option<Vec<maze::RockCluster>>,
 }
 
 impl WorldRt {
@@ -151,14 +158,25 @@ impl WorldRt {
                 .unwrap_or(ch.cx);
             chunks.insert(cx, ch);
         }
+        // load_game: stones lie still (`stones_moving` is empty)
+        for ch in chunks.values_mut() {
+            for s in &mut ch.stones {
+                s.moving = false;
+                s.vx = 0.0;
+                s.vy = 0.0;
+                s.spin = 0.0;
+            }
+        }
         let dirty_chunks = chunks.keys().copied().collect();
-        WorldRt {
+        let mut rt = WorldRt {
             params: w,
             chunks,
             mode,
             dirty_chunks,
             ..Default::default()
-        }
+        };
+        rt.assign_stone_uids();
+        rt
     }
 
     /// `global.world` as save_game writes it.
