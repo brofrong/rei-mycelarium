@@ -2,8 +2,8 @@
 //!
 //! Environment: `MYCO_ASSETS` (assets folder), `MYCO_SAVE_DIR` (saves and settings.ini; default
 //! the LÖVE port's folder), `MYCO_SEED`, `MYCO_INPUT`, `MYCO_DUMP`, `MYCO_SHOT`, `MYCO_FOCUS`
-//! (see `autopilot`), `MYCO_FORCE_RAIN=1` (start the rain at once), `MYCO_CAMERA=x,y` (camera top-left at start),
-//! `MYCO_CAVE_TAKE=<cave id>` (take a cave at start).
+//! (see `autopilot`), `MYCO_FORCE_RAIN=1` (start the rain at once), `MYCO_CAMERA=x,y`
+//! (camera top-left at game start), `MYCO_CAVE_TAKE=<cave id>` (take a cave at game start).
 
 use bevy::prelude::*;
 use bevy::window::ExitCondition;
@@ -16,10 +16,33 @@ use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::render::world::WorldRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
-use myco_app::ui::UiPlugin;
+use myco_app::ui::{MenuPlugin, UiPlugin};
 use myco_core::save;
 use myco_core::sim::Sim;
-use myco_core::state::GameMode;
+
+/// MYCO_CAMERA=x,y (camera top-left) and MYCO_CAVE_TAKE=<cave id> (take that cave), applied once
+/// when the game starts (the title closes): render comparisons; the LÖVE side does the same
+/// through MYCO_PROBE (forest controller camera_x/camera_y, cave_take).
+fn comparison_hooks(mut sim: ResMut<SimRes>, mut done: Local<bool>) {
+    let sim = &mut sim.0;
+    if *done || sim.title_open {
+        return;
+    }
+    *done = true;
+    if let Some((x, y)) = std::env::var("MYCO_CAMERA").ok().and_then(|v| {
+        let (x, y) = v.split_once(',')?;
+        Some((x.trim().parse::<f64>().ok()?, y.trim().parse::<f64>().ok()?))
+    }) {
+        sim.camera.x = x;
+        sim.camera.y = y;
+    }
+    if let Ok(id) = std::env::var("MYCO_CAVE_TAKE") {
+        let cave = sim.world.cave_rects().iter().find(|c| c.id == id).cloned();
+        if let Some(c) = cave {
+            myco_core::world::caves::cave_take(sim, &c, None, None);
+        }
+    }
+}
 
 fn main() {
     let save_dir = display::save_dir();
@@ -28,31 +51,13 @@ fn main() {
     let screen = display::main_screen_info();
     let window = display::primary_window(&settings, screen.as_ref());
 
-    let mut sim = Sim::new_game(GameMode::Exploration, "", seed_from_env());
+    // the game boots into the title menu over a fresh world (obj_game Create_0)
+    let mut sim = Sim::title_screen(seed_from_env());
     sim.save_dir = Some(save_dir.clone());
     // MYCO_FORCE_RAIN=1: start the rain cycle now (the original's weather_force_rain debug hook;
     // used for render comparisons)
     if std::env::var("MYCO_FORCE_RAIN").is_ok_and(|v| v == "1") {
         myco_core::weather::force_rain(&mut sim);
-    }
-
-    // MYCO_CAMERA=x,y: put the camera's top-left there at start (render comparisons; the LÖVE
-    // side sets the forest controller's camera_x/camera_y through MYCO_PROBE)
-    if let Some((x, y)) = std::env::var("MYCO_CAMERA").ok().and_then(|v| {
-        let (x, y) = v.split_once(',')?;
-        Some((x.trim().parse::<f64>().ok()?, y.trim().parse::<f64>().ok()?))
-    }) {
-        sim.camera.x = x;
-        sim.camera.y = y;
-    }
-
-    // MYCO_CAVE_TAKE=<cave id>: take that cave at start (render comparisons; LÖVE: cave_take
-    // through MYCO_PROBE)
-    if let Ok(id) = std::env::var("MYCO_CAVE_TAKE") {
-        let cave = sim.world.cave_rects().iter().find(|c| c.id == id).cloned();
-        if let Some(c) = cave {
-            myco_core::world::caves::cave_take(&mut sim, &c, None, None);
-        }
     }
 
     let mut app = App::new();
@@ -82,8 +87,10 @@ fn main() {
         UiPlugin,
         ForestRenderPlugin,
         WeatherRenderPlugin,
+        MenuPlugin,
         WorldRenderPlugin,
     ));
+    app.add_systems(Update, comparison_hooks);
     if let Some(s) = screen {
         app.insert_resource(s);
     }

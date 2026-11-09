@@ -17,7 +17,7 @@
 
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
-use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlocking, UiCapture};
+use crate::sim_bridge::{PendingInput, SimRes, SimSet, UiBlockers, UiCapture};
 use crate::ui::gm_draw::{Gm, GuiDraw, FA_CENTER, FA_LEFT, FA_MIDDLE, FA_RIGHT, FA_TOP};
 use crate::ui::LocaleRes;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
@@ -1007,13 +1007,14 @@ impl TreeView {
         String::new()
     }
 
-    // port: hud_close_button_rect
+    /// `hud_close_button_rect()` ([`crate::ui::menu::hud_close_button_rect`]).
     pub fn close_button_rect(&self) -> Rect4 {
+        let r = crate::ui::menu::hud_close_button_rect(self.gui_w);
         Rect4 {
-            x1: self.gui_w - 152.0,
-            y1: 30.0,
-            x2: self.gui_w - 32.0,
-            y2: 76.0,
+            x1: r.x1,
+            y1: r.y1,
+            x2: r.x2,
+            y2: r.y2,
         }
     }
 
@@ -1139,29 +1140,24 @@ impl TreeView {
     }
 }
 
-/// TODO(T17): unmarked copy of the T17 row `hud_fit`; T17 should mark it here or move it.
-/// `hud_fit`: the scale that keeps `s` within `maxw` × `maxh` (maxh 0: no height limit).
+/// `hud_fit` ([`crate::ui::draw::hud_fit_size`]) in the painter's current font.
 pub fn hud_fit(gm: &Gm, s: &str, sc: f64, maxw: f64, maxh: f64) -> f64 {
-    let mut k = sc;
-    let w = gm.string_width(s);
-    let h = gm.string_height(s);
-    if w * k > maxw {
-        k = maxw.max(0.05) / w.max(1.0);
-    }
-    if maxh > 0.0 && h * k > maxh {
-        k = maxh.max(0.05) / h.max(1.0);
-    }
-    k
+    crate::ui::draw::hud_fit_size(gm.string_width(s), gm.string_height(s), sc, maxw, maxh)
 }
 
-/// TODO(T17): unmarked copy of the T17 row `hud_text_box`; T17 should mark it here or move it.
-/// `hud_text_box`: text fitted into a button rectangle, left-padded, vertically centred.
+/// `hud_text_box` ([`crate::ui::draw::hud_text_box_place`]) on the painter.
 fn hud_text_box(gm: &mut Gm, r: Rect4, s: &str, sc: f64, pad: f64) {
     let (ha, va) = (gm.halign, gm.valign);
-    let k = hud_fit(gm, s, sc, r.x2 - r.x1 - pad * 2.0, r.y2 - r.y1 - 6.0);
+    let (x, y, k) = crate::ui::draw::hud_text_box_place(
+        gm.string_width(s),
+        gm.string_height(s),
+        (r.x1, r.y1, r.x2, r.y2),
+        sc,
+        pad,
+    );
     gm.halign = FA_LEFT;
     gm.valign = FA_MIDDLE;
-    gm.text_transformed(r.x1 + pad, (r.y1 + r.y2) * 0.5, s, k, k);
+    gm.text_transformed(x, y, s, k, k);
     gm.halign = ha;
     gm.valign = va;
 }
@@ -1659,12 +1655,23 @@ fn collect_wheel(mut screen: ResMut<TreeScreen>, mut wheel: MessageReader<MouseW
 pub fn tree_step_system(
     mut screen: ResMut<TreeScreen>,
     mut pending: ResMut<PendingInput>,
-    mut blocking: ResMut<UiBlocking>,
+    mut blockers: ResMut<UiBlockers>,
     mut capture: ResMut<UiCapture>,
     cams: Res<Cameras>,
     sim: Res<SimRes>,
+    menus: Option<Res<crate::ui::menu::Menus>>,
 ) {
     let screen = &mut *screen;
+    // obj_hud Step_1 runs the pause and logo branches before the tree's and returns (Task 18);
+    // the tree stays open under them, and an Escape they used is not the tree's
+    let held = sim.0.pause_open || menus.as_ref().is_some_and(|m| m.logo.open);
+    let escape_used = menus.as_ref().is_some_and(|m| m.escape_used);
+    if screen.open && held {
+        pending.menu_open = true;
+        capture.tree = true;
+        blockers.tree = true;
+        return;
+    }
     screen
         .view
         .set_gui_size(cams.layout.view_w, cams.layout.view_h);
@@ -1675,7 +1682,8 @@ pub fn tree_step_system(
         // TODO(T17): simplified. The original chain (ui_4.lua:963-977) first closes slots,
         // credits, debug, logo, and only then the tree; it is also skipped while
         // `cine_blocking`. T17 owns that chain and should move this check into it.
-        if pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open {
+        if pending.keys_pressed.contains(&Key::Escape) && !pending.tasks_popup_open && !escape_used
+        {
             screen.open = false;
         }
     }
@@ -1684,7 +1692,7 @@ pub fn tree_step_system(
     if !screen.open {
         screen.view.closed_step();
         pending.menu_open = false;
-        blocking.0 = false;
+        blockers.tree = false;
         // `global.ui_capture_mouse` is recomputed every step (ui_4.lua:1051)
         capture.tree = false;
         return;
@@ -1715,7 +1723,7 @@ pub fn tree_step_system(
     }
     pending.menu_open = screen.open;
     capture.tree = screen.open;
-    blocking.0 = screen.open;
+    blockers.tree = screen.open;
 }
 
 /// Every frame: the tree screen into [`GuiDraw`], and built hypha lengths into the simulation.
