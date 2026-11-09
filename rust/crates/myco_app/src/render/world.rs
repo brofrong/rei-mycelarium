@@ -367,6 +367,11 @@ pub fn world_draw(
     let r0 = gml::clamp(((vy - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let r1 = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64);
     let shade = merge_colour(0.0, C_WHITE, vis("food_shade"));
+    // Texture filter state: the LÖVE port's `gpu_get_tex_filter()` always returns true, so the
+    // HUD's `cave_perk_icons_draw` leaves `gpu_set_tex_filter(true)` behind every frame; world
+    // drawing therefore starts linear-filtered until the food glow switches it off (as below).
+    out.back.set_filter(true);
+    out.front.set_filter(true);
     let b = &mut out.back;
     let mut r = r0;
     while r <= r1 {
@@ -1358,14 +1363,15 @@ pub fn world_draw_food_glow(
     Some(info)
 }
 
-/// `draw_surface_ext(food_glow_seed, x, y, step, step, 0, food_glow_colour, a)` with `bm_add`
-/// and the texture filter on.
+/// `gpu_set_tex_filter(true)`, `bm_add`, `draw_surface_ext(food_glow_seed, x, y, step, step,
+/// 0, food_glow_colour, a)`, `bm_normal`, `gpu_set_tex_filter(false)` (the filter stays off).
 fn draw_glow_surface(b: &mut QuadBatch, ctx: &DrawCtx, g: &GlowInfo, alpha: f64) {
+    b.set_filter(true);
     let Some(img) = ctx.glow_image else {
+        b.set_filter(false);
         return;
     };
-    let (old_b, old_f) = (b.blend, b.linear);
-    b.set_filter(true);
+    let old_b = b.blend;
     b.set_blend(QuadBlend::Add);
     b.image_ext(
         img,
@@ -1380,7 +1386,7 @@ fn draw_glow_surface(b: &mut QuadBatch, ctx: &DrawCtx, g: &GlowInfo, alpha: f64)
         alpha,
     );
     b.set_blend(old_b);
-    b.set_filter(old_f);
+    b.set_filter(false);
 }
 
 // port: world_draw_food_glow_inner
@@ -1959,6 +1965,18 @@ fn draw_world(
     }
 }
 
+/// `ui_font()`: the language's font, `Font1` (bitmap) for the default languages. The fitted
+/// full-size TTF for the other languages is T17's `locale_font_fit`; until then they use the
+/// small fitted TTF.
+fn ui_font(locale: Option<&crate::ui::LocaleRes>) -> UiFont {
+    match locale {
+        Some(l) if l.locale.font_for() != myco_core::locale::FontId::Default => {
+            l.font_small.clone()
+        }
+        _ => UiFont::Gm("Font1".into()),
+    }
+}
+
 fn draw_world_gui(
     mut sim: ResMut<SimRes>,
     assets: Res<GameAssets>,
@@ -1969,11 +1987,7 @@ fn draw_world_gui(
     let sim = &mut sim.0;
     let now = sim.now_ms();
     let mut g = Gm::new(&assets);
-    if let Some(l) = &locale {
-        g.font = l.font_small.clone();
-    } else {
-        g.font = UiFont::Gm("fnt_gm_20".into());
-    }
+    let ui_font = ui_font(locale.as_deref());
     let ui_ox = cams.layout.ui_ox;
     cave_perk_icons_draw(
         &mut g,
@@ -1983,6 +1997,8 @@ fn draw_world_gui(
     );
     draw.lists
         .insert(PERK_ICONS_DRAW_ORDER, std::mem::take(&mut g.items));
+    // cave_popups_draw runs after the HUD's `draw_set_font(ui_font())`
+    g.font = ui_font;
     let gv = cams.game_view;
     let loc = |k: &str| -> String {
         locale
