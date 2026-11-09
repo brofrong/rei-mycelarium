@@ -102,6 +102,8 @@ pub struct TasksRt {
     pub fold_k: BTreeMap<String, f64>,
     /// per item key: the check-mark fill the panel animates (`tasks_block_draw`)
     pub fill: BTreeMap<String, f64>,
+    /// `tasks.cine`: the migration cut-scene ([`crate::cine`]); not saved
+    pub cine: Option<crate::cine::Cine>,
 }
 
 // port: tasks_defs

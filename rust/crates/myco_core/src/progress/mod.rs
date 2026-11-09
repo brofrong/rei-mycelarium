@@ -57,24 +57,22 @@ impl Default for ProgressRt {
     }
 }
 
-/// The logic part of obj_hud Step_1 (Begin Step): tree purchases (`upg_buy` on a click in
-/// the tree screen arrives as `Command::BuyUpgrade`), `water_counter_step` (Task 5). The HUD
-/// itself (layout, menus, Escape handling) is the app's (Task 17).
+/// The logic part of obj_hud Step_1 (Begin Step), in its order: `water_counter_step`, the
+/// tasks headers (`tasks_mouse_step`), a click on an animal marker (`camera_fly_to_marker`),
+/// `cine_step`; then the early returns for a blocking cut-scene, the tasks popup, the pause,
+/// the debug overlay, the title and the logo screen; only past those do the tree purchases
+/// (`upg_buy` from the tree screen, as `Command::BuyUpgrade`), the camera buttons
+/// (`camera_jump_*`) and the placement run. The HUD itself (layout, menus, Escape handling) is the
+/// app's (Task 17).
 pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
+    use crate::sim::Command;
     // obj_hud Step_1 runs water_counter_step before its input handling
     crate::world::water_counter_step(sim);
-    upgrades::apply_commands(sim, input);
     tasks::apply_commands(sim, input);
     for cmd in &input.commands {
         match *cmd {
-            crate::sim::Command::CameraJumpEdge { dir } => {
-                crate::camera::camera_jump_edge(sim, dir)
-            }
-            crate::sim::Command::CameraJumpOrigin => crate::camera::camera_jump_origin(sim),
-            crate::sim::Command::CameraFlyTo { x, y } => {
-                // camera_fly_to_marker: global.camera_fly = { marker, t = 0 }
-                sim.camera.fly = Some(crate::camera::CameraFly { t: 0.0, x, y });
-            }
+            Command::CameraFlyTo { x, y } => crate::camera::camera_fly_to_marker(sim, x, y),
+            Command::CameraFlyTrack { x, y } => crate::camera::camera_fly_track(sim, x, y),
             _ => {}
         }
     }
@@ -91,6 +89,21 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
         }
         sim.mushrooms.place_preview = None;
         return;
+    }
+    if sim.pause_open || input.debug_open || sim.title_open || input.logo_open {
+        sim.mushrooms.place_preview = None;
+        return;
+    }
+    // the tree screen's branch (menu_open) buys upgrades; the game branch has the camera buttons
+    upgrades::apply_commands(sim, input);
+    if !input.menu_open && !input.hud_hidden && !sim.intro_active {
+        for cmd in &input.commands {
+            match *cmd {
+                Command::CameraJumpEdge { dir } => crate::camera::camera_jump_edge(sim, dir),
+                Command::CameraJumpOrigin => crate::camera::camera_jump_origin(sim),
+                _ => {}
+            }
+        }
     }
     // the HUD's placement mode places mushrooms here (obj_hud Step_1 -> myc_place_check /
     // myc_place_mushroom), only where Step_1 gets that far (ruling R24)

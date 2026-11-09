@@ -558,3 +558,79 @@ fn placement_mode_fills_step_input_and_core_preview() {
     let pv = s.0.mushrooms.place_preview.as_ref().expect("core preview");
     assert_eq!(pv.kind, MushroomKind::Spore);
 }
+
+/// `camera_fly_to_marker` keeps the marker itself: the fly's target follows the marker while
+/// the camera flies (Task 21).
+#[test]
+fn camera_fly_follows_the_clicked_marker() {
+    use myco_app::ui::markers::Marker;
+    use myco_core::camera::CameraFly;
+    let Some(assets) = assets() else {
+        return;
+    };
+    let mut s = sim();
+    let loc = Locale::load("key,en\n");
+    let uf = UiFonts::bitmap();
+    let mut markers = AnimalMarkers::default();
+    markers.list.push(Marker {
+        src: 77,
+        sprite: "boar",
+        frames: 6.0,
+        frame: 0.0,
+        mirror: 1.0,
+        x: 3000.0,
+        y: 500.0,
+        w: 50.0,
+        h: 40.0,
+        warn: false,
+        alpha: 1.0,
+        vx: 0.0,
+        vy: 0.0,
+        gone: false,
+        seen: true,
+        follow: 0.0,
+        ui: Some((1800.0, 540.0)),
+    });
+    let mut hud = HudState::new();
+    let click = StepIn {
+        click: true,
+        ..input(1800.0, 540.0)
+    };
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &click,
+    );
+    assert!(
+        cmds.contains(&Command::CameraFlyTo {
+            x: 3000.0,
+            y: 500.0
+        }),
+        "{cmds:?}"
+    );
+    // the core started the fly; the boar walks on
+    s.camera.fly = Some(CameraFly {
+        t: 0.0,
+        x: 3000.0,
+        y: 500.0,
+    });
+    markers.list[0].x = 3100.0;
+    let idle = input(600.0, 540.0);
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle,
+    );
+    assert!(
+        cmds.contains(&Command::CameraFlyTrack {
+            x: 3100.0,
+            y: 500.0
+        }),
+        "{cmds:?}"
+    );
+    // the fly ended: no more tracking
+    s.camera.fly = None;
+    let cmds = step_pre(
+        &mut hud, &s, &assets, &uf, &loc, &markers, 0.0, 0.0, false, &idle,
+    );
+    assert!(!cmds
+        .iter()
+        .any(|c| matches!(c, Command::CameraFlyTrack { .. })));
+    assert_eq!(hud.fly_marker, None);
+}

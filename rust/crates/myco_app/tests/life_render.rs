@@ -150,6 +150,7 @@ fn life_draw_follows_obj_life_draw_order() {
         fx: None,
         clouds: None,
         start_linear: false,
+        game_view: None,
     };
     let d = life_draw(&sim, &ctx, &v);
     let keys: Vec<LifeKey> = d.segs.iter().map(|s| s.0).collect();
@@ -362,4 +363,50 @@ fn post_layer_draw_plans_like_the_original() {
     assert_eq!((g.gw, g.gh), (320.0, 180.0));
     assert_eq!((g.fw, g.fh), (320.0 / 3.0, 60.0));
     assert!((g.near_alpha - 0.45).abs() < 1e-12 && (g.far_alpha - 0.225).abs() < 1e-12);
+}
+
+/// Zoomed out, animals spawn and vanish at the 1× game view's edge (logic's view): they fade out
+/// over their spawn margin beyond it instead of popping. Inside the 1× view nothing changes.
+#[test]
+fn animals_fade_beyond_the_1x_view_when_zoomed_out() {
+    let Some(assets) = assets() else { return };
+    let cams = Cameras {
+        zoom: 0.5,
+        ..Default::default()
+    };
+    let gv = cams.game_view;
+    let rv = cams.render_view();
+    let margin = myco_core::life::hedgehog::hedgehog_border_margin();
+    let mut sim = game();
+    for (id, x) in [
+        (1, gv.x + gv.w * 0.5),
+        (2, gv.x - margin * 0.5),
+        (3, gv.x - margin - 10.0),
+    ] {
+        sim.life.animals.push(Hedgehog {
+            id,
+            x,
+            y: gv.y + gv.h * 0.5,
+            ..Default::default()
+        });
+    }
+    let ctx = LifeCtx {
+        assets: &assets,
+        fg: None,
+        fx: None,
+        clouds: None,
+        start_linear: false,
+        game_view: Some(gv),
+    };
+    let d = life_draw(&sim, &ctx, &rv);
+    let alpha = |id: u64| {
+        d.segs
+            .iter()
+            .find(|s| s.0 == LifeKey::Hedgehog(id))
+            .map(|s| s.1.runs[0].verts[0].col[3])
+    };
+    assert_eq!(alpha(1), Some(1.0), "inside the 1x view: unchanged");
+    let a2 = alpha(2).expect("half way out: drawn");
+    assert!((a2 - 0.5).abs() < 0.02, "{a2}");
+    assert_eq!(alpha(3), None, "past the margin: fully faded, no entity");
 }

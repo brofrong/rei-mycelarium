@@ -158,6 +158,12 @@ pub enum Command {
         x: f64,
         y: f64,
     },
+    /// the flown marker's position this step (the original reads `camera_fly.marker` live; the
+    /// markers are the app's): `camera_fly_track`
+    CameraFlyTrack {
+        x: f64,
+        y: f64,
+    },
     /// Task 8: a click on the in-world build menu's option `index` (the app hit-tests
     /// `myc_build_button_rect`; ruling R9b)
     MycBuildOption {

@@ -20,7 +20,7 @@ use crate::render::batch::{
     BatchPlugin, BatchPool, BatchTarget, GmQuad, QuadBatch, QuadBlend, WhiteTexture, C_WHITE,
 };
 use crate::render::blend::{GmBlend, GmBlendMode};
-use crate::render::layers::{LAYER_SPAN, Z_LIFE, Z_MYC_STRANDS, Z_STEP, Z_TURF, Z_WORMS};
+use crate::render::layers::{z_at, LAYER_SPAN, Z_LIFE, Z_MYC_STRANDS, Z_STEP, Z_TURF, Z_WORMS};
 use crate::render::leaf_art::{leaf_shape_images, strip_scan, LeafFgArt, LeafFgSprite, PagePixels};
 use crate::render::mushrooms::{clouds_composite, mushroom_draw, stinky_draw, CloudFrame, FxArt};
 use crate::render::mycelium::{fill_strand_mesh, strand_layers, V2};
@@ -329,24 +329,6 @@ pub fn hedgehog_draw(b: &mut QuadBatch, a: &GameAssets, x: f64, y: f64, dir: f64
     );
 }
 
-/// `intro_draw` (Task 21's row, unmarked here): the intro hedgehog and the origin mushroom on its
-/// back, then falling at the start. `life_draw` calls it first while the intro runs.
-pub fn intro_draw(b: &mut QuadBatch, a: &GameAssets, sim: &Sim) {
-    let it = &sim.life.intro;
-    hedgehog_draw(b, a, it.x, it.y, 1.0, it.frame);
-    let sy = if !it.dropped {
-        it.y + hedgehog::hedgehog_back_y()
-    } else {
-        it.shroom_y
-    };
-    let sx = if !it.dropped {
-        it.x
-    } else {
-        sim.state.state.start_x
-    };
-    b.sprite(a, "originshroom", 0, sx.floor(), sy.floor());
-}
-
 /// `leaf_fg_frame(l)` on the app's frame sprites.
 fn fg_frame<'a>(fg: &'a LeafFgArt, l: &Leaf) -> &'a LeafFgSprite {
     if l.turn >= 0.0 {
@@ -388,7 +370,6 @@ pub fn leaf_draw(b: &mut QuadBatch, a: &GameAssets, fg: &LeafFgArt, l: &Leaf, al
 /// shared group.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum LifeKey {
-    Intro,
     Leaves,
     Mushroom(u64),
     Stinky,
@@ -447,6 +428,68 @@ pub struct LifeCtx<'a> {
     pub clouds: Option<&'a CloudFrame>,
     /// the texture filter `world_draw` left on (`WorldDrawState`)
     pub start_linear: bool,
+    /// the 1× game view (logic's camera) when zoomed out, for [`edge_fade`]; `None`: no fade
+    pub game_view: Option<ViewRect>,
+}
+
+/// Rust-only (zoom): logic spawns animals and lets them go at the 1× game view's edge plus a
+/// margin, which a zoomed-out camera shows. They fade from full at the 1× edge to nothing at
+/// that margin instead of popping. At zoom ≥ 1 this region is off screen, so the look is the
+/// original's.
+pub fn edge_fade(gv: Option<&ViewRect>, x: f64, y: f64, margin: f64) -> f64 {
+    let Some(g) = gv else { return 1.0 };
+    let dx = (g.x - x).max(x - (g.x + g.w)).max(0.0);
+    let dy = (g.y - y).max(y - (g.y + g.h)).max(0.0);
+    gml::clamp(1.0 - dx.max(dy) / margin.max(1.0), 0.0, 1.0)
+}
+
+/// Apply [`edge_fade`] to the animal segments (each animal is one segment, its load included).
+fn fade_animals(d: &mut LifeDraw, sim: &Sim, gv: Option<&ViewRect>) {
+    if gv.is_none() {
+        return;
+    }
+    let l = &sim.life;
+    let sq_margin = squirrel::squirrel_frame_w() + 80.0;
+    let crow_margin = crow::crow_frame_w() * vis("crow_scale") + 200.0;
+    for (key, b) in d.segs.iter_mut() {
+        let at = match *key {
+            LifeKey::Hedgehog(id) => l
+                .animals
+                .iter()
+                .find(|a| a.id == id)
+                .map(|a| (a.x, a.y, hedgehog::hedgehog_border_margin())),
+            LifeKey::Boar(id) => l
+                .boars
+                .iter()
+                .find(|a| a.id == id)
+                .map(|a| (a.x, a.y, boar_frame_w() + 40.0)),
+            LifeKey::Squirrel(id) => l
+                .squirrels
+                .iter()
+                .find(|a| a.id == id)
+                .map(|a| (a.x, a.y, sq_margin)),
+            LifeKey::Crow(id) => l
+                .crows
+                .iter()
+                .find(|a| a.id == id)
+                .map(|a| (a.x, a.y, crow_margin)),
+            _ => None,
+        };
+        let Some((x, y, m)) = at else { continue };
+        let f = edge_fade(gv, x, y, m) as f32;
+        if f >= 1.0 {
+            continue;
+        }
+        if f <= 0.0 {
+            b.runs.clear();
+            continue;
+        }
+        for r in b.runs.iter_mut() {
+            for v in r.verts.iter_mut() {
+                v.col[3] *= f;
+            }
+        }
+    }
 }
 
 /// The body colour of a mushroom (dim when inactive, except repellers; pinkish while flashing).
@@ -619,16 +662,15 @@ fn held_mushroom(b: &mut QuadBatch, a: &GameAssets, m: &MushroomSave) {
 }
 
 // port: life_draw
-/// `life_draw`: the intro, leaves, mushrooms (+ predator flies), the stench, hedgehogs (+ what
-/// they carry), boars, the clouds, squirrels (+ stolen mushrooms), crows, drops — in that order,
+/// `life_draw`: (the intro: Task 21's `cine::intro_draw`), leaves, mushrooms (+ predator
+/// flies), the stench, hedgehogs (+ what they carry), boars, the clouds, squirrels (+ stolen mushrooms), crows, drops — in that order,
 /// culled to the view. (`squirrel_art_init` / `hedgehog_back_init` run at startup;
 /// `hover_bar_step_draw` is the HUD's, Task 17.)
 pub fn life_draw(sim: &Sim, ctx: &LifeCtx, v: &ViewRect) -> LifeDraw {
     let a = ctx.assets;
     let mut d = LifeDraw::new(ctx.start_linear);
-    if sim.intro_active {
-        intro_draw(d.seg(LifeKey::Intro), a, sim);
-    }
+    // `if intro_active then intro_draw()`: Task 21's `cine::intro_draw` draws the intro's two
+    // sprites at the bottom of the life layer (`z_at(Z_LIFE, 0..2)`); the segments start above
     let (cx, cy, cw, ch) = (v.x, v.y, v.w, v.h);
     if let Some(fg) = ctx.fg {
         for l in &sim.life.leaves {
@@ -705,6 +747,7 @@ pub fn life_draw(sim: &Sim, ctx: &LifeCtx, v: &ViewRect) -> LifeDraw {
         d.seg(LifeKey::Drops)
             .sprite(a, "waterdrop", 0, dr.x.floor(), dr.y.floor());
     }
+    fade_animals(&mut d, sim, ctx.game_view.as_ref());
     // a key that drew nothing (sprite missing, nothing in view) gets no entity; keep the state
     // the dropped segment carried in the next one
     let mut kept: Vec<(LifeKey, QuadBatch)> = Vec::with_capacity(d.segs.len());
@@ -942,6 +985,9 @@ impl LifePools {
     }
 }
 
+/// z slots of Task 21's intro sprites at the bottom of the life layer.
+const INTRO_SPRITES: usize = 2;
+
 // port: gml_Object_obj_life_Draw_0
 /// obj_life Draw_0: `life_draw` every frame, into the life layer's keyed entities.
 #[allow(clippy::too_many_arguments)]
@@ -965,6 +1011,7 @@ pub fn life_draw_system(
         fx: fx.as_deref(),
         clouds: clouds.as_deref(),
         start_linear: world.is_none_or(|w| w.end_linear),
+        game_view: (cams.zoom < 1.0).then_some(cams.game_view),
     };
     let d = life_draw(&sim.0, &ctx, &cams.render_view());
     let mut t = BatchTarget {
@@ -976,7 +1023,7 @@ pub fn life_draw_system(
     pools.sync(
         &mut t,
         &d.segs,
-        Z_LIFE,
+        z_at(Z_LIFE, INTRO_SPRITES),
         Z_TURF - LAYER_SPAN,
         &RenderLayers::layer(0),
     );

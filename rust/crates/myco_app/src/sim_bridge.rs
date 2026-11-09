@@ -48,6 +48,8 @@ pub struct PendingInput {
     /// `hud_place_type` while the HUD is in placement mode (ruling R22: the core runs
     /// `myc_place_check` from it and stores `sim.mushrooms.place_preview`; set by the HUD)
     pub placement: Option<myco_core::mushrooms::MushroomKind>,
+    /// zoom requested by the autopilot (`zoom:<factor>`), as ln(factor); the zoom system takes it
+    pub zoom_log: f64,
 }
 
 impl PendingInput {
@@ -296,7 +298,7 @@ pub fn key_from_love_name(name: &str) -> Option<Key> {
 }
 
 /// Every frame: mouse/key edges and text into `PendingInput`.
-fn collect_input(
+pub fn collect_input(
     mut pending: ResMut<PendingInput>,
     mut mouse: MessageReader<MouseButtonInput>,
     mut keys: MessageReader<KeyboardInput>,
@@ -357,10 +359,8 @@ fn step_sim(
     if let Some(mut h) = history {
         h.0.push(input);
     }
-    // the logic's camera (top-left corner) moves the 1× game view
-    let (x, y) = (sim.0.camera.x, sim.0.camera.y);
-    cams.game_view.x = x;
-    cams.game_view.y = y;
+    // the logic's camera (`camera_view_x/y`: floored, shaken) moves the 1× game view
+    cams.sync_game_view(&sim.0.camera);
     out.write_batch(sim.0.drain_events().into_iter().map(SimEventMsg));
 }
 

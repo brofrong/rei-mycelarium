@@ -14,7 +14,6 @@ use crate::mushrooms::types::{
     mushroom_cell_width, mushroom_sprite_now, mushroom_variant, shroom_sprite,
 };
 use crate::mycelium::source;
-use crate::rng::Rng;
 use crate::sim::Sim;
 use crate::state::{GameMode, MushroomSave};
 
@@ -35,15 +34,7 @@ pub fn boar_any_target(sim: &Sim) -> bool {
     sim.state.mushrooms.iter().any(boar_hits_mushroom)
 }
 
-/// `array_shuffle` (GML; the LÖVE shim draws from the game RNG the same way): Fisher–Yates from
-/// the end with `j = floor(random(1) * (i + 1))`.
-pub fn array_shuffle<T>(rng: &mut Rng, v: &mut [T]) {
-    let n = v.len();
-    for i in (1..n).rev() {
-        let j = (rng.random(1.0) * (i + 1) as f64).floor() as usize;
-        v.swap(i, j);
-    }
-}
+pub use crate::rng::array_shuffle;
 
 // port: boar_pick_targets
 /// Up to `boar_hits` random mushrooms ahead of `x` in `dir` (ids).

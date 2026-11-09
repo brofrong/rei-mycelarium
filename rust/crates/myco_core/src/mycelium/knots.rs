@@ -20,7 +20,7 @@ pub struct Smallshroom {
 }
 
 /// A knot (`___struct___467`, or `___struct___472` for a spore knot with its smallshroom).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Knot {
     pub x: f64,
     pub y: f64,
