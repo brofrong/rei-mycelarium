@@ -217,6 +217,7 @@ impl Plugin for HudPlugin {
                     popups::popups_collect,
                     cursor_tip::cursor_tip_collect,
                     hud::hud_events,
+                    hud::hud_tasks_fill,
                 )
                     .in_set(SimSet::After)
                     .after(ui_demo),

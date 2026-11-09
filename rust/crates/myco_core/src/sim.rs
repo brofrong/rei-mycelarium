@@ -116,6 +116,11 @@ pub struct StepInput {
     pub slot_naming: bool,
 }
 
+/// What the app asks the simulation to do this step (clicks the app hit-tests, ruling R9).
+///
+/// Contract with Task 8: the in-world button commands (`MycReleaseSpores`, `MycBuildOption`,
+/// `MycRegenRepeller`) are dropped while `StepInput.ui_captured` is set, so the in-world
+/// prompts must never set `UiCapture` themselves; only HUD and menu screens do.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     /// right click

@@ -500,3 +500,30 @@ fn locale_extra_covers_12_languages() {
         assert!(loc.loc("tip_node_need_food").contains("{n}"));
     }
 }
+
+#[test]
+fn tasks_fill_advances_once_per_step() {
+    use myco_app::ui::tasks::tasks_fill_step;
+    let mut s = sim();
+    s.state.state.tasks.shown = true;
+    s.state
+        .state
+        .tasks
+        .done
+        .insert("absorption".into(), serde_json::Value::Bool(true));
+    s.progress.tasks.fill.insert("absorption".into(), 0.0);
+    let hud = HudState::new();
+    let loc = Locale::load("key,en\n");
+    let step = 1.0 / myco_core::balance::vis("tasks_fill_frames").max(1.0);
+    tasks_fill_step(&mut s, &hud, &loc);
+    tasks_fill_step(&mut s, &hud, &loc);
+    let f = s.progress.tasks.fill["absorption"];
+    assert!((f - 2.0 * step).abs() < 1e-12, "fill {f}");
+    // hidden HUD: tasks_draw does not run, the fill stays
+    let hidden = HudState {
+        hud_hidden: true,
+        ..HudState::new()
+    };
+    tasks_fill_step(&mut s, &hidden, &loc);
+    assert!((s.progress.tasks.fill["absorption"] - f).abs() < 1e-12);
+}

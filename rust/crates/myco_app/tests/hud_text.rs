@@ -14,8 +14,13 @@ fn assets() -> Option<GameAssets> {
         return None;
     }
     Some(
-        GameAssets::load(&root, |_| Handle::default(), |_| Handle::default(), |_| Handle::default())
-            .unwrap(),
+        GameAssets::load(
+            &root,
+            |_| Handle::default(),
+            |_| Handle::default(),
+            |_| Handle::default(),
+        )
+        .unwrap(),
     )
 }
 
@@ -42,10 +47,23 @@ fn icon_number_stays_centred_when_text_is_enlarged() {
         let mut g = Gm::new(&assets);
         g.font = UiFont::Gm("Font1".into());
         g.valign = 1;
-        hud_icon_number(&mut g, &assets, &hud, "apple_bite", 700.0, 24.0, 0.4, "1234", 0.5);
+        hud_icon_number(
+            &mut g,
+            &assets,
+            &hud,
+            "apple_bite",
+            700.0,
+            24.0,
+            0.4,
+            "1234",
+            0.5,
+        );
         let (lo, hi) = x_span(&g.items);
         let mid = (lo + hi) / 2.0;
-        assert!((mid - 700.0).abs() < 3.0, "ppu {ppu}: group {lo}..{hi} not centred on 700");
+        assert!(
+            (mid - 700.0).abs() < 3.0,
+            "ppu {ppu}: group {lo}..{hi} not centred on 700"
+        );
         if ppu < 1.0 {
             // the minimum really kicked in: the text is drawn larger than asked
             assert!(eff_scale(&g, 0.5) > 0.5);

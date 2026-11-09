@@ -207,7 +207,7 @@ pub fn visible(sim: &Sim, hud: &HudState) -> bool {
 /// The tasks panel (all visible blocks).
 pub fn tasks_draw(
     g: &mut Gm,
-    sim: &mut Sim,
+    sim: &Sim,
     hud: &HudState,
     uf: &UiFonts,
     loc: &Locale,
@@ -218,10 +218,9 @@ pub fn tasks_draw(
     if !visible(sim, hud) {
         return;
     }
-    let step = 1.0 / vis("tasks_fill_frames").max(1.0);
     for b in tasks_blocks(sim, loc) {
         let items = tasks_block_items(sim, loc, b.id);
-        tasks_block_draw(g, sim, hud, uf, ui_ox, gw, assets, &b, &items, step);
+        tasks_block_draw(g, sim, hud, uf, ui_ox, gw, assets, &b, &items);
     }
     g.set_alpha(1.0);
     g.font = uf.small.clone();
@@ -235,7 +234,7 @@ pub fn tasks_draw(
 #[allow(clippy::too_many_arguments)]
 pub fn tasks_block_draw(
     g: &mut Gm,
-    sim: &mut Sim,
+    sim: &Sim,
     hud: &HudState,
     uf: &UiFonts,
     ui_ox: f64,
@@ -243,7 +242,6 @@ pub fn tasks_block_draw(
     assets: &GameAssets,
     b: &BlockHead,
     items: &[Item],
-    step: f64,
 ) {
     use super::hud::{
         COLOR_DIM as C_REWARD, COLOR_GOOD as C_HOVER, COLOR_INK as C_TEXT, COLOR_PANEL as C_BOX,
@@ -280,17 +278,7 @@ pub fn tasks_block_draw(
         ax,
         y - off,
     );
-    let fill = &mut sim.progress.tasks.fill;
-    for it in items {
-        let target = if it.done { 1.0 } else { 0.0 };
-        let cur = fill.get(&it.key).copied().unwrap_or(target);
-        let v = if cur >= target {
-            target.max(cur - step)
-        } else {
-            target.min(cur + step)
-        };
-        fill.insert(it.key.clone(), v);
-    }
+    // the check-mark fill advances per step in `tasks_fill_step`
     if k <= 0.0 {
         return;
     }
@@ -327,7 +315,9 @@ pub fn tasks_block_draw(
         g.set_alpha(ia);
         text(g, tx, iy, &it.text, xs, xs);
         if it.done && it.reward {
-            let rx = tx + g.string_width(&it.text) * super::hud::eff_scale(g, xs) + vis("tasks_reward_gap");
+            let rx = tx
+                + g.string_width(&it.text) * super::hud::eff_scale(g, xs)
+                + vis("tasks_reward_gap");
             let pulse = (f * std::f64::consts::PI).sin() * 0.35 + 1.0;
             let rs = xs * pulse;
             let s = format!("+{}", super::hud::fmt_num(reward_points));
@@ -650,4 +640,28 @@ pub fn tutorial_draw(
     g.font = uf.small.clone();
     g.halign = 0;
     g.valign = 0;
+}
+
+/// The fill animation of `tasks_block_draw` (each item's check mark eases toward done by
+/// `1 / tasks_fill_frames`). The original runs it in Draw GUI, once per 60 Hz frame; here it runs
+/// once per fixed step, for the blocks `tasks_draw` would draw.
+pub fn tasks_fill_step(sim: &mut Sim, hud: &HudState, loc: &Locale) {
+    if !visible(sim, hud) {
+        return;
+    }
+    let step = 1.0 / vis("tasks_fill_frames").max(1.0);
+    for b in tasks_blocks(sim, loc) {
+        let items = tasks_block_items(sim, loc, b.id);
+        let fill = &mut sim.progress.tasks.fill;
+        for it in items {
+            let target = if it.done { 1.0 } else { 0.0 };
+            let cur = fill.get(&it.key).copied().unwrap_or(target);
+            let v = if cur >= target {
+                target.max(cur - step)
+            } else {
+                target.min(cur + step)
+            };
+            fill.insert(it.key, v);
+        }
+    }
 }

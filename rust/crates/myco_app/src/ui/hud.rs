@@ -222,6 +222,9 @@ pub struct HudState {
     pub place_at: Option<PlaceAt>,
     /// `global.ui_capture_mouse`
     pub ui_capture_mouse: bool,
+    /// `cave_hover_tip(...)` locale key under the cursor, computed in the Begin Step (it may
+    /// build the cave rects, so the read-only Draw GUI uses this)
+    pub cave_tip: String,
     /// `global.right_click_used`
     pub right_click_used: bool,
     /// Read-only mirrors of state the menus (Task 18: `UiFlags`, `Menus.logo`) and the tree
@@ -278,6 +281,7 @@ impl HudState {
             place_type: None,
             place_at: None,
             ui_capture_mouse: false,
+            cave_tip: String::new(),
             right_click_used: false,
             menu_open: false,
             debug_open: false,
@@ -851,10 +855,10 @@ pub fn hud_blocks(sim: &Sim) -> bool {
     tasks::tasks_popup_open(sim) || cine_blocking(sim)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn hud_step_pre(
     mut hud: ResMut<HudState>,
-    sim: Res<SimRes>,
+    mut sim: ResMut<SimRes>,
     assets: Res<GameAssets>,
     ui_fonts: Res<UiFonts>,
     loc: Res<LocaleRes>,
@@ -893,6 +897,21 @@ pub fn hud_step_pre(
         &inp,
     );
     pending.commands.extend(cmds);
+    // Draw_75's cave tooltip lookup, done here so drawing stays read-only
+    hud.cave_tip = if ui_blocking(&sim.0, &hud) {
+        String::new()
+    } else {
+        let (vx, vy) = view_xy(&cams);
+        myco_core::world::caves::cave_hover_tip(
+            &mut sim.0,
+            inp.mx,
+            inp.my,
+            vis("cave_icons_x") + cams.layout.ui_ox,
+            vis("cave_icons_y"),
+            vx,
+            vy,
+        )
+    };
     pending.tasks_popup_open = tasks::tasks_popup_open(&sim.0);
     out.0.hud = hud_blocks(&sim.0);
     out.1.hud = hud.ui_capture_mouse;
@@ -935,6 +954,11 @@ pub fn hud_step_game(
     if let Some(f) = flags.as_mut() {
         f.build_open = hud.build_open || hud.place_type.is_some();
     }
+}
+
+/// After each step: the tasks panel's check-mark fill (`tasks_block_draw`'s animation).
+pub fn hud_tasks_fill(mut sim: ResMut<SimRes>, hud: Res<HudState>, loc: Res<LocaleRes>) {
+    ui_tasks::tasks_fill_step(&mut sim.0, &hud, &loc.locale);
 }
 
 /// Events after a step: a placed mushroom closes the bar (`if ok then hud_build_close()`).
@@ -1161,7 +1185,7 @@ pub fn draw_top(
 pub fn hud_draw_main(
     mut draw: ResMut<GuiDraw>,
     hud: Res<HudState>,
-    mut sim: ResMut<SimRes>,
+    sim: Res<SimRes>,
     assets: Res<GameAssets>,
     ui_fonts: Res<UiFonts>,
     loc: Res<LocaleRes>,
@@ -1175,7 +1199,7 @@ pub fn hud_draw_main(
     draw_main(
         &mut g,
         &hud,
-        &mut sim.0,
+        &sim.0,
         &assets,
         &ui_fonts,
         &loc.locale,
@@ -1191,7 +1215,7 @@ pub fn hud_draw_main(
 pub fn draw_main(
     g: &mut Gm,
     hud: &HudState,
-    sim: &mut Sim,
+    sim: &Sim,
     assets: &GameAssets,
     uf: &UiFonts,
     loc: &Locale,
@@ -1487,29 +1511,21 @@ fn draw_build(
 pub fn hud_draw_tooltip(
     mut draw: ResMut<GuiDraw>,
     hud: Res<HudState>,
-    mut sim: ResMut<SimRes>,
+    sim: Res<SimRes>,
     assets: Res<GameAssets>,
     ui_fonts: Res<UiFonts>,
     loc: Res<LocaleRes>,
     cams: Res<Cameras>,
 ) {
     let mut g = Gm::new(&assets);
-    draw_tooltip(
-        &mut g,
-        &hud,
-        &mut sim.0,
-        &assets,
-        &ui_fonts,
-        &loc.locale,
-        &cams,
-    );
+    draw_tooltip(&mut g, &hud, &sim.0, &assets, &ui_fonts, &loc.locale, &cams);
     draw.lists.insert(draw_order::TOOLTIP, g.items);
 }
 
 pub fn draw_tooltip(
     g: &mut Gm,
     hud: &HudState,
-    sim: &mut Sim,
+    sim: &Sim,
     assets: &GameAssets,
     uf: &UiFonts,
     loc: &Locale,
@@ -1529,22 +1545,8 @@ pub fn draw_tooltip(
             length_text((step_cm - xp_base).ceil().max(0.0), hud.units_imperial, loc),
             loc.loc("points_till_next")
         )
-    } else if !ui_blocking(sim, hud) {
-        let (vx, vy) = view_xy(cams);
-        let key = myco_core::world::caves::cave_hover_tip(
-            sim,
-            mx,
-            my,
-            vis("cave_icons_x") + cams.layout.ui_ox,
-            vis("cave_icons_y"),
-            vx,
-            vy,
-        );
-        if key.is_empty() {
-            key
-        } else {
-            loc.loc(&key).to_string()
-        }
+    } else if !ui_blocking(sim, hud) && !hud.cave_tip.is_empty() {
+        loc.loc(&hud.cave_tip).to_string()
     } else {
         String::new()
     };
