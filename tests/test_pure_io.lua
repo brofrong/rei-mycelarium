@@ -31,6 +31,7 @@ return {
   shader_precision_removed = function()
     local out = shader_conv.fragment("precision mediump float;\n#define LOWPREC lowp\nvoid main()\n{\n gl_FragColor = vec4(1.0);\n}\n")
     assert(not out:find("precision mediump", 1, true) and not out:find("#define LOWPREC lowp", 1, true))
+    assert(out:find("uniform Image MainTex;", 1, true))
   end,
   ini_roundtrip = function()
     local d = ini.parse('[display]\r\nfullscreen="1.000000"\r\n[audio]\r\nmusic="0.5"\r\n')

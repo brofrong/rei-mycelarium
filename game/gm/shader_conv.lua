@@ -15,6 +15,7 @@ function M.fragment(src)
     "#define v_vTexcoord VaryingTexCoord.xy",
     "#define v_vColour VaryingColor",
     "#define gm_BaseTexture MainTex",
+    "uniform Image MainTex;",
     "",
   }, "\n")
   return header .. out
