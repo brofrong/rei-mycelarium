@@ -60,8 +60,8 @@ function world_start_ring(self, other)
 end
 
 -- gml_Script_world_start_on_screen @ 0x1402c5220
-function world_start_on_screen(self, other, r, x, y)
-  return x >= r.x1 and x <= r.x2 and y >= r.y1 and y <= r.y2
+function world_start_on_screen(self, other, r, x1, y1, x2, y2)
+  return x1 >= r.x1 and x2 <= r.x2 and y1 >= r.y1 and y2 <= r.y2
 end
 
 -- gml_Script_world_start_angle @ 0x1402c54f0
