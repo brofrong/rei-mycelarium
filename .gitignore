@@ -7,3 +7,4 @@ game/assets
 __pycache__/
 .pytest_cache/
 re/lifted/
+.claude/

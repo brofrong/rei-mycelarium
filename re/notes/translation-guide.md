@@ -5,7 +5,7 @@
 
 ## Что читать
 
-- Твой список функций: `re/partition/<part>.txt` (имя, путь к очищенному коду, размер).
+- Твой список функций: `re/chunks/<chunk>.txt` (имя, путь к очищенному коду, размер).
 - Очищенный код: `re/lifted/**/<name>.txt` (сделан `tools/lift.py` из `re/decomp/`). Если в очищенном коде
   что-то потерялось — смотри исходную декомпиляцию `re/decomp/**/<name>.c`.
 - Как читать YYC: `re/notes/yyc-runtime.md`. Кто кого вызывает: `re/callgraph.json`.
@@ -34,46 +34,41 @@
 
 ## Соглашения Lua
 
-**Файлы.** Каждый агент пишет только свои файлы:
-- скрипты: `game/myco/scripts/<part>.lua` (например `scr_life_a.lua`; для части `core`/`meta`/`ui` —
-  по файлу на исходный scr_*: `scr_game.lua`, `scr_logo.lua`, …);
-- объекты: `game/myco/objects/<obj>.lua`.
-Каждый файл начинается с `local gm = require("gm")`. Не трогай `game/gm/`, `game/main.lua`, чужие файлы,
-не делай git commit.
+**Одна GML-функция = одна глобальная функция Lua с тем же именем.** Это касается всех функций из твоего
+списка, включая события объектов, анонимные функции и конструкторы литералов структур:
 
-**Скриптовые функции** — глобальные функции Lua с именем GML без префикса `gml_Script_`:
+| GML-символ | имя функции Lua |
+|---|---|
+| `gml_Script_hedgehog_frame_h` | `hedgehog_frame_h` (префикс `gml_Script_` убирается) |
+| `gml_Script_anon__799__gml_Object_obj_forest_controller_Create_0` | `anon__799__gml_Object_obj_forest_controller_Create_0` |
+| `gml_Script____struct___367__gml_Object_obj_hud_Create_0` | `____struct___367__gml_Object_obj_hud_Create_0` |
+| `gml_Object_obj_hud_Create_0` | `gml_Object_obj_hud_Create_0` (имя целиком) |
+| `gml_GlobalScript_scr_world` | `gml_GlobalScript_scr_world` (верхнеуровневый код файла, вызывается при старте) |
+
+Сигнатура всегда `(self, other, ...аргументы GML)`:
 ```lua
 -- gml_Script_hedgehog_frame_h @ 0x1400a9780
 function hedgehog_frame_h(self, other)
   return gm.sprite_get_height(hedgehog) * vis(self, other, "hedgehog_scale")
 end
 ```
-Первые два параметра всегда `self, other`; дальше аргументы GML. Вызов другой скриптовой функции:
-`f(self, other, a, b)` — даже если она в чужом файле (все скрипты глобальные).
+Вызов другой функции (даже из чужого файла — все глобальные): `f(self, other, a, b)`.
 
-**Объекты:**
-```lua
-obj_hud = gm.object("obj_hud", {
-  -- gml_Object_obj_hud_Create_0 @ 0x...
-  Create_0 = function(self, other) ... end,
-  Step_1 = function(self, other) ... end,
-  Draw_75 = function(self, other) ... end,
-})
-```
-Имена событий = суффикс YYC (`Create_0`, `Step_0`, `Step_1`, `Draw_0`, `Draw_64`, `Draw_73..77`, `CleanUp_0`, `Other_3`).
-Родитель (если есть, см. `build/assets/objects.json`) — поле `parent = "obj_x"`.
+**Где функция создаёт метод/анонимную функцию** (в YYC: ссылка на `gml_Script_anon__…` + создание метода) →
+`gm.method(self, anon__799__gml_Object_obj_forest_controller_Create_0)` (привязка к текущему self; если метод
+создаётся внутри литерала структуры — привязка к этой структуре).
+**Где функция создаёт литерал структуры** (вызов конструктора `gml_Script____struct___N__…` с захваченными значениями) →
+`gm.new(____struct___N__…, args...)`. Сам конструктор переводится как обычная функция, которая заполняет поля `self`
+(и привязывает свои методы к `self` через `gm.method(self, …)`).
+Именованные конструкторы (`function Foo() constructor`) — так же: `gm.new(Foo, ...)`.
+Вызов метода или переменной-функции: `m(self, other, args)` — одинаково для функций и методов.
 
-**Глобальные скрипты** `gml_GlobalScript_scr_x`: верхнеуровневый код файла (не объявления функций) →
-`function __global_scr_x(self, other) ... end` (вызовется при старте). Если там только регистрация функций — пустая функция.
+События объектов регистрирует интегратор (`gm.object(...)` с этими функциями) — тебе нужно только написать
+функции `gml_Object_<obj>_<Event>_<n>(self, other)`.
 
-**Анонимные функции и методы** (`gml_Script_anon__NNN__<родитель>`) переводятся там, где создаются,
-как замыкание, привязанное к self (GML `method`/`function` внутри события или структуры):
-`self.on_click = gm.method(self, function(self, other, ...) ... end)`.
-Литералы структур (`gml_Script____struct___N__<родитель>` — конструктор литерала `{...}`) →
-`gm.struct({ a = 1, b = gm.method(nil, function(self, other) ... end) })`, затем методы привязываются к самой структуре:
-`local s = gm.struct({...}); s.f = gm.method(s, function(self, other) ... end)`.
-Именованные конструкторы (`function Foo() constructor`) → `function Foo(self, other, ...)` + `gm.new(Foo, ...)`.
-Вызов метода/переменной-функции: `m(self, other, args)` — одинаково для функций и методов.
+**Файл.** Пиши только тот файл, который указан в задании (`game/myco/gen/<chunk>.lua`), начиная с
+`local gm = require("gm")`. Не трогай `game/gm/`, `game/main.lua`, чужие файлы, не делай git commit,
+не создавай git worktree и **не запускай других агентов** — переводи сам.
 
 **Значения:**
 - переменные экземпляра: `self.x`; глобальные: `global.x` (`global` — глобальная таблица Lua = `gm.global`); `other.x`.
@@ -102,6 +97,8 @@ obj_hud = gm.object("obj_hud", {
 ## Проверка перед сдачей
 
 1. `luajit -bl game/myco/scripts/<file>.lua > /dev/null` (и для объектов) — без синтаксических ошибок.
-2. Каждая функция из `re/partition/<part>.txt` переведена (или явно помечена `-- TODO(port): not translated`).
+2. Каждая функция из твоего списка переведена полностью. Заглушки, «упрощённые версии» и `return false` вместо
+   логики недопустимы. Единственная допустимая пометка — `-- TODO(port): <конкретная неясность>` внутри переведённой
+   функции. Счёт в отчёте должен быть честным.
 3. В отчёте: число функций, список встроенных функций `gm.*`, которых нет в `game/gm/`, список TODO
    с именами функций, неясности в соглашениях.
