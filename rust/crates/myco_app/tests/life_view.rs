@@ -11,8 +11,10 @@ use myco_core::state::GameMode;
 /// Run 240 steps of a fresh game with the app's step input at render `zoom`; the logic's view,
 /// the worm keep zone and the worms that live in it.
 fn run(zoom: f64) -> (ViewRect, ViewRect, f64, Vec<(f64, f64)>) {
-    let mut cams = Cameras::default();
-    cams.zoom = zoom;
+    let cams = Cameras {
+        zoom,
+        ..Default::default()
+    };
     let render = cams.render_view();
     let mut sim = Sim::new_game(GameMode::Exploration, "view", Some(31607));
     sim.intro_active = false;
