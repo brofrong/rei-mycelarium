@@ -267,6 +267,11 @@ pub const GUI_LAYER: usize = 1;
 #[derive(Component)]
 pub struct WorldCamera;
 
+/// Task 15's BLACK METAL post effect: while `Some`, the world and GUI cameras render into this
+/// offscreen frame (full image, no viewport) instead of the window; `render::post` draws it.
+#[derive(Resource, Clone, Debug, Default)]
+pub struct PostRedirect(pub Option<Handle<Image>>);
+
 #[derive(Component)]
 pub struct GuiCamera;
 
@@ -351,16 +356,39 @@ type CamParts = (
 );
 
 fn apply_cameras(
+    mut commands: Commands,
     cams: Res<Cameras>,
-    mut world: Query<CamParts, (With<WorldCamera>, Without<GuiCamera>)>,
-    mut gui: Query<CamParts, (With<GuiCamera>, Without<WorldCamera>)>,
+    redirect: Option<Res<PostRedirect>>,
+    mut applied: Local<Option<AssetId<Image>>>,
+    mut world: Query<(Entity, CamParts), (With<WorldCamera>, Without<GuiCamera>)>,
+    mut gui: Query<(Entity, CamParts), (With<GuiCamera>, Without<WorldCamera>)>,
 ) {
     use bevy::camera::CameraProjection;
-    let vp = cams.viewport();
-    let size = vp
-        .as_ref()
-        .map(|v| v.physical_size.as_vec2())
-        .unwrap_or(Vec2::ONE);
+    let target = redirect.and_then(|r| r.0.clone());
+    let vp = if target.is_some() {
+        None
+    } else {
+        cams.viewport()
+    };
+    let size = match (&target, &vp) {
+        (Some(_), _) => Vec2::new(
+            cams.picture.w.floor().max(1.0) as f32,
+            cams.picture.h.floor().max(1.0) as f32,
+        ),
+        (None, Some(v)) => v.physical_size.as_vec2(),
+        (None, None) => Vec2::ONE,
+    };
+    // render target: the window, or the post frame (written only when it changes)
+    if *applied != target.as_ref().map(|t| t.id()) {
+        let rt = match &target {
+            Some(img) => bevy::camera::RenderTarget::Image(img.clone().into()),
+            None => bevy::camera::RenderTarget::Window(bevy::window::WindowRef::Primary),
+        };
+        for (e, _) in world.iter().chain(gui.iter()) {
+            commands.entity(e).insert(rt.clone());
+        }
+        *applied = target.as_ref().map(|t| t.id());
+    }
     // The projection is written with its `area` already computed (`update`), and only when it
     // changes: a fresh `OrthographicProjection` has the unit area until Bevy's `camera_system`
     // updates it, and a frustum built from that culls every sprite (R21a, see task-13-report).
@@ -378,11 +406,11 @@ fn apply_cameras(
             **proj = p;
         }
     };
-    for (mut cam, mut proj, mut tf) in &mut world {
+    for (_, (mut cam, mut proj, mut tf)) in &mut world {
         apply(&mut cam, &mut proj, fit(cams.world_projection()));
         tf.set_if_neq(cams.world_transform());
     }
-    for (mut cam, mut proj, mut tf) in &mut gui {
+    for (_, (mut cam, mut proj, mut tf)) in &mut gui {
         apply(&mut cam, &mut proj, fit(cams.gui_projection()));
         tf.set_if_neq(cams.gui_transform());
     }

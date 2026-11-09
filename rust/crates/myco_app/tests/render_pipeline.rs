@@ -429,3 +429,72 @@ fn filtering_and_gradients_interpolate_encoded_values() {
         "gradient midpoint {grad:?}, want ≈128"
     );
 }
+
+// --- sh_blackmetal (render::post, Task 15) ---------------------------------------------------
+
+const BW_RGB: [u8; 3] = [200, 120, 40];
+
+/// A 1×1 image in BW_RGB tone-mapped by `BwQuad`: the left half bright 0 (the picture), the
+/// right half bright 1 (the glow's bright pass).
+fn draw_bw(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut mats: ResMut<Assets<myco_app::render::post::BwQuad>>,
+    mut images: ResMut<Assets<Image>>,
+    mut done: Local<bool>,
+) {
+    use myco_app::render::batch::{run_mesh, QuadBatch, C_WHITE};
+    use myco_app::render::post::{bw_shader_set, BwQuad};
+    if *done {
+        return;
+    }
+    *done = true;
+    let img = images.add(Image::new(
+        Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        vec![BW_RGB[0], BW_RGB[1], BW_RGB[2], 255],
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    ));
+    for (x, bright) in [(-32.0, 0.0), (0.0, 1.0)] {
+        let mut b = QuadBatch::new();
+        b.image_ext(
+            &img,
+            [0.0, 0.0, 1.0, 1.0],
+            [0.0, 0.0, 1.0, 1.0],
+            x,
+            -32.0,
+            32.0,
+            64.0,
+            0.0,
+            C_WHITE,
+            1.0,
+        );
+        commands.spawn((
+            Mesh2d(meshes.add(run_mesh(&b.runs[0].verts))),
+            MeshMaterial2d(mats.add(BwQuad::new(img.clone(), &bw_shader_set(bright), false))),
+            Transform::from_xyz(0.0, 0.0, 1.0),
+        ));
+    }
+}
+
+#[test]
+fn blackmetal_tone_maps_encoded_values_like_the_glsl() {
+    use myco_app::render::post::{bw_shader_set, bw_tone, BwPlugin};
+    let mut app = headless_app();
+    app.add_plugins(BwPlugin).add_systems(Update, draw_bw);
+    let data = run(&mut app, 30);
+    let rgb = BW_RGB.map(|c| c as f64 / 255.0);
+    for (x, bright) in [(16, 0.0), (48, 1.0)] {
+        let want = (bw_tone(rgb, 1.0, &bw_shader_set(bright))[0] * 255.0).round() as i32;
+        let got = pixel(&data, x, 32);
+        assert!(
+            (got[0] as i32 - want).abs() <= 2 && got[0] == got[1] && got[1] == got[2],
+            "bright {bright}: {got:?}, want grey {want}"
+        );
+    }
+}

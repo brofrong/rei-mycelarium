@@ -9,6 +9,7 @@ pub mod life;
 pub mod mushrooms;
 pub mod mycelium;
 pub mod mycelium_glow;
+pub mod post;
 pub mod sprite;
 pub mod weather;
 pub mod world;

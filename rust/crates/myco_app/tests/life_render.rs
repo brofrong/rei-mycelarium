@@ -332,3 +332,16 @@ fn tendril_cells_are_squares_in_the_original_vertex_order() {
     assert_eq!(out[1], [12.0, 19.0]);
     assert_eq!(out[4], [12.0, 22.0]);
 }
+
+#[test]
+fn post_layer_draw_plans_like_the_original() {
+    use myco_app::render::post::{post_layer_draw, PostPlan};
+    assert_eq!(post_layer_draw(false, 1920.0, 1080.0), PostPlan::Plain);
+    let PostPlan::BlackMetal { glow: Some(g) } = post_layer_draw(true, 1920.0, 1080.0) else {
+        panic!("glow strength 0.45 > 0: glow passes");
+    };
+    // glow_downscale 6, glow_wide 3; strength 0.45, halo 0.5
+    assert_eq!((g.gw, g.gh), (320.0, 180.0));
+    assert_eq!((g.fw, g.fh), (320.0 / 3.0, 60.0));
+    assert!((g.near_alpha - 0.45).abs() < 1e-12 && (g.far_alpha - 0.225).abs() < 1e-12);
+}
