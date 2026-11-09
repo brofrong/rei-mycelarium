@@ -95,6 +95,11 @@ impl PendingInput {
             commands: std::mem::take(&mut self.commands),
             tasks_panel_open: self.tasks_panel_open,
             tasks_popup_open: self.tasks_popup_open,
+            // HUD/menu state the HUD tasks (T17) will provide
+            menu_open: false,
+            debug_open: false,
+            logo_open: false,
+            hud_hidden: false,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;

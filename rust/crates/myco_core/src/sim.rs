@@ -90,7 +90,8 @@ impl Key {
 pub struct StepInput {
     /// world px; `None` when the cursor is outside the window
     pub cursor: Option<(f64, f64)>,
-    /// GUI coordinates (1920 wide)
+    /// GUI coordinates: the GUI layer is view-sized (`display_set_gui_size(view_w, view_h)`,
+    /// so `0..view.w` x `0..view.h`)
     pub cursor_gui: Option<(f64, f64)>,
     pub lmb: ButtonState,
     pub rmb: ButtonState,

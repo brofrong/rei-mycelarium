@@ -61,6 +61,8 @@ impl Default for ProgressRt {
 /// the tree screen arrives as `Command::BuyUpgrade`), `water_counter_step` (Task 5). The HUD
 /// itself (layout, menus, Escape handling) is the app's (Task 17).
 pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
+    // obj_hud Step_1 runs water_counter_step before its input handling
+    crate::world::water_counter_step(sim);
     upgrades::apply_commands(sim, input);
 }
 
