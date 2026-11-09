@@ -492,3 +492,17 @@ pub fn squirrel_tree_has_mushroom(sim: &Sim, tree_uid: u64) -> bool {
 pub fn squirrel_edge_x(sim: &Sim, tree_uid: u64, _side: f64, _y: f64) -> f64 {
     sim.forest.tree(tree_uid).map_or(0.0, |t| t.x)
 }
+
+/// The hover-bar progress of mushroom `i` by type, as `hover_bar_step_draw` picks it
+/// (`predator_progress`, `tree_shroom_progress`, `experience_progress`, `consumptor_progress`,
+/// `repeller_regen_progress`); `None`: no bar.
+pub fn hover_progress(sim: &Sim, i: usize) -> Option<f64> {
+    match MushroomKind::from_code(sim.state.mushrooms[i].kind)? {
+        MushroomKind::Predator => life::predator_progress(sim, i),
+        MushroomKind::Tree => types::tree_shroom_progress(sim, i),
+        MushroomKind::Experience => types::experience_progress(sim, i),
+        MushroomKind::Consumptor => consumptor::consumptor_progress(sim, i),
+        MushroomKind::Repeller => types::repeller_regen_progress(sim, i),
+        _ => None,
+    }
+}

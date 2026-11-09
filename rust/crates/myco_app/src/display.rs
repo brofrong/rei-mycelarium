@@ -220,20 +220,128 @@ pub struct SaveDir(pub PathBuf);
 #[derive(Resource, Clone, Debug, PartialEq)]
 pub struct Display(pub DisplaySettings);
 
+/// Ask the display to step through the window sizes (`display_cycle_size(dir)`, settings menu).
+#[derive(Message, Clone, Copy, Debug)]
+pub struct CycleWindowSize(pub i32);
+
+/// The window sizes offered in the settings (`global.display_sizes`) and the chosen one.
+#[derive(Resource, Clone, Debug, PartialEq)]
+pub struct DisplaySizes {
+    pub sizes: Vec<(u32, u32)>,
+    pub index: usize,
+}
+
+impl DisplaySizes {
+    /// `display_init`'s list: the standard sizes that fit the screen (`display_get_width()`,
+    /// `display_get_height() - 80`, in points as the LÖVE port reports them), at least 1280×720;
+    /// the size saved in settings.ini is selected, else the largest.
+    pub fn new(screen: Option<(f64, f64)>, saved: Option<(u32, u32)>) -> DisplaySizes {
+        const ALL: [(u32, u32); 7] = [
+            (1280, 720),
+            (1366, 768),
+            (1600, 900),
+            (1920, 1080),
+            (2560, 1440),
+            (3200, 1800),
+            (3840, 2160),
+        ];
+        let (dw, dh) = screen.unwrap_or((1920.0, 1080.0 + 80.0));
+        let mut sizes: Vec<(u32, u32)> = ALL
+            .iter()
+            .copied()
+            .filter(|&(w, h)| w as f64 <= dw && h as f64 <= dh - 80.0)
+            .collect();
+        if sizes.is_empty() {
+            sizes.push(ALL[0]);
+        }
+        let index = saved
+            .and_then(|want| sizes.iter().rposition(|&s| s == want))
+            .unwrap_or(sizes.len() - 1);
+        DisplaySizes { sizes, index }
+    }
+
+    // port: display_window_size
+    pub fn display_window_size(&self) -> (u32, u32) {
+        self.sizes[self.index]
+    }
+
+    // port: display_cycle_size
+    /// Step to the next/previous size (wrapping); the caller applies and saves it.
+    pub fn display_cycle_size(&mut self, dir: i32) -> (u32, u32) {
+        let n = self.sizes.len() as i64;
+        self.index = (self.index as i64 + dir as i64 + n).rem_euclid(n) as usize;
+        self.display_window_size()
+    }
+}
+
+fn init_display_sizes(
+    mut commands: Commands,
+    screen: Option<Res<ScreenInfo>>,
+    dir: Option<Res<SaveDir>>,
+) {
+    let pt = screen.map(|s| (s.width_pt, s.height_pt));
+    // ini_read_real("display", "window_w"/"window_h", 0)
+    let text = dir
+        .and_then(|d| std::fs::read(d.0.join("settings.ini")).ok())
+        .map(|b| String::from_utf8_lossy(&b).into_owned())
+        .unwrap_or_default();
+    let num = |k: &str| {
+        save::ini_read(&text, "display", k)
+            .and_then(|v| v.trim().parse::<f64>().ok())
+            .unwrap_or(0.0)
+    };
+    let saved = Some((num("window_w") as u32, num("window_h") as u32));
+    commands.insert_resource(DisplaySizes::new(pt, saved));
+}
+
+/// `display_cycle_size`: pick the size, resize the window when windowed, save settings.ini.
+fn apply_cycle_size(
+    mut msgs: MessageReader<CycleWindowSize>,
+    sizes: Option<ResMut<DisplaySizes>>,
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut display: ResMut<Display>,
+    dir: Res<SaveDir>,
+) {
+    let Some(mut sizes) = sizes else {
+        msgs.clear();
+        return;
+    };
+    let mut changed = false;
+    for m in msgs.read() {
+        sizes.display_cycle_size(m.0);
+        changed = true;
+    }
+    if !changed {
+        return;
+    }
+    let (w, h) = sizes.display_window_size();
+    display.0.window_w = w as _;
+    display.0.window_h = h as _;
+    if !display.0.fullscreen {
+        if let Ok(mut win) = windows.single_mut() {
+            // settings sizes are logical points (ruling R23)
+            win.resolution.set(w as f32, h as f32);
+            win.position = WindowPosition::Centered(MonitorSelection::Current);
+        }
+    }
+    if let Err(e) = write_display_settings(&dir.0, &display.0) {
+        warn!("settings.ini: {e}");
+    }
+}
+
 /// Ask the display to switch fullscreen on or off; the choice is written to settings.ini.
 #[derive(Message, Clone, Copy, Debug)]
 pub struct SetFullscreen(pub bool);
 
 /// The primary window for the given settings (`display.init`): fullscreen below the notch, or a
-/// window of `window_w×window_h` physical pixels, centred.
-pub fn primary_window(settings: &DisplaySettings, screen: Option<&ScreenInfo>) -> Window {
-    let sf = screen.map(|s| s.scale).unwrap_or(1.0).max(1.0);
+/// window of `window_w×window_h` logical points, centred. Ruling R23: LÖVE (highdpi, no DPI
+/// scaling) applies the settings.ini size as points (`gm/display.lua`), so a 1366×768 window is
+/// 2732×1536 pixels on Retina; the size is not divided by the scale factor. (Before the window
+/// exists Bevy's scale factor is 1, and winit creates it with this logical size.)
+pub fn primary_window(settings: &DisplaySettings, _screen: Option<&ScreenInfo>) -> Window {
     let mut w = Window {
         title: "Mycelarium".into(),
-        resolution: WindowResolution::new(
-            ((settings.window_w as f64 / sf).round() as u32).max(1),
-            ((settings.window_h as f64 / sf).round() as u32).max(1),
-        ),
+        resolution: WindowResolution::new(settings.window_w.max(1), settings.window_h.max(1)),
         position: WindowPosition::Centered(MonitorSelection::Primary),
         ..default()
     };
@@ -248,7 +356,12 @@ pub struct DisplayPlugin;
 impl Plugin for DisplayPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SetFullscreen>()
-            .add_systems(Update, (display_keys, apply_set_fullscreen).chain());
+            .add_message::<CycleWindowSize>()
+            .add_systems(Startup, init_display_sizes)
+            .add_systems(
+                Update,
+                (display_keys, apply_set_fullscreen, apply_cycle_size).chain(),
+            );
     }
 }
 
@@ -285,10 +398,9 @@ fn apply_set_fullscreen(
         win.mode = if on {
             WindowMode::BorderlessFullscreen(MonitorSelection::Current)
         } else {
+            // settings sizes are logical points (ruling R23)
             let (w, h) = (display.0.window_w, display.0.window_h);
-            let sf = win.scale_factor().max(1.0) as f64;
-            win.resolution
-                .set((w as f64 / sf) as f32, (h as f64 / sf) as f32);
+            win.resolution.set(w as f32, h as f32);
             WindowMode::Windowed
         };
     }
