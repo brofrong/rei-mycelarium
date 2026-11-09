@@ -3,7 +3,8 @@
 
 Prints `name<TAB>alias<TAB>task` for each `^function NAME` in game/myco/gen/*.lua (except the
 `___struct___*` data shapes). `task` is `T<N>`, `skip:<reason>` or `T?` when no rule applies; the
-`T?` rows are resolved by hand afterwards (they are also listed on stderr).
+`T?` rows are listed on stderr. Hand decisions for rows no rule covers live in MANUAL; a
+function that calls drawing builtins goes to the render task of its logic task (ruling R7).
 
 Usage: python3 -I tools/portmap_init.py > rust/portmap.tsv
 """
@@ -19,17 +20,74 @@ ALIAS_RE = re.compile(r"self\.([A-Za-z_][A-Za-z0-9_]*) = gm\.method\(self, ([A-Z
 
 
 def collect(gen=GEN):
-    """Return [(name, chunk_file_stem)] in file order, and {name: alias}."""
+    """Return [(name, chunk_file_stem, body)] in file order, and {name: alias}.
+
+    `body` is the text from `function NAME(` to the first column-0 `end`.
+    """
     funcs, aliases = [], {}
     for path in sorted(gen.glob("*.lua")):
         text = path.read_text()
-        for name in FUNC_RE.findall(text):
-            if not name.startswith("___struct___"):
-                funcs.append((name, path.stem))
+        for m in FUNC_RE.finditer(text):
+            name = m.group(1)
+            if name.startswith("___struct___"):
+                continue
+            end = re.compile(r"^end\b", re.M).search(text, m.end())
+            funcs.append((name, path.stem, text[m.start():end.end() if end else len(text)]))
         for alias, name in ALIAS_RE.findall(text):
             if alias != name and name not in aliases:
                 aliases[name] = alias
     return funcs, aliases
+
+
+# Ruling R7: a function whose own body calls a drawing builtin (draw/gpu/surface/shader/texture,
+# plus vertex-buffer building and freeing) belongs to a render task.
+DRAW_RE = re.compile(r"\bgm\.((?:draw|gpu|surface|shader|texture|vertex)_[A-Za-z0-9_]*)\s*\(")
+# pure size/existence/handle queries do not make a function a drawing one
+DRAW_QUERY = {"surface_exists", "surface_get_width", "surface_get_height", "texture_get_width",
+              "texture_get_height", "texture_get_texel_width", "texture_get_texel_height",
+              "shader_is_compiled", "shader_get_uniform", "shader_get_sampler_index"}
+# mixed functions that stay with their logic task (the render task ports their GPU part unmarked):
+# load_game frees the old mycelium vertex buffers; the controller Create defines all mycelium state
+# and also builds the vertex format
+DRAW_KEEP = {"load_game", "gml_Object_obj_mycelium_controller_Create_0"}
+# logic task -> render task that takes its drawing rows
+DRAW_TASK = {"T3": "T17", "T5": "T13", "T6": "T13", "T7": "T13", "T8": "T14", "T9": "T15",
+             "T10": "T15", "T11": "T17", "T12": "T16"}
+
+
+def draw_calls(body):
+    """Drawing builtins called in a Lua function body (size/existence queries excluded)."""
+    return sorted({c for c in DRAW_RE.findall(body) if c not in DRAW_QUERY})
+
+
+def draw_reassign(task, body, name=""):
+    if name in DRAW_KEEP or not draw_calls(body):
+        return task
+    return DRAW_TASK.get(task, task)
+
+
+# Hand decisions for rows no table rule covers (Task 1 step 6, rulings R5/R8).
+MANUAL = {}
+for _task, _names in {
+    "T3": "balance_defaults balance_init worldgen_defaults worldgen_init "
+          "game_mode_apply game_mode_start visual_defaults visual_init ui_font ui_font_small "
+          "gml_Object_obj_game_Create_0 gml_Object_obj_game_Other_3",
+    "T4": "display_init display_fit display_apply focus_step art_preload_step display_step "
+          "display_window_size display_save display_set_fullscreen display_cycle_size",
+    "T15": "post_layer_draw surface_fit bw_shader_set gml_Object_obj_game_Draw_74 gml_Object_obj_game_Draw_75 "
+           "gml_Object_obj_game_Draw_77 gml_Object_obj_life_Draw_0",
+    "T17": "ui_blocking animal_marker_list animal_markers_update animal_markers_draw animal_marker_at "
+           "gml_Object_obj_hud_Create_0 gml_Object_obj_hud_Step_1 gml_Object_obj_hud_Draw_75",
+    "T10": "squirrel_grab gml_Object_obj_life_Create_0 gml_Object_obj_life_Step_0 "
+           "game_init game_step gml_Object_obj_game_Step_0",
+    "T8": "anon__49789__anon__49515__gml_Object_obj_mycelium_controller_Create_0 "
+          "anon__86877__anon__86458__gml_Object_obj_mycelium_controller_Create_0 "
+          "gml_Object_obj_mycelium_controller_Create_0 gml_Object_obj_mycelium_controller_Step_0 "
+          "gml_Object_obj_mycelium_controller_CleanUp_0",
+    "T14": "gml_Object_obj_mycelium_controller_Draw_0 gml_Object_obj_mycelium_controller_Draw_64",
+}.items():
+    for _n in _names.split():
+        MANUAL[_n] = _task
 
 
 def starts(name, *prefixes):
@@ -109,12 +167,23 @@ def classify(name, alias, chunk):
     return "T?"
 
 
+def assign(name, alias, chunk, body):
+    """Final task of a row: hand decision, else table rule; then the R7 drawing rule."""
+    task = MANUAL.get(name) or classify(name, alias, chunk)
+    if task == "T?":
+        if "world_clear_ocean" in name:
+            task = "T5"
+        elif "obj_forest_controller" in name:
+            task = "T16"
+    return draw_reassign(task, body, name)
+
+
 def main():
     funcs, aliases = collect()
     unresolved = []
-    for name, chunk in funcs:
+    for name, chunk, body in funcs:
         alias = aliases.get(name)
-        task = classify(name, alias, chunk)
+        task = assign(name, alias, chunk, body)
         print(f"{name}\t{alias or '-'}\t{task}")
         if task == "T?":
             unresolved.append(f"{chunk}: {name} ({alias or '-'})")

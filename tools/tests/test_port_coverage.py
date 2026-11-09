@@ -43,3 +43,18 @@ def test_other_task_not_checked(tmp_path):
     r = run(tmp_path, "foo\t-\tT5\nbaz\t-\tT6\n", "// port: foo\n", "--all")
     assert r.returncode == 1
     assert "baz" in r.stdout
+
+
+def test_unknown_task_rejected(tmp_path):
+    r = run(tmp_path, "foo\t-\tT5\n", "// port: foo\n", "--task", "T55")
+    assert r.returncode == 2
+    assert "T55" in r.stdout + r.stderr
+
+
+def test_markers_in_tests_dir_ignored(tmp_path):
+    src = tmp_path / "src"
+    (src / "crate" / "tests").mkdir(parents=True)
+    (src / "crate" / "tests" / "t.rs").write_text("// port: foo\n")
+    r = run(tmp_path, "foo\t-\tT5\n", "fn x() {}\n", "--task", "T5")
+    assert r.returncode == 1
+    assert "foo" in r.stdout

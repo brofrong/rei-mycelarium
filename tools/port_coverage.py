@@ -6,7 +6,8 @@ rust/portmap.tsv rows: `name<TAB>alias<TAB>task` (alias `-` when none, task `T<N
 `// port: <alias>`. `skip:*` rows need no marker.
 
 Usage: python3 -I tools/port_coverage.py --task T5 | --all  [--portmap FILE] [--src DIR]
-Exit code 1 when a required function has no marker.
+Exit code 1 when a required function has no marker, 2 for a task absent from the map.
+Markers under target/ and tests/ directories do not count.
 """
 import argparse
 import re
@@ -32,7 +33,8 @@ def read_portmap(path):
 def markers(src):
     found = set()
     for path in Path(src).rglob("*.rs"):
-        if "target" in path.relative_to(src).parts:
+        parts = path.relative_to(src).parts
+        if "target" in parts or "tests" in parts:  # tests do not port anything
             continue
         found.update(MARKER_RE.findall(path.read_text(errors="replace")))
     return found
@@ -48,6 +50,9 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     rows = read_portmap(args.portmap)
+    if args.task and not any(r[2] == args.task for r in rows):
+        print(f"unknown task {args.task}: no rows in {args.portmap}", file=sys.stderr)
+        return 2
     have = markers(args.src)
     wanted = [r for r in rows if not r[2].startswith("skip:") and (args.all or r[2] == args.task)]
     missing = [r for r in wanted if r[0] not in have and (r[1] == "-" or r[1] not in have)]
