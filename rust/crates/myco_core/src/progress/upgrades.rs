@@ -134,11 +134,12 @@ pub fn upg_cost(st: &GameState, id: &str) -> f64 {
         UpgKind::Root | UpgKind::Ghost => 0.0,
         UpgKind::Unlock => b(st, def.cost_key),
         UpgKind::Level => {
-            let tier_mult = b(st, "upgrade_cost_tier_mult").powf((def.tier - 1.0).max(0.0));
+            let tier_mult =
+                crate::gml::power(b(st, "upgrade_cost_tier_mult"), (def.tier - 1.0).max(0.0));
             let growth = bal_get(st.state.mode, &format!("upg_{id}_cost_growth"))
                 .unwrap_or_else(|| b(st, "upgrade_cost_growth"));
             let lvl = upg_level(st, id) as f64;
-            (b(st, "upgrade_cost_base") * tier_mult * growth.powf(lvl)).ceil()
+            (b(st, "upgrade_cost_base") * tier_mult * crate::gml::power(growth, lvl)).ceil()
         }
     }
 }

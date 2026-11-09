@@ -547,11 +547,12 @@ pub fn tutorial_draw(
     col: f64,
     gw: f64,
     gh: f64,
-    vx: f64,
-    vy: f64,
+    to_gui: &dyn Fn(f64, f64) -> (f64, f64),
     myc: (f64, f64),
 ) {
     let rt = &sim.progress.tutorial;
+    // the mycelium origin on screen (the original: `myc - camera_view_x/y` at 1×)
+    let (mgx, mgy) = to_gui(myc.0, myc.1);
     let pad = 24.0;
     let frames = hand_frames(assets);
     let nf = frames.len();
@@ -561,8 +562,8 @@ pub fn tutorial_draw(
         g.sprite_ext(
             spr,
             0,
-            myc.0 - vx + vis("tutorial_hand_offset_x"),
-            myc.1 - vy + vis("tutorial_hand_offset_y"),
+            mgx + vis("tutorial_hand_offset_x"),
+            mgy + vis("tutorial_hand_offset_y"),
             sc,
             sc,
             C_WHITE,
@@ -573,8 +574,8 @@ pub fn tutorial_draw(
         if rt.camera_alpha > 0.0 {
             let sc = vis("tutorial_camera_scale");
             let (sw, sh) = (cs.size.x as f64, cs.size.y as f64);
-            let cx = myc.0 - vx - (sw * 0.5 - cs.origin.x as f64) * sc;
-            let cy = myc.1 - vy - vis("tutorial_camera_offset_y") - (sh - cs.origin.y as f64) * sc;
+            let cx = mgx - (sw * 0.5 - cs.origin.x as f64) * sc;
+            let cy = mgy - vis("tutorial_camera_offset_y") - (sh - cs.origin.y as f64) * sc;
             let n = cs.frames.len().max(1) as f64;
             g.sprite_ext(
                 "CAMERA_TUTOR",
@@ -608,8 +609,7 @@ pub fn tutorial_draw(
         let (mut tx, mut ty) = (t.x, t.y);
         match t.anchor.as_str() {
             "world" => {
-                tx -= vx;
-                ty -= vy;
+                (tx, ty) = to_gui(tx, ty);
             }
             "screen" => {
                 tx *= gw;

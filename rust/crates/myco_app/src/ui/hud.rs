@@ -916,16 +916,7 @@ pub fn hud_step_pre(
     hud.cave_tip = if ui_blocking(&sim.0, &hud) {
         String::new()
     } else {
-        let (vx, vy) = view_xy(&cams);
-        myco_core::world::caves::cave_hover_tip(
-            &mut sim.0,
-            inp.mx,
-            inp.my,
-            vis("cave_icons_x") + cams.layout.ui_ox,
-            vis("cave_icons_y"),
-            vx,
-            vy,
-        )
+        cave_tip(&mut sim.0, &cams, inp.mx, inp.my)
     };
     pending.tasks_popup_open = tasks::tasks_popup_open(&sim.0);
     out.0.hud = hud_blocks(&sim.0);
@@ -1091,10 +1082,29 @@ pub fn hud_icon_number(
     hud_text(g, x + w + hud.ui.icon_gap, cy, text, tscale);
 }
 
-/// The world → GUI offset of the drawn camera (`camera_view_x/y` at zoom 1).
-pub fn view_xy(cams: &Cameras) -> (f64, f64) {
-    let rv = cams.render_view();
-    (rv.x, rv.y)
+/// Draw_75's cave tooltip (`cave_hover_tip`) for the GUI cursor (mx, my): the held-perk icon
+/// row, else the taken cave wall under the cursor's world point, mapped through the zoomed
+/// render camera (`cams.gui_to_world`; at 1× that is the original's `mx + camera_view_x`).
+pub fn cave_tip(sim: &mut Sim, cams: &Cameras, mx: f64, my: f64) -> String {
+    let w = cams.gui_to_world(bevy::math::DVec2::new(mx, my));
+    myco_core::world::caves::cave_hover_tip_world(
+        sim,
+        mx,
+        my,
+        vis("cave_icons_x") + cams.layout.ui_ox,
+        vis("cave_icons_y"),
+        w.x,
+        w.y,
+    )
+}
+
+/// World point → GUI point through the drawn (zoomed) camera, as a pair for the drawing ports
+/// that took `camera_view_x/y` offsets in the original.
+pub fn world_to_gui_fn(cams: &Cameras) -> impl Fn(f64, f64) -> (f64, f64) + '_ {
+    move |x, y| {
+        let p = cams.world_to_gui(bevy::math::DVec2::new(x, y));
+        (p.x, p.y)
+    }
 }
 
 /// Draw_75, first part: tabs, bar, upgrade icon and button, length, food, water.
@@ -1246,7 +1256,7 @@ pub fn draw_main(
     myc: (f64, f64),
 ) {
     let (gw, gh) = (cams.layout.view_w, cams.layout.view_h);
-    let (vx, vy) = view_xy(cams);
+    let to_gui = world_to_gui_fn(cams);
     if !hud.hud_hidden {
         let u = &hud.ui;
         ui_tasks::tasks_draw(g, sim, hud, uf, loc, cams.layout.ui_ox, gw, assets);
@@ -1254,7 +1264,7 @@ pub fn draw_main(
         g.valign = 1;
         g.halign = 1;
         g.set_colour(COLOR_INK);
-        // cave_popups_draw(vx, vy): Task 13
+        // cave_popups_draw: drawn by render::world (Task 13)
         if !sim.intro_active {
             let blocked = ui_blocking(sim, hud);
             markers::animal_markers_draw(
@@ -1325,7 +1335,7 @@ pub fn draw_main(
     }
     let box_ = hud.upgrades_button_rect(assets);
     ui_tasks::tutorial_draw(
-        g, sim, assets, uf, loc, box_, COLOR_INK, gw, gh, vx, vy, myc,
+        g, sim, assets, uf, loc, box_, COLOR_INK, gw, gh, &to_gui, myc,
     );
 }
 

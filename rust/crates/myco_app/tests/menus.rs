@@ -418,6 +418,96 @@ fn quit_writes_slot() {
     assert!(std::fs::read_dir(&dir2).unwrap().next().is_none());
 }
 
+/// Every way out reaches obj_game Other_3 through `AppExit` and saves exactly once: Cmd+Q
+/// (the app menu's Quit, the Dock's Quit: `applicationShouldTerminate:` -> `request_quit`),
+/// Cmd+Q as a key, Cmd+Esc, closing the primary window; two of them in a row still save once.
+#[test]
+fn every_quit_path_saves_once() {
+    use bevy::window::{exit_on_primary_closed, PrimaryWindow};
+    use myco_app::display;
+    let dir = temp_dir("quit-paths");
+    let mut sim = title(&dir);
+    sim.start_from_title(1, "Leaving", GameMode::Exploration);
+    sim.intro_active = false;
+    let mut app = App::new();
+    app.add_message::<AppExit>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_resource(SimRes(sim))
+        .init_resource::<ExitSaved>()
+        .add_systems(
+            Update,
+            (display::display_quit_requests, display::display_keys),
+        )
+        .add_systems(PostUpdate, exit_on_primary_closed)
+        .add_systems(Last, save_on_exit);
+    let win = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    app.update();
+    let path = save::save_path(&dir, 1);
+    assert!(!path.exists(), "no save before quitting");
+    // the app menu's Quit (Cmd+Q): the first request is turned into AppExit, not a terminate
+    assert!(!display::request_quit(), "first Quit is not forced");
+    app.update();
+    assert!(path.exists(), "Cmd+Q saved");
+    assert!(app.world().resource::<ExitSaved>().0);
+    // later exits (Cmd+Esc, Cmd+Q as a key, closing the window) do not save again
+    std::fs::remove_file(&path).unwrap();
+    {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.press(KeyCode::SuperLeft);
+        keys.press(KeyCode::Escape);
+        keys.press(KeyCode::KeyQ);
+    }
+    app.world_mut().despawn(win);
+    app.update();
+    let exits = app
+        .world()
+        .resource::<Messages<AppExit>>()
+        .iter_current_update_messages()
+        .count();
+    assert!(exits >= 2, "Cmd+Esc/Cmd+Q/close each ask to exit ({exits})");
+    assert!(!path.exists(), "saved only once");
+    // a second Quit while the first is still pending forces the terminate (a stuck app quits)
+    assert!(display::request_quit());
+}
+
+/// Closing the window and Cmd+Esc each save on their own (fresh app each).
+#[test]
+fn window_close_and_cmd_esc_save() {
+    use bevy::window::{exit_on_primary_closed, PrimaryWindow};
+    use myco_app::display;
+    for (tag, close) in [("close", true), ("cmdesc", false)] {
+        let dir = temp_dir(tag);
+        let mut sim = title(&dir);
+        sim.start_from_title(1, "Leaving", GameMode::Exploration);
+        sim.intro_active = false;
+        let mut app = App::new();
+        app.add_message::<AppExit>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_resource(SimRes(sim))
+            .init_resource::<ExitSaved>()
+            .add_systems(Update, display::display_keys)
+            .add_systems(PostUpdate, exit_on_primary_closed)
+            .add_systems(Last, save_on_exit);
+        let win = app
+            .world_mut()
+            .spawn((Window::default(), PrimaryWindow))
+            .id();
+        app.update();
+        if close {
+            app.world_mut().despawn(win);
+        } else {
+            let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            keys.press(KeyCode::SuperRight);
+            keys.press(KeyCode::Escape);
+        }
+        app.update();
+        assert!(save::save_path(&dir, 1).exists(), "{tag} saved");
+    }
+}
+
 /// Credits open from the title and any click closes them.
 #[test]
 fn credits_open_and_close() {
@@ -523,4 +613,36 @@ fn main_menu_restart_happens_after_the_step() {
     // title's first step makes ~160 more (the backdrop leaves)
     let n = draws(sim).expect("from the title's own seed");
     assert!(n < 60, "the new title has not stepped yet ({n} draws)");
+}
+
+/// `menu::menus_block` is the menus' share of `ui_blocking()`; with the HUD's share
+/// (`hud::hud_blocks`: tasks popup, blocking cut-scene) it is the whole `hud::ui_blocking`.
+#[test]
+fn menus_block_plus_hud_blocks_is_ui_blocking() {
+    use myco_app::ui::hud::{hud_blocks, ui_blocking, HudState};
+    let dir = temp_dir("blocking");
+    let mut sim = title(&dir);
+    sim.start_from_title(1, "Blocks", GameMode::Exploration);
+    for bits in 0u32..128 {
+        let b = |i: u32| bits & (1 << i) != 0;
+        sim.intro_active = b(0);
+        sim.title_open = b(1);
+        sim.pause_open = b(2);
+        sim.state.state.tasks.popup = if b(3) { "t".into() } else { String::new() };
+        let flags = UiFlags {
+            menu_open: b(4),
+            debug_open: b(5),
+            ..Default::default()
+        };
+        let logo = b(6);
+        let mut hud = HudState::new();
+        hud.menu_open = flags.menu_open;
+        hud.debug_open = flags.debug_open;
+        hud.logo_open = logo;
+        assert_eq!(
+            menus_block(&sim, &flags, logo) || hud_blocks(&sim),
+            ui_blocking(&sim, &hud),
+            "bits {bits:07b}"
+        );
+    }
 }

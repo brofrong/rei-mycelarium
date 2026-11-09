@@ -179,7 +179,7 @@ pub fn maze_room(m: &mut Maze, cx: f64, cy: f64, rx: f64, ry: f64) -> MazeRoom {
             let dx = (col + 0.5 - cx) / rx;
             let dy = (row + 0.5 - cy) / ry;
             let a = dy.atan2(dx);
-            let k = 1.0 + (3.0 * a + p1).sin() * 0.18 + (5.0 * a + p2).sin() * 0.1;
+            let k = 1.0 + gml::sin(3.0 * a + p1) * 0.18 + gml::sin(5.0 * a + p2) * 0.1;
             if dx * dx + dy * dy <= k * k {
                 maze_open_at(m, col, row);
             }
@@ -223,14 +223,14 @@ pub fn maze_tunnel(
     let bulge_ch = wld("maze_bulge_chance");
     let mut i = 0.0;
     while i < steps {
-        let mut rr = gml::lerp(r0, r1, ((i * 0.6 * fr + ph).sin() + 1.0) * 0.5);
+        let mut rr = gml::lerp(r0, r1, (gml::sin(i * 0.6 * fr + ph) + 1.0) * 0.5);
         if bulge <= 0.0 && maze_rng(m) < bulge_ch {
             bulge = 6.0 + maze_rng(m) * 6.0;
             bulge_amp = 1.0 + maze_rng(m) * 1.6;
         }
         if bulge > 0.0 {
             bulge -= 0.6;
-            rr += bulge_amp * (PI * 1f64.min(bulge / 6.0)).sin();
+            rr += bulge_amp * gml::sin(PI * 1f64.min(bulge / 6.0));
         }
         maze_disc(m, x, y, rr);
         pts.push((x, y));
@@ -349,9 +349,9 @@ pub fn maze_dig_out(m: &mut Maze, dist: &[i64], mut lc: i64, mut lr: i64) {
         }
         lc = bc;
         lr = br;
-        let x = m.c1 + lc as f64 + 0.5 + (k * 0.5 + ph).sin() * 0.6;
+        let x = m.c1 + lc as f64 + 0.5 + gml::sin(k * 0.5 + ph) * 0.6;
         let y = m.top + lr as f64 + 0.5;
-        let r = gml::lerp(tmin * 0.9, tmin * 1.5, ((k * 0.3 + ph).sin() + 1.0) * 0.5);
+        let r = gml::lerp(tmin * 0.9, tmin * 1.5, (gml::sin(k * 0.3 + ph) + 1.0) * 0.5);
         maze_disc(m, x, y, r);
         k += 1.0;
     }
@@ -387,7 +387,7 @@ pub fn maze_cave_hollows(w: &mut WorldRt, m: &mut Maze, x1: f64, y1: f64, x2: f6
                 let dx = (xx + 0.5 - cx) / rx;
                 let dy = (yy + 0.5 - cy) / ry;
                 let a = dy.atan2(dx);
-                let k = 1.05 + 0.08 * (4.0 * a + phase).sin();
+                let k = 1.05 + 0.08 * gml::sin(4.0 * a + phase);
                 if gml::power(dx.abs(), 4.0) + gml::power(dy.abs(), 4.0) <= gml::power(k, 4.0) {
                     let lx = (xx - m.c1) as i64;
                     let ly = (yy - m.top) as i64;
@@ -894,8 +894,8 @@ pub fn world_cluster_build(w: &mut WorldRt, idx: usize) -> MazeData {
             let dx = m.c1 + i as f64 + 0.5 - (cl.col + 0.5);
             let dy = m.top + j as f64 + 0.5 - (cl.row + 0.5);
             let a = dy.atan2(dx);
-            let rr =
-                cl.r * (0.07 * (5.0 * a + phase2).sin() + 0.12 * (3.0 * a + phase1).sin() + 1.0);
+            let rr = cl.r
+                * (0.07 * gml::sin(5.0 * a + phase2) + 0.12 * gml::sin(3.0 * a + phase1) + 1.0);
             inside[(j * ni + i) as usize] = dx * dx + dy * dy <= rr * rr;
         }
     }

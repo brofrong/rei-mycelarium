@@ -391,7 +391,7 @@ fn click_system(
 #[derive(Resource, Default, Debug, Clone, PartialEq)]
 pub struct BuildAffordable(pub Vec<bool>);
 
-fn build_affordable_system(mut sim: ResMut<SimRes>, mut ok: ResMut<BuildAffordable>) {
+pub fn build_affordable_system(mut sim: ResMut<SimRes>, mut ok: ResMut<BuildAffordable>) {
     let sim = &mut sim.0;
     let v: Vec<bool> = if sim.mycelium.mushroom_prompt {
         let opts = sim.mycelium.build_options.clone();
@@ -449,7 +449,13 @@ impl Plugin for MycPromptsPlugin {
             )
             .add_systems(
                 FixedUpdate,
-                click_system.in_set(SimSet::Prepare).after(run_script),
+                // the prompts' clicks are obj_mycelium_controller's Step: after every Begin
+                // Step (menus, HUD, tree) and obj_game's Step (`focus_step`)
+                click_system
+                    .in_set(SimSet::Prepare)
+                    .after(run_script)
+                    .after(crate::ui::HudStepSet::Game)
+                    .after(crate::sim_bridge::focus_step),
             )
             .add_systems(Update, draw_system);
     }

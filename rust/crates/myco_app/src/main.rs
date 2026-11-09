@@ -3,7 +3,8 @@
 //! Environment: `MYCO_ASSETS` (assets folder), `MYCO_SAVE_DIR` (saves and settings.ini; default
 //! the LÖVE port's folder), `MYCO_SEED`, `MYCO_INPUT`, `MYCO_DUMP`, `MYCO_SHOT`, `MYCO_FOCUS`
 //! and the render-comparison hooks `MYCO_FORCE_RAIN`, `MYCO_CAMERA`, `MYCO_CAVE_TAKE`, `MYCO_BW`,
-//! `MYCO_UI_DEMO` (all in `autopilot`; each acts only when set).
+//! `MYCO_UI_DEMO` (all in `autopilot`; each acts only when set). `MYCO_AMBIGUITY=1` logs the
+//! fixed step's conflicting systems that have no order (Bevy's ambiguity detection).
 
 use bevy::prelude::*;
 use bevy::window::ExitCondition;
@@ -73,6 +74,15 @@ fn main() {
     .add_plugins(ArtPreloadPlugin);
     if let Some(s) = screen {
         app.insert_resource(s);
+    }
+    if std::env::var("MYCO_AMBIGUITY").is_ok_and(|v| v == "1") {
+        use bevy::ecs::schedule::{LogLevel, ScheduleBuildSettings};
+        app.edit_schedule(FixedUpdate, |s| {
+            s.set_build_settings(ScheduleBuildSettings {
+                ambiguity_detection: LogLevel::Warn,
+                ..default()
+            });
+        });
     }
     app.run();
 }

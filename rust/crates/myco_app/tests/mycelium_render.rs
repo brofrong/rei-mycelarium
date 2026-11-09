@@ -561,9 +561,9 @@ fn a_click_on_an_in_world_button_becomes_its_command() {
 #[test]
 fn a_replaced_sim_stops_the_old_hyphae_sounds() {
     use bevy::ecs::system::RunSystemOnce;
-    use bevy::prelude::World;
+    use bevy::prelude::{Messages, World};
     use myco_app::render::mycelium::tiles_step_system;
-    use myco_app::sim_bridge::SimRes;
+    use myco_app::sim_bridge::{SimEventMsg, SimRes};
     use myco_core::audio::{HyphaePlan, HyphaeStart};
     use myco_core::events::{AudioCall, SimEvent};
     use myco_core::mycelium::GrowthSound;
@@ -587,13 +587,23 @@ fn a_replaced_sim_stops_the_old_hyphae_sounds() {
     let mut world = World::new();
     world.insert_resource(SimRes(sim));
     world.insert_resource(MycBake::default());
+    world.init_resource::<Messages<SimEventMsg>>();
     world.run_system_once(tiles_step_system).unwrap();
     assert_eq!(world.resource::<MycBake>().sounding, vec![4242]);
     // back to the title: a fresh Sim replaces the game
     let fresh = Sim::new_game(GameMode::Exploration, "", Some(8));
     world.resource_mut::<SimRes>().0 = fresh;
     world.run_system_once(tiles_step_system).unwrap();
-    let events = world.resource_mut::<SimRes>().0.drain_events();
-    assert!(events.contains(&SimEvent::Audio(AudioCall::HyphaeStop { id: 4242 })));
+    // final review finding 6: the stop reaches audio in this step (the step's events were
+    // already drained by `step_sim`), not with the next step's events
+    let stop = SimEvent::Audio(AudioCall::HyphaeStop { id: 4242 });
+    let sent: Vec<SimEvent> = world
+        .resource::<Messages<SimEventMsg>>()
+        .iter_current_update_messages()
+        .map(|m| m.0.clone())
+        .collect();
+    assert!(sent.contains(&stop), "{sent:?}");
+    let late = world.resource_mut::<SimRes>().0.drain_events();
+    assert!(!late.contains(&stop), "not left for the next step");
     assert!(world.resource::<MycBake>().sounding.is_empty());
 }

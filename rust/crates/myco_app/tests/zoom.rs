@@ -237,3 +237,123 @@ fn forest_view_is_the_floored_shaken_camera() {
     assert_eq!(cam_x, 101.0);
     assert!(rv.w > cams.game_view.w * 1.9);
 }
+
+/// The real extracted assets with placeholder handles; `None` (test skipped) without build/assets.
+fn assets() -> Option<myco_app::assets::GameAssets> {
+    use bevy::prelude::Handle;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../build/assets");
+    if !root.join("sprites.json").exists() {
+        eprintln!("skipped: no build/assets");
+        return None;
+    }
+    Some(
+        myco_app::assets::GameAssets::load(
+            &root,
+            |_| Handle::default(),
+            |_| Handle::default(),
+            |_| Handle::default(),
+        )
+        .unwrap(),
+    )
+}
+
+/// The logic camera at (cx, cy) and the render zoom `z`.
+fn zoomed(cx: f64, cy: f64, z: f64) -> Cameras {
+    let mut cam = myco_core::camera::CameraRt::default();
+    cam.view_x = cx - 960.0;
+    cam.view_y = cy - 540.0;
+    cam.x = cam.view_x;
+    cam.y = cam.view_y;
+    let mut cams = Cameras::default();
+    cams.sync_game_view(&cam);
+    cams.zoom = z;
+    cams
+}
+
+/// Final review finding 3: at zoom 0.5 the cave-wall tooltip looks under the cursor's world
+/// point through the zoomed render camera, not `cursor + view top-left` at scale 1.
+#[test]
+fn cave_tooltip_follows_the_zoomed_cursor() {
+    let mut sim = small_colony();
+    let rects = sim.world.cave_rects().to_vec();
+    let r = rects.first().expect("a cave in seed 31607").clone();
+    sim.state
+        .state
+        .cave_taken
+        .insert(r.id.clone(), serde_json::json!(true));
+    // a solid point of the cave wall
+    let mut hit = None;
+    let mut y = r.y1;
+    while hit.is_none() && y < r.y2 {
+        let mut x = r.x1;
+        while x < r.x2 {
+            if r.solid_at(x, y) {
+                hit = Some(DVec2::new(x + 0.5, y + 0.5));
+                break;
+            }
+            x += 4.0;
+        }
+        y += 4.0;
+    }
+    let w = hit.expect("cave wall");
+    let cams = zoomed(w.x + 300.0, w.y - 200.0, 0.5);
+    let gui = cams.world_to_gui(w);
+    assert!(
+        gui.x > 0.0 && gui.x < 1920.0 && gui.y > 0.0 && gui.y < 1080.0,
+        "{gui:?}"
+    );
+    let tip = myco_app::ui::hud::cave_tip(&mut sim, &cams, gui.x, gui.y);
+    assert_eq!(tip, format!("perk_{}_desc", r.kind.id()));
+}
+
+/// Final review finding 3: cave popups (world-anchored text) sit at `world_to_gui` of their
+/// point at zoom 0.5.
+#[test]
+fn cave_popups_follow_the_zoom() {
+    use myco_app::ui::gm_draw::{DrawItem, Gm};
+    use myco_core::balance::vis;
+    use myco_core::world::caves::{CavePopup, CaveRt};
+    let Some(a) = assets() else { return };
+    let cams = zoomed(1500.0, 900.0, 0.5);
+    let now = 10_000.0;
+    let ms = vis("cave_popup_ms");
+    let (px, py) = (1700.0, 1000.0);
+    let draw = |to_gui: &dyn Fn(f64, f64) -> (f64, f64)| {
+        let mut caves = CaveRt::default();
+        caves.popups.push(CavePopup {
+            text: "perk_blue_name".into(),
+            x: px,
+            y: py,
+            born: now - ms * 0.5,
+        });
+        let mut g = Gm::new(&a);
+        myco_app::render::world::cave_popups_draw(
+            &mut g,
+            &mut caves,
+            &|k: &str| k.to_string(),
+            now,
+            to_gui,
+            1920.0,
+        );
+        g.items
+            .iter()
+            .rev()
+            .filter_map(|i| match i {
+                DrawItem::Text { x, y, .. } | DrawItem::Quad { x, y, .. } => {
+                    Some(DVec2::new(*x, *y))
+                }
+                _ => None,
+            })
+            .next()
+            .expect("popup text (glyph quads of the GM font)")
+    };
+    let at_origin = draw(&|_, _| (0.0, 0.0));
+    let zoomed_at = draw(&|x, y| {
+        let p = cams.world_to_gui(DVec2::new(x, y));
+        (p.x, p.y)
+    });
+    let rise = vis("cave_popup_rise_px") * 0.5;
+    let want = cams.world_to_gui(DVec2::new(px, py - rise));
+    let got = zoomed_at - at_origin;
+    assert!((got - want).length() < 1e-6, "{got:?} vs {want:?}");
+}

@@ -40,6 +40,6 @@ pub fn world_hash01(seed: i64, a: f64, b: f64, c: f64) -> f64 {
 // port: cave_hash
 /// `cave_hash(a, b, c)`: the classic sine hash, fractional part in [0, 1).
 pub fn cave_hash(a: f64, b: f64, c: f64) -> f64 {
-    let v = (a * 12.9898 + b * 78.233 + c * 37.719).sin() * 43758.5453;
+    let v = crate::gml::sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453;
     v - v.floor()
 }

@@ -41,6 +41,27 @@ pub fn point_in_rectangle(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64) 
     px >= x1 && px <= x2 && py >= y1 && py <= y2
 }
 
+/// C `sin`, with the argument hidden from the optimizer. On Apple targets release builds
+/// fuse `sin(a)` and `cos(a)` of the same argument into `__sincos_stret`, whose results can
+/// differ from separate `sin`/`cos` calls (LuaJIT calls them separately) by an ulp. Every sin
+/// in core goes through here (or [`cos`]/[`tan`]) so debug and release give the same bits.
+#[inline]
+pub fn sin(x: f64) -> f64 {
+    std::hint::black_box(x).sin()
+}
+
+/// C `cos`, argument hidden from the optimizer; see [`sin`].
+#[inline]
+pub fn cos(x: f64) -> f64 {
+    std::hint::black_box(x).cos()
+}
+
+/// C `tan`, argument hidden from the optimizer; see [`sin`].
+#[inline]
+pub fn tan(x: f64) -> f64 {
+    std::hint::black_box(x).tan()
+}
+
 /// `gm.power(a, b)` = Lua's `a ^ b`: the C library `pow`, called for every exponent. LLVM
 /// would turn `pow(x, 2.0)` into `x * x`, but the macOS libm `pow` is not correctly rounded
 /// (e.g. `pow(19.07197..., 2)` is one ulp above the product), so the exponent is hidden from
@@ -60,11 +81,11 @@ pub fn point_direction(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
 }
 
 pub fn lengthdir_x(len: f64, dir: f64) -> f64 {
-    len * (dir * DEG2RAD).cos()
+    len * cos(dir * DEG2RAD)
 }
 
 pub fn lengthdir_y(len: f64, dir: f64) -> f64 {
-    -len * (dir * DEG2RAD).sin()
+    -len * sin(dir * DEG2RAD)
 }
 
 /// Signed difference a - b wrapped to [-180, 180).
@@ -93,11 +114,11 @@ pub fn sign(x: f64) -> f64 {
 }
 
 pub fn dsin(deg: f64) -> f64 {
-    (deg * DEG2RAD).sin()
+    sin(deg * DEG2RAD)
 }
 
 pub fn dcos(deg: f64) -> f64 {
-    (deg * DEG2RAD).cos()
+    cos(deg * DEG2RAD)
 }
 
 pub fn darctan2(y: f64, x: f64) -> f64 {
@@ -113,7 +134,7 @@ pub fn radtodeg(rad: f64) -> f64 {
 }
 
 pub fn dtan(deg: f64) -> f64 {
-    (deg * DEG2RAD).tan()
+    tan(deg * DEG2RAD)
 }
 
 /// `make_colour_rgb(r, g, b)`: a BGR integer `0xBBGGRR` (components floored, like the LÖVE port).

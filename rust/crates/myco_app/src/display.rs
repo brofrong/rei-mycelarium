@@ -16,6 +16,7 @@ use myco_core::save;
 use myco_core::state::DisplaySettings;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// `display_math.view_for_window` result: logical view and application-surface size.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -466,23 +467,108 @@ impl Plugin for DisplayPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SetFullscreen>()
             .add_message::<CycleWindowSize>()
-            .add_systems(Startup, init_display_sizes)
-            .add_systems(FixedUpdate, display_step)
+            .add_systems(Startup, (init_display_sizes, install_quit_hook))
+            // display_step sets the window's size/mode, focus_step reads only its focus flag
+            .add_systems(
+                FixedUpdate,
+                display_step.ambiguous_with(crate::sim_bridge::focus_step),
+            )
             .add_systems(
                 Update,
-                (display_keys, apply_set_fullscreen, apply_cycle_size).chain(),
+                (
+                    display_quit_requests,
+                    display_keys,
+                    apply_set_fullscreen,
+                    apply_cycle_size,
+                )
+                    .chain(),
             );
     }
 }
 
-/// Cmd+Esc quits (as in the LÖVE port, main.lua). The original has no fullscreen hotkey: the
-/// screen mode changes only from the settings menu.
+/// Cmd+Esc quits (as in the LÖVE port, main.lua); so does Cmd+Q when it reaches the window as a
+/// key (normally the app menu's Quit takes it first, see [`install_quit_hook`]). Both go through
+/// `AppExit`, so `ui::save_on_exit` saves (obj_game Other_3). The original has no fullscreen
+/// hotkey: the screen mode changes only from the settings menu.
 pub fn display_keys(keys: Res<ButtonInput<KeyCode>>, mut exit: MessageWriter<AppExit>) {
     let cmd = keys.any_pressed([KeyCode::SuperLeft, KeyCode::SuperRight]);
-    if cmd && keys.just_pressed(KeyCode::Escape) {
+    if cmd && keys.any_just_pressed([KeyCode::Escape, KeyCode::KeyQ]) {
         exit.write(AppExit::Success);
     }
 }
+
+/// A Quit asked for by the OS (app menu Quit / Cmd+Q, Dock Quit) and not yet turned into
+/// `AppExit`.
+static QUIT_PENDING: AtomicBool = AtomicBool::new(false);
+/// Some Quit was asked for since launch.
+static QUIT_ASKED: AtomicBool = AtomicBool::new(false);
+
+/// Ask the app to quit through `AppExit` on its next update, so the Game End save runs (winit's
+/// own `terminate:` path ends the app in `applicationWillTerminate:`, where Bevy only clears the
+/// world without running a schedule). Returns whether a Quit was asked before: the
+/// `applicationShouldTerminate:` hook then lets the terminate through, so a stuck app still
+/// quits on the second Cmd+Q.
+pub fn request_quit() -> bool {
+    QUIT_PENDING.store(true, Ordering::SeqCst);
+    QUIT_ASKED.swap(true, Ordering::SeqCst)
+}
+
+/// Turns a [`request_quit`] into `AppExit` (once per request).
+pub fn display_quit_requests(mut exit: MessageWriter<AppExit>) {
+    if QUIT_PENDING.swap(false, Ordering::SeqCst) {
+        exit.write(AppExit::Success);
+    }
+}
+
+/// macOS: Cmd+Q is the key equivalent of the Quit item in winit's default app menu, which sends
+/// `terminate:` and never reaches the window as a key. Add `applicationShouldTerminate:` to
+/// winit's app delegate: the first terminate is cancelled and becomes [`request_quit`] (then
+/// `AppExit`, the save, and winit's normal exit); a second one while the first is pending
+/// terminates at once. Logging out also asks the app to terminate: the first request cancels
+/// that logout while the game saves and quits, a retried logout goes through.
+#[cfg(target_os = "macos")]
+pub fn install_quit_hook() {
+    use objc2::runtime::{AnyClass, AnyObject, Imp, Sel};
+    use objc2::sel;
+
+    // NSApplicationTerminateReply: NSTerminateCancel = 0, NSTerminateNow = 1
+    unsafe extern "C-unwind" fn should_terminate(
+        _this: *mut AnyObject,
+        _cmd: Sel,
+        _sender: *mut AnyObject,
+    ) -> usize {
+        if request_quit() {
+            1
+        } else {
+            0
+        }
+    }
+
+    let Some(cls) = AnyClass::get(c"WinitApplicationDelegate") else {
+        // no winit event loop (tests, headless runs)
+        return;
+    };
+    let f: unsafe extern "C-unwind" fn(*mut AnyObject, Sel, *mut AnyObject) -> usize =
+        should_terminate;
+    // SAFETY: the function matches the `Q@:@` signature of
+    // `-(NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender`, and
+    // the class is winit's registered delegate class, which does not implement that method.
+    let added = unsafe {
+        let imp: Imp = std::mem::transmute::<_, Imp>(f);
+        objc2::ffi::class_addMethod(
+            cls as *const AnyClass as *mut AnyClass,
+            sel!(applicationShouldTerminate:),
+            imp,
+            c"Q@:@".as_ptr(),
+        )
+    };
+    if !added.as_bool() {
+        warn!("applicationShouldTerminate: already defined; Cmd+Q may quit without saving");
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn install_quit_hook() {}
 
 // port: display_set_fullscreen
 /// `display_set_fullscreen(on)` (the settings menu): the setting, `display_apply` (the window

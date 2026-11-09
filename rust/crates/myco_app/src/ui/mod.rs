@@ -213,13 +213,20 @@ impl Plugin for HudPlugin {
             (
                 hud::hud_step_pre.in_set(HudStepSet::Pre),
                 hud::hud_step_game.in_set(HudStepSet::Game),
+                // obj_hud last: after the world's draw-side steps (draw generation, tiles,
+                // build options; `ui_demo` runs after them); the bar closes on this step's
+                // events before Draw GUI's tasks fill
                 (
                     popups::popups_collect,
                     cursor_tip::cursor_tip_collect,
                     hud::hud_events,
                     hud::hud_tasks_fill,
                 )
+                    .chain()
                     .in_set(SimSet::After)
+                    .after(crate::render::draw_generate_system)
+                    .after(crate::render::mycelium::tiles_step_system)
+                    .after(crate::ui::myc_prompts::build_affordable_system)
                     .after(crate::autopilot::ui_demo)
                     .before(crate::autopilot::dump_state),
             ),
@@ -486,7 +493,7 @@ pub fn menu_step(
     // the tree adds its own flag and screen after this (it runs next)
     let menus_up = sim.0.title_open || sim.0.pause_open || menus.logo.open || flags.debug_open;
     // the tree screen writes its own blocker (`UiBlockers::tree`)
-    ui.0.menus = menu::ui_blocking(&sim.0, &flags, menus.logo.open);
+    ui.0.menus = menu::menus_block(&sim.0, &flags, menus.logo.open);
     ui.1.menus = menus_up || sim.0.intro_active;
 }
 

@@ -186,8 +186,8 @@ pub fn boar_shake(sim: &mut Sim, vx: f64, vw: f64, ui_blocking: bool) -> [f64; 2
     let amp = vis("boar_shake_px") * best * best;
     let t = sim.now_ms();
     [
-        base[0] + amp * 0.45 * ((t * 0.031).sin() * 0.6 + (t * 0.057 + 1.3).sin() * 0.4),
-        base[1] + amp * ((t * 0.043 + 0.7).sin() * 0.6 + (t * 0.089 + 2.1).sin() * 0.4),
+        base[0] + amp * 0.45 * (gml::sin(t * 0.031) * 0.6 + gml::sin(t * 0.057 + 1.3) * 0.4),
+        base[1] + amp * (gml::sin(t * 0.043 + 0.7) * 0.6 + gml::sin(t * 0.089 + 2.1) * 0.4),
     ]
 }
 
