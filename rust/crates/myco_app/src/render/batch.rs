@@ -526,12 +526,15 @@ fn fill_mesh(m: &mut Mesh, verts: &[QVert]) {
     );
 }
 
+/// What a slot's material was built from: texture, blend, filter, blur step bits.
+type SlotKey = (AssetId<Image>, QuadBlend, bool, Option<[u32; 2]>);
+
 #[derive(Clone, Debug)]
 struct Slot {
     entity: Entity,
     mesh: Handle<Mesh>,
     material: Handle<GmQuad>,
-    key: Option<(AssetId<Image>, QuadBlend, bool, Option<[u32; 2]>)>,
+    key: Option<SlotKey>,
 }
 
 /// Pooled entities drawing a [`QuadBatch`]: run `i` at z = `base + i·step`.

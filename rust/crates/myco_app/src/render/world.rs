@@ -19,6 +19,11 @@
 //! `gm.current_time` is `Sim::now_ms` (frame clock), the same clock cave flash / wrap / popup
 //! births use.
 
+#![allow(
+    clippy::neg_cmp_op_on_partial_ord,
+    reason = "`not (a < b)` mirrors the Lua conditions exactly, NaN included"
+)]
+
 use crate::assets::GameAssets;
 use crate::camera::{Cameras, COMPOSITING};
 use crate::render::batch::{
