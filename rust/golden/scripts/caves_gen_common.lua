@@ -1,5 +1,5 @@
 -- Body of caves_s31607.lua / caves_s7.lua (run with the matching MYCO_SEED): a fresh world with
--- caves, bones and relics live and stones neutralized (R19), then the cave layout, the chunks
+-- everything live (caves, bones, relics, stones, mazes), then the cave layout, the chunks
 -- that hold caves and big bones, point queries around them, the pure cave/bone helpers, and
 -- the yellow cave appearing. For tests/caves.rs (which replays the same calls in order: the
 -- cave caches fill lazily, so the order matters).

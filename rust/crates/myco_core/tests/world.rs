@@ -2,10 +2,7 @@
 //! generation for seeds 31607 and 7, tile/water queries, water and food mutations, the
 //! survival layout and the Exploration fixture loaded through `Sim::from_save`.
 //! Golden topics: world_hash, world_assets, world_s31607, world_s7, world_survival,
-//! world_fixture (captured with the Task 6/7 features neutralized, see
-//! rust/golden/scripts/world_lib.lua). Task 6's caves are live, so every test switches them
-//! off on its thread (`neutralize_caves`, ruling R19) until these topics are re-captured with
-//! everything enabled after Tasks 6 and 7 merge.
+//! world_fixture, captured with caves, stones, mazes and obstacles live (ruling R19).
 mod common;
 
 use common::{f, golden, i};
@@ -62,8 +59,6 @@ fn to_json<T: serde::Serialize>(v: &T) -> Value {
 
 #[test]
 fn hash_matches_love() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     let g = golden("world_hash");
     let rows = g["rows"].as_array().unwrap();
     assert_eq!(rows.len(), 10_000);
@@ -80,8 +75,6 @@ fn hash_matches_love() {
 
 #[test]
 fn art_data_and_soil_rows_match_love() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     let g = golden("world_assets");
     // lake masks
     let kinds = lakes::lake_kinds();
@@ -388,22 +381,16 @@ fn world_seed_matches(topic: &str, seed: i64) {
 
 #[test]
 fn chunk_tiles_match_love_seed_31607() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     world_seed_matches("world_s31607", 31607);
 }
 
 #[test]
 fn chunk_tiles_match_love_seed_7() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     world_seed_matches("world_s7", 7);
 }
 
 #[test]
 fn survival_layout_matches_love() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     let g = golden("world_survival");
     // exploration: the ocean is infinite water; a spend dips the shown amount and refills
     let mut sim = Sim::new_game(GameMode::Exploration, "Golden", Some(31607));
@@ -475,8 +462,6 @@ pub fn fixture_state(name: &str) -> GameState {
 
 #[test]
 fn fixture_world_loads_identically() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     let g = golden("world_fixture");
     let mut sim = Sim::from_save(fixture_state("exploration.json")).unwrap();
     params_eq(&sim.world, &g["params"]);
@@ -506,8 +491,6 @@ fn fixture_world_loads_identically() {
 
 #[test]
 fn world_chunks_marked_dirty() {
-    // R19: these references were captured with caves neutralized (world_lib.lua)
-    world::caves::neutralize_caves(true);
     let mut sim = Sim::new_game(GameMode::Exploration, "Dirty", Some(7));
     assert!(
         sim.world.dirty_chunks.contains(&0),

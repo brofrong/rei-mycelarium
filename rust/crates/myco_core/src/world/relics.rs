@@ -121,7 +121,7 @@ pub fn relic_wrapped(sim: &Sim, id: &str) -> bool {
     if gml_truthy(sim.state.state.relic_taken.get(id)) {
         // TODO(port) in the Lua: value from inlined FUN_1402f02e0, assumed global.cave_wrap[$ id]
         if let Some(wr) = sim.world.caves.wrap.get(id) {
-            return caves::now_ms(sim) - wr.born >= vis("cave_wrap_ms");
+            return sim.now_ms() - wr.born >= vis("cave_wrap_ms");
         }
         return true;
     }
@@ -150,7 +150,7 @@ pub fn relics_touch_at(sim: &mut Sim, x: f64, y: f64) -> Vec<RelicKind> {
                 .state
                 .relic_taken
                 .insert(r.relic.id().to_string(), true.into());
-            let now = caves::now_ms(sim);
+            let now = sim.now_ms();
             let c = &mut sim.world.caves;
             c.flash.insert(r.id.clone(), now);
             c.wrap.insert(
