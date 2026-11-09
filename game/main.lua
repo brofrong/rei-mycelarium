@@ -57,6 +57,11 @@ local function run_script()
         local fx, fy = s[3]:match("([%d.]+),([%d.]+)")
         local f = display.fit
         display.mouse_override = { f.x + f.w * tonumber(fx), f.y + f.h * tonumber(fy) }
+      elseif s[2] == "gmove" then
+        -- GUI coordinates (display_set_gui_size space) to window pixels
+        local gx, gy = s[3]:match("([-%d.]+),([-%d.]+)")
+        local f = display.fit
+        display.mouse_override = { f.x + tonumber(gx) * f.w / display.gui_w, f.y + tonumber(gy) * f.h / display.gui_h }
       elseif s[2] == "wmove" then
         -- world offset from the mycelium controller, through view 0 to window pixels
         local w = require("gm.window")
@@ -70,6 +75,9 @@ local function run_script()
       elseif s[2] == "down" then gm.mousepressed(0, 0, tonumber(s[3]))
       elseif s[2] == "up" then gm.mousereleased(0, 0, tonumber(s[3]))
       elseif s[2] == "key" then gm.keypressed(s[3]); gm.keyreleased(s[3])
+      elseif s[2] == "quit" then love.event.quit()
+      elseif s[2] == "kdown" then gm.keypressed(s[3])
+      elseif s[2] == "kup" then gm.keyreleased(s[3])
       elseif s[2] == "text" then gm.textinput(s[3]) end
     end
   end
