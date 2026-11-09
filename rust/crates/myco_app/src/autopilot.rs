@@ -197,7 +197,7 @@ pub fn apply_action(a: &Action, pending: &mut PendingInput, cams: &Cameras, anch
     false
 }
 
-fn run_script(
+pub fn run_script(
     mut ap: ResMut<Autopilot>,
     mut pending: ResMut<PendingInput>,
     cams: Res<Cameras>,

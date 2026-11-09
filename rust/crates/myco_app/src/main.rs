@@ -14,6 +14,7 @@ use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
+use myco_app::ui::UiPlugin;
 use myco_core::save;
 use myco_core::sim::Sim;
 use myco_core::state::GameMode;
@@ -57,6 +58,7 @@ fn main() {
         SimBridgePlugin,
         AutopilotPlugin,
         GameAudioPlugin,
+        UiPlugin,
         ForestRenderPlugin,
         WeatherRenderPlugin,
     ));
