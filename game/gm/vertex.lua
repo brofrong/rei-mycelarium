@@ -77,4 +77,16 @@ function M.vertex_submit(id, prim, tex)
   love.graphics.draw(b.mesh)
 end
 
+function M.snapshot(id)
+  local out = {}
+  for i, v in ipairs(buffers[id].verts) do out[i] = { unpack(v) } end
+  return out
+end
+function M.restore(id, verts)
+  local b = buffers[id]
+  b.verts = {}
+  for i, v in ipairs(verts or {}) do b.verts[i] = { unpack(v) } end
+  b.frozen = true
+end
+
 return M

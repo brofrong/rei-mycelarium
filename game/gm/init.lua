@@ -29,6 +29,18 @@ gm.mouse_x, gm.mouse_y = 0, 0
 function gm.buffer_get_surface(buf, surf, offset) file.buffer_get_surface(buf, surf, offset, draw) end
 function gm.buffer_set_surface(buf, surf, offset) file.buffer_set_surface(buf, surf, offset, draw) end
 function gm.string_byte_length(s) return #s end
+-- Vertex data round-trips through buffers only as an opaque snapshot.
+local vbuf_snapshots = {}
+function gm.buffer_create_from_vertex_buffer(vb, kind, align)
+  local id = file.buffer_create(1, kind or 1, align or 1)
+  vbuf_snapshots[id] = vertex.snapshot(vb)
+  return id
+end
+function gm.vertex_create_buffer_from_buffer(buf, fmt)
+  local vb = vertex.vertex_create_buffer()
+  vertex.restore(vb, vbuf_snapshots[buf])
+  return vb
+end
 function gm.int64(v) return math.floor(gm.real(v)) end
 gm.fps, gm.fps_real = 60, 60
 
