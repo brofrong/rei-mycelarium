@@ -109,12 +109,22 @@ function gm.boot_room(start_room)
   gm.apply_room(start_room or assets.game.room_order[1])
 end
 
+local conform = require("gm.conform")
+local steps_run = 0
 function gm.update(dt)
   local step = 1 / game_speed
   acc = math.min(acc + dt, step * 5)
+  -- MYCO_CONFORM=1: exactly one step per frame on the step clock (gm/conform.lua)
+  if conform.enabled then acc = step end
   while acc >= step do
     refresh_display()
-    gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
+    if conform.enabled then
+      gm.current_time = conform.time_ms(steps_run)
+      file.frozen_timer = conform.timer_us(steps_run)
+    else
+      gm.current_time = math.floor((love.timer.getTime() - t_start) * 1000)
+    end
+    steps_run = steps_run + 1
     gm.delta_time = step * 1e6
     gm.fps, gm.fps_real = love.timer.getFPS(), 1 / math.max(love.timer.getAverageDelta(), 1e-6)
     window.update_mouse(gm)

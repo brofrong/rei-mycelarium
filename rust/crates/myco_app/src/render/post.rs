@@ -547,8 +547,8 @@ impl Plugin for PostPlugin {
             app.add_plugins(BatchPlugin);
         }
         app.add_plugins(BwPlugin);
-        let on = std::env::var("MYCO_BW").is_ok_and(|v| v == "1");
-        app.insert_resource(BwMode(on))
+        // off in the shipped game; `MYCO_BW=1` (autopilot::DevHooks) turns it on
+        app.insert_resource(BwMode(false))
             .init_resource::<PostRedirect>()
             .init_resource::<PostState>()
             .add_systems(Startup, spawn_post_cameras)

@@ -127,6 +127,21 @@ fn save_dir_honours_env_override() {
     assert_eq!(display::save_dir_from(None), myco_core::save::save_dir());
 }
 
+/// Automated runs (MYCO_INPUT / MYCO_DUMP / MYCO_SHOT) without MYCO_SAVE_DIR write into a
+/// temp folder, never into the LÖVE port's real save folder.
+#[test]
+fn automated_runs_default_to_a_temp_save_dir() {
+    let real = myco_core::save::save_dir();
+    let auto = display::save_dir_for(None, true);
+    assert_ne!(auto, real);
+    assert!(auto.starts_with(std::env::temp_dir()), "{auto:?}");
+    assert_eq!(display::save_dir_for(None, false), real);
+    assert_eq!(
+        display::save_dir_for(Some("/tmp/myco-y".into()), true),
+        std::path::PathBuf::from("/tmp/myco-y")
+    );
+}
+
 /// Ruling R23: a settings.ini window size is logical points (LÖVE highdpi without DPI scaling),
 /// so 1366×768 opens a 1366×768-point window on any scale factor.
 #[test]
@@ -156,5 +171,37 @@ fn settings_window_size_is_logical_points() {
             (1366.0, 768.0),
             "scale {scale}"
         );
+    }
+}
+
+/// The original has no fullscreen hotkeys: Cmd+F and Alt+Enter do nothing (Alt+Enter reaches the
+/// game only as Enter); Cmd+Esc still quits, as in the LÖVE port.
+#[test]
+fn no_fullscreen_hotkeys() {
+    use bevy::prelude::*;
+    use bevy::window::PrimaryWindow;
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .add_message::<display::SetFullscreen>()
+        .add_message::<AppExit>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_systems(Update, display::display_keys);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    let count = |app: &mut App| {
+        app.world()
+            .resource::<Messages<display::SetFullscreen>>()
+            .iter_current_update_messages()
+            .count()
+    };
+    for combo in [
+        [KeyCode::SuperLeft, KeyCode::KeyF],
+        [KeyCode::AltLeft, KeyCode::Enter],
+    ] {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.reset_all();
+        keys.press(combo[0]);
+        keys.press(combo[1]);
+        app.update();
+        assert_eq!(count(&mut app), 0, "{combo:?} must not toggle fullscreen");
     }
 }

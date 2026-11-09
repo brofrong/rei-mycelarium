@@ -15,6 +15,11 @@ end
 
 function M.random_get_seed() return seed end
 
+-- The whole generator state (seed and xorshift word), to set aside and restore later
+-- (conformance runs keep audio draws off the game's sequence, see gm/conform.lua).
+function M.get_state() return { seed = seed, word = ffi.new("uint64_t", state[0]) } end
+function M.set_state(st) seed, state[0] = st.seed, st.word end
+
 local function next01()
   local x = state[0]
   x = bit.bxor(x, bit.rshift(x, 12))

@@ -172,9 +172,24 @@ pub fn main_screen_info() -> Option<ScreenInfo> {
     None
 }
 
-/// Save folder: `MYCO_SAVE_DIR` if set, else the LÖVE port's folder (`save::save_dir`).
+/// Save folder: `MYCO_SAVE_DIR` if set; else, for an automated run (`MYCO_INPUT`, `MYCO_DUMP` or
+/// `MYCO_SHOT` set), a fresh temp folder; else the LÖVE port's folder (`save::save_dir`).
 pub fn save_dir() -> PathBuf {
-    save_dir_from(std::env::var_os("MYCO_SAVE_DIR").map(PathBuf::from))
+    let automated = ["MYCO_INPUT", "MYCO_DUMP", "MYCO_SHOT"]
+        .iter()
+        .any(|k| std::env::var_os(k).is_some_and(|v| !v.is_empty()));
+    save_dir_for(std::env::var_os("MYCO_SAVE_DIR").map(PathBuf::from), automated)
+}
+
+/// [`save_dir`] from its inputs: an automated run never falls back to the real save folder.
+pub fn save_dir_for(env: Option<PathBuf>, automated: bool) -> PathBuf {
+    match env {
+        Some(p) if !p.as_os_str().is_empty() => p,
+        _ if automated => {
+            std::env::temp_dir().join(format!("myco-auto-save-{}", std::process::id()))
+        }
+        _ => save::save_dir(),
+    }
 }
 
 pub fn save_dir_from(env: Option<PathBuf>) -> PathBuf {
@@ -365,22 +380,12 @@ impl Plugin for DisplayPlugin {
     }
 }
 
-/// Cmd+Esc quits (as in the LÖVE port); Cmd+F / Alt+Enter toggles fullscreen.
-fn display_keys(
-    keys: Res<ButtonInput<KeyCode>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-    mut toggle: MessageWriter<SetFullscreen>,
-    mut exit: MessageWriter<AppExit>,
-) {
+/// Cmd+Esc quits (as in the LÖVE port, main.lua). The original has no fullscreen hotkey: the
+/// screen mode changes only from the settings menu.
+pub fn display_keys(keys: Res<ButtonInput<KeyCode>>, mut exit: MessageWriter<AppExit>) {
     let cmd = keys.any_pressed([KeyCode::SuperLeft, KeyCode::SuperRight]);
-    let alt = keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight]);
     if cmd && keys.just_pressed(KeyCode::Escape) {
         exit.write(AppExit::Success);
-    }
-    let Ok(win) = windows.single() else { return };
-    if (cmd && keys.just_pressed(KeyCode::KeyF)) || (alt && keys.just_pressed(KeyCode::Enter)) {
-        let on = matches!(win.mode, WindowMode::Windowed);
-        toggle.write(SetFullscreen(on));
     }
 }
 

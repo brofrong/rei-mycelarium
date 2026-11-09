@@ -828,7 +828,12 @@ impl Plugin for MyceliumRenderPlugin {
         app.init_resource::<MycBake>()
             .add_systems(Startup, setup)
             .init_resource::<crate::autopilot::MyceliumAnchor>()
-            .add_systems(FixedUpdate, tiles_step_system.in_set(SimSet::After))
+            .add_systems(
+                FixedUpdate,
+                tiles_step_system
+                    .in_set(SimSet::After)
+                    .before(crate::autopilot::dump_state),
+            )
             .add_systems(
                 FixedUpdate,
                 sync_anchor

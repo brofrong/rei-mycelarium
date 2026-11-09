@@ -82,3 +82,16 @@ fn held_button_stays_down_across_steps() {
     assert!(hist[0].lmb.pressed && hist[0].lmb.down);
     assert!(!hist[1].lmb.pressed && hist[1].lmb.down);
 }
+
+/// LÖVE caps the step accumulator at 5 steps (game/gm/init.lua `acc = min(acc + dt, step * 5)`):
+/// after a long hitch at most 5 steps run in one frame.
+#[test]
+fn catch_up_is_capped_at_five_steps() {
+    let mut app = app();
+    let max = app.world().resource::<Time<Virtual>>().max_delta();
+    let step = app.world().resource::<Time<Fixed>>().timestep();
+    assert_eq!(max, step * 5);
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs(2)));
+    app.update();
+    assert_eq!(app.world().resource::<StepHistory>().0.len(), 5);
+}

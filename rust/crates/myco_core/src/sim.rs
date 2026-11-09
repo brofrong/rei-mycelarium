@@ -164,6 +164,13 @@ pub enum Command {
         x: f64,
         y: f64,
     },
+    /// the app's render zoom moved the logic camera so the point under the cursor stays put:
+    /// its new top-left, applied at the start of the step ([`crate::camera::camera_pan_to`]),
+    /// so the logic camera only changes inside steps and replays the same
+    CameraPan {
+        x: f64,
+        y: f64,
+    },
     /// Task 8: a click on the in-world build menu's option `index` (the app hit-tests
     /// `myc_build_button_rect`; ruling R9b)
     MycBuildOption {
@@ -426,6 +433,7 @@ impl Sim {
         for cmd in &input.commands {
             match cmd {
                 Command::SetPaused(p) => self.pause_open = *p,
+                Command::CameraPan { x, y } => crate::camera::camera_pan_to(self, *x, *y),
                 Command::Save => {
                     self.save_game();
                 }

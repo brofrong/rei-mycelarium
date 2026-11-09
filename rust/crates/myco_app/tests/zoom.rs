@@ -54,9 +54,17 @@ fn retina() -> Cameras {
     )
 }
 
+/// One zoom frame followed by its step's `Command::CameraPan` (only the pan, not a whole step).
+fn advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, anchor: Vec2) {
+    let base = (sim.camera.x, sim.camera.y);
+    if let Some((x, y)) = zoom_advance(cams, sim, zs, 1.0 / 60.0, anchor, base) {
+        myco_core::camera::camera_pan_to(sim, x, y);
+    }
+}
+
 fn settle(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, anchor: Vec2, frames: usize) {
     for _ in 0..frames {
-        zoom_advance(cams, sim, zs, 1.0 / 60.0, anchor);
+        advance(cams, sim, zs, anchor);
     }
 }
 
@@ -105,7 +113,7 @@ fn zoom_keeps_point_under_cursor() {
         let w0: DVec2 = cams.screen_to_world(cursor);
         zoom_wheel(&mut zs, factor);
         for frame in 0..90 {
-            zoom_advance(&mut cams, &mut sim, &mut zs, 1.0 / 60.0, cursor);
+            advance(&mut cams, &mut sim, &mut zs, cursor);
             let w = cams.screen_to_world(cursor);
             assert!(
                 (w - w0).length() <= 0.5,
@@ -187,7 +195,7 @@ fn zoom_locked_during_cine() {
     assert!(!zoom_locked(&sim));
     cine::cine_show_start(&mut sim);
     assert!(zoom_locked(&sim));
-    zoom_advance(&mut cams, &mut sim, &mut zs, 1.0 / 60.0, Vec2::ZERO);
+    advance(&mut cams, &mut sim, &mut zs, Vec2::ZERO);
     assert_eq!(cams.zoom, 1.0);
     zoom_wheel(&mut zs, 0.3);
     settle(&mut cams, &mut sim, &mut zs, Vec2::ZERO, 30);

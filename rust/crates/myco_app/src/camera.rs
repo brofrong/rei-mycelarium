@@ -574,16 +574,27 @@ pub fn zoom_wheel(zs: &mut ZoomState, factor: f64) {
     }
 }
 
-/// One frame of zoom: ease toward the target (clamped to [`zoom_limits`]) and move the logic
-/// camera so the world point under `anchor` (screen, logical px) stays there. The logic camera
-/// stays inside `camera_bounds`, and the 1× game view keeps the render camera's centre (except
-/// where the render camera is held below the sky top / above the world bottom).
-pub fn zoom_advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, dt: f64, anchor: Vec2) {
+/// One frame of zoom: ease toward the target (clamped to [`zoom_limits`]) and keep the world
+/// point under `anchor` (screen, logical px) there. The render side (`cams`: zoom, 1× game view,
+/// sub-pixel part) changes at once; the logic camera does not: the returned top-left is sent as
+/// `Command::CameraPan` and applied inside the next step, so the logic camera moves only in
+/// steps (deterministic, replayable). `base` is the logic camera's top-left this pan builds on
+/// (a pan still waiting for its step, else `sim.camera`). The pan stays inside
+/// `camera_bounds`, and the 1× game view keeps the render camera's centre (except where the
+/// render camera is held below the sky top / above the world bottom).
+pub fn zoom_advance(
+    cams: &mut Cameras,
+    sim: &Sim,
+    zs: &mut ZoomState,
+    dt: f64,
+    anchor: Vec2,
+    base: (f64, f64),
+) -> Option<(f64, f64)> {
     cams.y_limits = Some(render_y_limits(sim, cams.game_view.h));
     if zoom_locked(sim) {
         cams.zoom = 1.0;
         zs.target = 1.0;
-        return;
+        return None;
     }
     let (lo, hi) = zoom_limits(sim, cams);
     zs.target = zs.target.clamp(lo, hi);
@@ -595,7 +606,7 @@ pub fn zoom_advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, dt: f
         (l0 + (lt - l0) * (1.0 - (-dt / ZOOM_SMOOTH_SECONDS).exp())).exp()
     };
     if z1 == z0 {
-        return;
+        return None;
     }
     let before = cams.screen_to_world(anchor);
     cams.zoom = z1;
@@ -603,19 +614,15 @@ pub fn zoom_advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, dt: f
     let d = before - after;
     let (w, h) = (sim.camera.width, sim.camera.height);
     let b = myco_core::camera::camera_bounds(sim, w, h);
-    let cam = &mut sim.camera;
-    let nx = myco_core::gml::clamp(cam.x + d.x, b.x1, b.x2);
-    let ny = myco_core::gml::clamp(cam.y + d.y, b.y1, b.y2);
-    let (dx, dy) = (nx - cam.x, ny - cam.y);
-    cam.x = nx;
-    cam.y = ny;
+    let nx = myco_core::gml::clamp(base.0 + d.x, b.x1, b.x2);
+    let ny = myco_core::gml::clamp(base.1 + d.y, b.y1, b.y2);
+    let (dx, dy) = (nx - base.0, ny - base.1);
     let fx = cams.game_view.x + cams.sub.x + dx;
     let fy = cams.game_view.y + cams.sub.y + dy;
-    cam.view_x = fx.floor();
-    cam.view_y = fy.floor();
-    cams.game_view.x = cam.view_x;
-    cams.game_view.y = cam.view_y;
-    cams.sub = DVec2::new(fx - cam.view_x, fy - cam.view_y);
+    cams.game_view.x = fx.floor();
+    cams.game_view.y = fy.floor();
+    cams.sub = DVec2::new(fx - cams.game_view.x, fy - cams.game_view.y);
+    Some((nx, ny))
 }
 
 /// Wheel and pinch (and the autopilot's `zoom:` actions) → the zoom target, then
@@ -628,7 +635,7 @@ fn zoom_system(
     mut pinch: MessageReader<PinchGesture>,
     mut zs: ResMut<ZoomState>,
     mut cams: ResMut<Cameras>,
-    sim: Option<ResMut<crate::sim_bridge::SimRes>>,
+    sim: Option<Res<crate::sim_bridge::SimRes>>,
     blockers: Option<Res<crate::sim_bridge::UiBlockers>>,
     pending: Option<ResMut<crate::sim_bridge::PendingInput>>,
 ) {
@@ -643,7 +650,7 @@ fn zoom_system(
     for ev in pinch.read() {
         log += ev.0 as f64;
     }
-    let (Some(mut sim), Some(mut pending)) = (sim, pending) else {
+    let (Some(sim), Some(mut pending)) = (sim, pending) else {
         return;
     };
     log += std::mem::take(&mut pending.zoom_log);
@@ -658,7 +665,12 @@ fn zoom_system(
     );
     let anchor = pending.cursor_override.or(pending.cursor).unwrap_or(centre);
     let dt = time.delta_secs_f64();
-    zoom_advance(&mut cams, &mut sim.0, &mut zs, dt, anchor);
+    let base = pending
+        .camera_pan
+        .unwrap_or((sim.0.camera.x, sim.0.camera.y));
+    if let Some(pan) = zoom_advance(&mut cams, &sim.0, &mut zs, dt, anchor, base) {
+        pending.camera_pan = Some(pan);
+    }
 }
 
 #[cfg(test)]

@@ -96,6 +96,20 @@ pub fn camera_jump_to(sim: &mut Sim, x: f64, y: f64) {
     cam.vy = 0.0;
 }
 
+/// The render zoom (Rust only: the original has no zoom) keeps the world point under the cursor
+/// fixed by moving the logic camera: top-left to `(x, y)` within `camera_bounds`, the view on
+/// whole pixels of the shaken position (as the forest step floors it). Sent as
+/// `Command::CameraPan` and applied inside the step.
+pub fn camera_pan_to(sim: &mut Sim, x: f64, y: f64) {
+    let (w, h) = (sim.camera.width, sim.camera.height);
+    let b = camera_bounds(sim, w, h);
+    let cam = &mut sim.camera;
+    cam.x = gml::clamp(x, b.x1, b.x2);
+    cam.y = gml::clamp(y, b.y1, b.y2);
+    cam.view_x = (cam.x + cam.shake[0]).floor();
+    cam.view_y = (cam.y + cam.shake[1]).floor();
+}
+
 // port: camera_jump_origin
 /// The HUD's origin button: centre on the mycelium controller, top of the bounds, stopped.
 pub fn camera_jump_origin(sim: &mut Sim) {

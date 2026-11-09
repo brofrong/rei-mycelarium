@@ -213,7 +213,6 @@ impl Plugin for HudPlugin {
             (
                 hud::hud_step_pre.in_set(HudStepSet::Pre),
                 hud::hud_step_game.in_set(HudStepSet::Game),
-                ui_demo.in_set(SimSet::After),
                 (
                     popups::popups_collect,
                     cursor_tip::cursor_tip_collect,
@@ -221,7 +220,8 @@ impl Plugin for HudPlugin {
                     hud::hud_tasks_fill,
                 )
                     .in_set(SimSet::After)
-                    .after(ui_demo),
+                    .after(crate::autopilot::ui_demo)
+                    .before(crate::autopilot::dump_state),
             ),
         )
         .add_systems(
@@ -244,44 +244,6 @@ impl Plugin for HudPlugin {
 fn init_fonts(mut commands: Commands, assets: Res<GameAssets>, locale: Option<Res<LocaleRes>>) {
     if let Some(l) = locale {
         commands.insert_resource(fonts::UiFonts::load(&assets, &l.locale));
-    }
-}
-
-/// `MYCO_UI_DEMO=1` (dev hook for screenshots): every 0.5 s synthetic resource events around the
-/// view centre and a refused node, as the logic tasks (T5/T8/T9) will emit them.
-fn ui_demo(
-    sim: Res<crate::sim_bridge::SimRes>,
-    cams: Res<crate::camera::Cameras>,
-    mut out: MessageWriter<crate::sim_bridge::SimEventMsg>,
-    mut on: Local<Option<bool>>,
-) {
-    use myco_core::events::{NodeReject, ResourceKind, SimEvent};
-    let on = *on.get_or_insert_with(|| std::env::var("MYCO_UI_DEMO").is_ok_and(|v| v == "1"));
-    if !on || !sim.0.frame.is_multiple_of(30) {
-        return;
-    }
-    let (cx, cy) = cams.game_view_center();
-    let k = (sim.0.frame / 30) as f64;
-    let ev = |kind, delta, dx: f64, dy: f64, source| SimEvent::Resource {
-        kind,
-        delta,
-        x: cx + dx,
-        y: cy + dy,
-        source,
-    };
-    for e in [
-        ev(ResourceKind::Food, 5.0, -300.0 + 20.0 * (k % 5.0), 80.0, 1),
-        ev(ResourceKind::Food, 3.0, -300.0, 80.0, 1),
-        ev(ResourceKind::Water, 12.0, 200.0, 140.0, 2),
-        ev(ResourceKind::Food, -15.0, -40.0, 220.0, 3),
-        ev(ResourceKind::UpgradePoints, 1.0, 420.0, 40.0, 4),
-        SimEvent::NodeRejected {
-            reason: NodeReject::NotEnoughFood { need: 12 },
-            x: cx,
-            y: cy,
-        },
-    ] {
-        out.write(crate::sim_bridge::SimEventMsg(e));
     }
 }
 

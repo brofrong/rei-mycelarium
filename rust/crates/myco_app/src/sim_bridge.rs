@@ -50,6 +50,9 @@ pub struct PendingInput {
     pub placement: Option<myco_core::mushrooms::MushroomKind>,
     /// zoom requested by the autopilot (`zoom:<factor>`), as ln(factor); the zoom system takes it
     pub zoom_log: f64,
+    /// the logic camera's top-left the render zoom asks for (`camera::zoom_advance`); sent as
+    /// `Command::CameraPan` with the next step
+    pub camera_pan: Option<(f64, f64)>,
 }
 
 impl PendingInput {
@@ -91,6 +94,10 @@ impl PendingInput {
 
     /// Build the step input and clear the latched edges.
     pub fn take_step(&mut self, cams: &Cameras) -> StepInput {
+        if let Some((x, y)) = self.camera_pan.take() {
+            // first, so the logic camera has moved before anything in the step reads it
+            self.commands.insert(0, Command::CameraPan { x, y });
+        }
         let screen = self.cursor_override.or(self.cursor);
         let input = StepInput {
             cursor: screen.map(|p| cams.screen_to_world(p).into()),
@@ -190,6 +197,7 @@ impl Plugin for SimBridgePlugin {
                 FixedUpdate,
                 (SimSet::Prepare, SimSet::Step, SimSet::After).chain(),
             )
+            .add_systems(Startup, cap_catch_up)
             .add_systems(PreUpdate, collect_input.after(bevy::input::InputSystems))
             .add_systems(
                 FixedUpdate,
@@ -199,6 +207,15 @@ impl Plugin for SimBridgePlugin {
                 ),
             );
     }
+}
+
+/// Most steps one frame may run after a hitch (game/gm/init.lua caps its accumulator at 5).
+pub const MAX_CATCH_UP_STEPS: f64 = 5.0;
+
+/// `Time<Virtual>` advances at most 5 steps' worth per frame, as LÖVE's accumulator cap.
+/// (Five whole fixed timesteps: `from_hz(60)` rounds the step up to whole nanoseconds.)
+fn cap_catch_up(mut time: ResMut<Time<Virtual>>, fixed: Res<Time<Fixed>>) {
+    time.set_max_delta(fixed.timestep() * MAX_CATCH_UP_STEPS as u32);
 }
 
 /// `KeyCode` → the game's key (`gm/input.lua KEYS`, physical layout).
@@ -376,6 +393,22 @@ mod tests {
         assert_eq!(key_from_love_name("kp3"), Some(Key::Numpad(3)));
         assert_eq!(key_from_love_name("return"), Some(Key::Enter));
         assert_eq!(key_from_love_name("tab"), None);
+    }
+
+    #[test]
+    fn zoom_pan_goes_to_the_step_as_a_command() {
+        let mut p = PendingInput {
+            commands: vec![Command::Save],
+            camera_pan: Some((10.5, -3.0)),
+            ..Default::default()
+        };
+        let s = p.take_step(&Cameras::default());
+        assert_eq!(
+            s.commands,
+            vec![Command::CameraPan { x: 10.5, y: -3.0 }, Command::Save]
+        );
+        assert_eq!(p.camera_pan, None);
+        assert!(p.take_step(&Cameras::default()).commands.is_empty());
     }
 
     #[test]

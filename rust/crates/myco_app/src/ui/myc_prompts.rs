@@ -439,7 +439,15 @@ impl Plugin for MycPromptsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GuiDraw>()
             .init_resource::<BuildAffordable>()
-            .add_systems(FixedUpdate, build_affordable_system.in_set(SimSet::After))
+            .add_systems(
+                FixedUpdate,
+                // can_build_at may generate chunks: one fixed place after the step, after the
+                // tiles step and before the dump (the dump sees what LÖVE's draw left)
+                build_affordable_system
+                    .in_set(SimSet::After)
+                    .after(crate::render::mycelium::tiles_step_system)
+                    .before(crate::autopilot::dump_state),
+            )
             .add_systems(
                 FixedUpdate,
                 click_system.in_set(SimSet::Prepare).after(run_script),
