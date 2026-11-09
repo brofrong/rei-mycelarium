@@ -473,6 +473,13 @@ impl Default for ZoomState {
     }
 }
 
+/// World y range of the render camera: from the sky top (`surface_y − view_h`, but not above
+/// y = 0, where the forest backdrop starts and the 1× camera never goes) to the world bottom.
+pub fn render_y_limits(sim: &Sim, view_h: f64) -> (f64, f64) {
+    let p = &sim.world.params;
+    ((p.surface_y - view_h).max(0.0), p.bottom_y)
+}
+
 /// The zoom is held at 1×: the intro, a cut-scene (until it is gone) and the title.
 pub fn zoom_locked(sim: &Sim) -> bool {
     sim.intro_active || myco_core::cine::cine_active(sim) || sim.title_open
@@ -516,8 +523,8 @@ pub fn zoom_limits(sim: &Sim, cams: &Cameras) -> (f64, f64) {
         let fit = (vw / (x2 - x1 + 2.0 * ZOOM_PAD_PX)).min(vh / (y2 - y1 + 2.0 * ZOOM_PAD_PX));
         lo = lo.min(fit);
     }
-    let p = &sim.world.params;
-    let range = p.bottom_y - (p.surface_y - vh);
+    let (top, bottom) = render_y_limits(sim, vh);
+    let range = bottom - top;
     if range > 0.0 {
         lo = lo.max((vh / range).min(1.0));
     }
@@ -536,8 +543,7 @@ pub fn zoom_wheel(zs: &mut ZoomState, factor: f64) {
 /// stays inside `camera_bounds`, and the 1× game view keeps the render camera's centre (except
 /// where the render camera is held below the sky top / above the world bottom).
 pub fn zoom_advance(cams: &mut Cameras, sim: &mut Sim, zs: &mut ZoomState, dt: f64, anchor: Vec2) {
-    let p = &sim.world.params;
-    cams.y_limits = Some((p.surface_y - cams.game_view.h, p.bottom_y));
+    cams.y_limits = Some(render_y_limits(sim, cams.game_view.h));
     if zoom_locked(sim) {
         cams.zoom = 1.0;
         zs.target = 1.0;

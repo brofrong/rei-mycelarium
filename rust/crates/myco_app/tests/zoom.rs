@@ -143,7 +143,8 @@ fn zoom_clamped_to_world_bounds() {
     settle(&mut cams, &mut sim, &mut zs, Vec2::new(960.0, 5.0), 240);
     let (lo, _) = zoom_limits(&sim, &cams);
     assert!((cams.zoom - lo).abs() < 1e-9, "{} vs {lo}", cams.zoom);
-    let sky_top = surface - cams.game_view.h;
+    // the sky top, but not above y = 0 where the backdrop starts
+    let sky_top = (surface - cams.game_view.h).max(0.0);
     let rv = cams.render_view();
     assert!(rv.y >= sky_top - 1e-6, "{} above the sky top {sky_top}", rv.y);
     assert!(rv.y + rv.h <= bottom + 1e-6, "{} below the bottom {bottom}", rv.y + rv.h);
