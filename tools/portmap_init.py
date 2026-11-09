@@ -76,7 +76,7 @@ for _task, _names in {
           "display_window_size display_save display_set_fullscreen display_cycle_size",
     "T15": "post_layer_draw surface_fit bw_shader_set gml_Object_obj_game_Draw_74 gml_Object_obj_game_Draw_75 "
            "gml_Object_obj_game_Draw_77 gml_Object_obj_life_Draw_0",
-    "T17": "ui_blocking animal_marker_list animal_markers_update animal_markers_draw animal_marker_at "
+    "T17": "ui_blocking tasks_header_rect animal_marker_list animal_markers_update animal_markers_draw animal_marker_at "
            "gml_Object_obj_hud_Create_0 gml_Object_obj_hud_Step_1 gml_Object_obj_hud_Draw_75",
     "T10": "squirrel_grab gml_Object_obj_life_Create_0 gml_Object_obj_life_Step_0 "
            "game_init game_step gml_Object_obj_game_Step_0",
@@ -84,7 +84,14 @@ for _task, _names in {
           "anon__86877__anon__86458__gml_Object_obj_mycelium_controller_Create_0 "
           "gml_Object_obj_mycelium_controller_Create_0 gml_Object_obj_mycelium_controller_Step_0 "
           "gml_Object_obj_mycelium_controller_CleanUp_0",
-    "T14": "gml_Object_obj_mycelium_controller_Draw_0 gml_Object_obj_mycelium_controller_Draw_64",
+    "T14": "gml_Object_obj_mycelium_controller_Draw_0 gml_Object_obj_mycelium_controller_Draw_64 "
+           # R9: hit-test rects that measure text belong to the app (keys are method aliases)
+           "myc_button_rect myc_spore_button_rect myc_build_button_rect myc_regen_button_rect "
+           "myc_build_hint_rect "
+           # R9a: rebaking from dirty state is render work; myc_tiles_step drives bake/merge
+           "myc_tiles_step",
+    # camera shake from boars (called from the forest controller Step, reads ui_blocking)
+    "T21": "boar_shake",
 }.items():
     for _n in _names.split():
         MANUAL[_n] = _task
@@ -167,9 +174,87 @@ def classify(name, alias, chunk):
     return "T?"
 
 
+RENDER = {"T13", "T14", "T15", "T16", "T17"}
+LOGIC = set(DRAW_TASK)
+CALL_RE = re.compile(r"(?<![A-Za-z0-9_])(gm\.)?([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+ANON_RE = re.compile(r"^anon__\d+__(.+)$")
+
+
+def call_graph(funcs, aliases):
+    """{name: set of row names it calls}; calls by global name or by method alias, gm.* excluded."""
+    names = {n for n, _, _ in funcs}
+    by_alias = {a: n for n, a in aliases.items()}
+    graph = {}
+    for name, _, body in funcs:
+        body = body.split("\n", 1)[1] if "\n" in body else ""  # drop the `function NAME(` line
+        out = set()
+        for gm_prefix, ident in CALL_RE.findall(body):
+            if gm_prefix:
+                continue
+            target = ident if ident in names else by_alias.get(ident)
+            if target and target != name:
+                out.add(target)
+        graph[name] = out
+    return graph
+
+
+def closure_parent(name, names):
+    """Parent function of an anonymous closure `anon__N__<parent>[__<script>]`, or None."""
+    m = ANON_RE.match(name)
+    if not m:
+        return None
+    rest = m.group(1)
+    if rest in names:
+        return rest
+    base = re.sub(r"__scr_[A-Za-z0-9_]+$", "", rest)
+    return base if base in names else None
+
+
+def propagate(tasks, graph, fixed=()):
+    """R7/R9 to a fixed point. A logic-owned function moves to a render task when
+    - it is a closure (`anon__N__<parent>`) of a render-owned parent: it takes the parent's task; or
+    - it calls at least one render-owned function and no logic-owned function calls it (callers are
+      render or app tasks, or none): it is a drawing wrapper. It takes its logic task's render
+      task if one of its render callees has it, else the most common render callee task.
+    A function still called by logic stays (logic consumes its result; R7 says the logic task ports
+    that data). This is deliberately conservative: a wrapper called only by another logic wrapper
+    stays too (moving whole logic call chains wrongly captured real logic such as myc_place_mushroom). Calls to logic queries (bal/vis/wld, state getters) do not block a move: render may
+    read logic. Rows in `fixed` (hand decisions) never move. Mutates and returns `tasks`."""
+    names = set(tasks)
+    callers = {n: set() for n in names}
+    for caller, callees in graph.items():
+        for c in callees:
+            callers[c].add(caller)
+    changed = True
+    while changed:
+        changed = False
+        for name in sorted(names):
+            task = tasks[name]
+            if task not in LOGIC or name in fixed:
+                continue
+            new = None
+            parent = closure_parent(name, names)
+            if parent and tasks[parent] in RENDER:
+                new = tasks[parent]
+            else:
+                rc = [tasks[c] for c in graph.get(name, ()) if tasks[c] in RENDER]
+                if rc and not any(tasks[c] in LOGIC for c in callers[name]):
+                    new = DRAW_TASK[task] if DRAW_TASK[task] in rc else max(sorted(set(rc)), key=rc.count)
+            if new and new != task:
+                tasks[name] = new
+                changed = True
+    return tasks
+
+
+def logic_to_render_edges(tasks, graph):
+    """Remaining (caller, caller_task, callee, callee_task) where logic calls render code."""
+    return sorted((a, tasks[a], b, tasks[b]) for a, cs in graph.items() for b in cs
+                  if tasks[a] in LOGIC and tasks[b] in RENDER)
+
+
 def assign(name, alias, chunk, body):
-    """Final task of a row: hand decision, else table rule; then the R7 drawing rule."""
-    task = MANUAL.get(name) or classify(name, alias, chunk)
+    """Task of a row before propagation: hand decision, else table rule; then the R7 drawing rule."""
+    task = MANUAL.get(name) or MANUAL.get(alias or "") or classify(name, alias, chunk)
     if task == "T?":
         if "world_clear_ocean" in name:
             task = "T5"
@@ -178,15 +263,21 @@ def assign(name, alias, chunk, body):
     return draw_reassign(task, body, name)
 
 
+def build(gen=GEN):
+    """[(name, alias, task)] in file order, with propagation applied."""
+    funcs, aliases = collect(gen)
+    tasks = {n: assign(n, aliases.get(n), c, b) for n, c, b in funcs}
+    fixed = {n for n in tasks if n in MANUAL or aliases.get(n) in MANUAL or n in DRAW_KEEP}
+    propagate(tasks, call_graph(funcs, aliases), fixed)
+    return [(n, aliases.get(n), tasks[n]) for n, _, _ in funcs]
+
+
 def main():
-    funcs, aliases = collect()
     unresolved = []
-    for name, chunk, body in funcs:
-        alias = aliases.get(name)
-        task = assign(name, alias, chunk, body)
+    for name, alias, task in build():
         print(f"{name}\t{alias or '-'}\t{task}")
         if task == "T?":
-            unresolved.append(f"{chunk}: {name} ({alias or '-'})")
+            unresolved.append(f"{name} ({alias or '-'})")
     if unresolved:
         print(f"{len(unresolved)} rows need a task (T?):", file=sys.stderr)
         for row in unresolved:
