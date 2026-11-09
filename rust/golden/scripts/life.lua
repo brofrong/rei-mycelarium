@@ -389,7 +389,7 @@ local function snap()
   return s
 end
 
-local R = { frames = {}, snaps = {} }
+local R = { frames = {}, snaps = {}, states = {} }
 for k = 0, 1799 do
   frame = k
   now()
@@ -412,6 +412,11 @@ for k = 0, 1799 do
     global.hedgehog_timer, global.boar_timer, global.squirrel_timer, global.crow_timer,
     global.experience_crow_timers[0], global.experience_crow_timers[1], global.leaf_timer, global.worm_timer,
     note or "" }
+  local st = {}
+  for i = 0, gm.array_length(global.squirrels) - 1 do st[#st + 1] = global.squirrels[i].state end
+  st[#st + 1] = -1
+  for i = 0, gm.array_length(global.crows) - 1 do st[#st + 1] = global.crows[i].state end
+  R.states[#R.states + 1] = st
   if k % 25 == 24 then
     local s = snap()
     s.frame = k
@@ -425,6 +430,53 @@ table.sort(stats, function(a, b) return a[1] < b[1] end)
 R.stats = stats
 R.probe = gm.random(1.0)
 out.run = R
+
+-- 5. leaves on the mycelium and far life -----------------------------------------------------
+-- leaves dropped right over strand points near the surface land on the mycelium and are
+-- absorbed; from frame 400 the view is far away, so the colony counts as far life
+load_fixture("mushrooms.json")
+set_view()
+gm.random_set_seed(11)
+set_upg("unlock_absorption", 1)
+set_upg("unlock_protein", 1)
+set_upg("absorption_speed", 6)
+global.hedgehog_timer, global.squirrel_timer, global.crow_timer = 1e9, 1e9, 1e9
+global.experience_crow_timers[0], global.experience_crow_timers[1], global.boar_timer = 1e9, 1e9, 1e9
+local ctrl = gm.instance_find(obj_mycelium_controller, 0)
+local sy = SY + wld(global, global, "reference_tile_size")
+local r = bal(global, global, "leaf_absorb_radius")
+local xs = {}
+for gi = 0, gm.array_length(ctrl.myc_growths) - 1 do
+  local br = ctrl.myc_growths[gi].branches
+  for bi = 0, gm.array_length(br) - 1 do
+    local pts = br[bi].points
+    for pi = 0, gm.array_length(pts) - 1 do
+      if math.abs(pts[pi].y - sy) <= r * 0.5 and #xs < 8 then xs[#xs + 1] = pts[pi].x end
+    end
+  end
+end
+local LF = { xs = xs, frames = {}, snaps = {} }
+local far_view = { x = 40000, y = 0, w = 1920, h = 1080 }
+for k = 0, 1499 do
+  frame = k
+  now()
+  if k >= 400 then VIEW = far_view end
+  set_view()
+  if k < #xs then leaf_spawn(global, global, false, xs[k + 1], SY - 60 - k * 7) end
+  life_step(global, global)
+  local nabs = 0
+  for i = 0, gm.array_length(global.leaves) - 1 do if gm.bool(global.leaves[i].absorbing) then nabs = nabs + 1 end end
+  LF.frames[#LF.frames + 1] = { global.food, gm.array_length(global.leaves), nabs, gm.array_length(global.leaf_tendrils_out),
+    gm.array_length(global.worms), global.far_rate.leaves, global.far_rate.worms, global.far_rate.food, global.far_food_due }
+  if k % 20 == 19 then
+    local s = snap()
+    s.frame = k
+    LF.snaps[#LF.snaps + 1] = s
+  end
+end
+LF.probe = gm.random(1.0)
+out.leaves = LF
+VIEW = { x = -960, y = 0, w = 1920, h = 1080 }
 
 -- 4. game_step ------------------------------------------------------------------------------
 load_fixture("exploration.json")

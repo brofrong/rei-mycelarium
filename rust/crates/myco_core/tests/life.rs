@@ -843,6 +843,10 @@ fn seeded_run_matches_love() {
         let wnote = want.pop().unwrap();
         row(&format!("frame {k}"), &got, &Value::from(want));
         assert_eq!(note, wnote.as_str().unwrap(), "frame {k} note");
+        let mut st: Vec<f64> = l.squirrels.iter().map(|q| q.state.code() as f64).collect();
+        st.push(-1.0);
+        st.extend(l.crows.iter().map(|c| c.state.code() as f64));
+        row(&format!("frame {k} states"), &st, &r["states"][k as usize]);
         if s < snaps.len() && i(&snaps[s]["frame"]) == k as i64 {
             snap_eq(&format!("snap {k}"), &sim, &snaps[s]);
             s += 1;
@@ -855,6 +859,74 @@ fn seeded_run_matches_love() {
         close(&format!("stats.{key}"), got, f(&w[1]));
     }
     close("probe", sim.rng.random(1.0), f(&r["probe"]));
+}
+
+/// Leaves dropped over the colony's strands land on the mycelium and are absorbed (tendrils,
+/// food); with the view far away the colony counts as far life (rates and food due).
+#[test]
+fn leaves_and_far_life_match_love() {
+    let g = golden("life");
+    let lg = &g["leaves"];
+    let mut sim = load("mushrooms.json", &g);
+    sim.rng = Rng::new(11);
+    set_upg(&mut sim, "unlock_absorption", 1);
+    set_upg(&mut sim, "unlock_protein", 1);
+    set_upg(&mut sim, "absorption_speed", 6);
+    {
+        let t = &mut sim.state.state.timers;
+        t.hedgehog = 1e9;
+        t.squirrel = 1e9;
+        t.crow = 1e9;
+        t.experience_crows = vec![1e9, 1e9];
+        t.boar = Some(1e9);
+    }
+    let xs: Vec<f64> = lg["xs"].as_array().unwrap().iter().map(f).collect();
+    assert!(!xs.is_empty(), "strand points near the surface");
+    let sy = myco_core::balance::wld("surface_height_px");
+    let frames = lg["frames"].as_array().unwrap();
+    let snaps = lg["snaps"].as_array().unwrap();
+    let mut s = 0;
+    let mut absorbed = false;
+    for k in 0..1500u64 {
+        sim.frame = k;
+        if k >= 400 {
+            sim.camera.view_x = 40000.0;
+        }
+        if (k as usize) < xs.len() {
+            leaves::leaf_spawn(
+                &mut sim,
+                false,
+                Some(xs[k as usize]),
+                Some(sy - 60.0 - k as f64 * 7.0),
+            );
+        }
+        life::life_step(&mut sim);
+        let l = &sim.life;
+        let nabs = l.leaves.iter().filter(|x| x.absorbing).count() as f64;
+        absorbed |= nabs > 0.0;
+        row(
+            &format!("leaves frame {k}"),
+            &[
+                sim.state.state.food,
+                l.leaves.len() as f64,
+                nabs,
+                l.leaf_tendrils_out.len() as f64,
+                l.worms.len() as f64,
+                l.far.rate.leaves,
+                l.far.rate.worms,
+                l.far.rate.food,
+                l.far.food_due,
+            ],
+            &frames[k as usize],
+        );
+        if s < snaps.len() && i(&snaps[s]["frame"]) == k as i64 {
+            snap_eq(&format!("leaves snap {k}"), &sim, &snaps[s]);
+            s += 1;
+        }
+    }
+    assert!(absorbed);
+    assert_eq!(s, snaps.len());
+    close("leaves probe", sim.rng.random(1.0), f(&lg["probe"]));
 }
 
 #[test]
