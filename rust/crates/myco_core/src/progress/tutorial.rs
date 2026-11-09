@@ -282,9 +282,9 @@ fn event_xy(ev: &serde_json::Map<String, Value>, name: &str) -> Option<(f64, f64
 
 // port: tutorial_step
 /// One frame of the tutorial: consume the pending events, show and hide tips, run the tip
-/// timers and fades. `raining` is `weather_is_raining()` (Task 12); `input` carries the
+/// timers and fades. Rain is `weather_is_raining()` (Task 12, ruling R16); `input` carries the
 /// app's `menu_open` (upgrade tree), `debug_open` and `logo_open`.
-pub fn step(sim: &mut Sim, input: &StepInput, raining: bool) {
+pub fn step(sim: &mut Sim, input: &StepInput) {
     if sim.title_open || sim.intro_active {
         sim.state.state.tutorial.events.clear();
         return;
@@ -391,7 +391,7 @@ pub fn step(sim: &mut Sim, input: &StepInput, raining: bool) {
             timer,
         );
     }
-    if raining {
+    if crate::weather::is_raining(sim) {
         show(sim, Tip::Rain, Anchor::Screen, 0.5, 0.3, -1.0);
     } else {
         hide(sim, Tip::Rain);

@@ -78,12 +78,64 @@ pub fn hud_begin_step(sim: &mut Sim, input: &StepInput) {
             _ => {}
         }
     }
-    // `if cine_blocking and not popup_open: return; if popup_open: tasks_popup_step; return`
-    if tasks::tasks_popup_open(sim) {
-        tasks::tasks_popup_step(sim, input);
+    crate::camera::cine_step(sim);
+    // the popup state is core's (saved); the app also reports it (`StepInput.tasks_popup_open`)
+    let popup = tasks::tasks_popup_open(sim) || input.tasks_popup_open;
+    if crate::camera::cine_blocking(sim) && !popup {
+        sim.mushrooms.place_preview = None;
+        return;
     }
-    // the HUD's placement mode places mushrooms here (obj_hud Step_1 -> myc_place_mushroom)
-    crate::mycelium::apply_hud_commands(sim, input);
+    if popup {
+        if tasks::tasks_popup_open(sim) {
+            tasks::tasks_popup_step(sim, input);
+        }
+        sim.mushrooms.place_preview = None;
+        return;
+    }
+    // the HUD's placement mode places mushrooms here (obj_hud Step_1 -> myc_place_check /
+    // myc_place_mushroom), only where Step_1 gets that far (ruling R24)
+    if hud_reaches_placement(sim, input) {
+        crate::mycelium::apply_hud_commands(sim, input);
+    } else {
+        sim.mushrooms.place_preview = None;
+    }
+}
+
+/// Whether obj_hud Step_1 gets to its placement code this step (ruling R24): its early returns
+/// for the pause menu, the debug overlay, the title (slots, credits, menu), the logo screen,
+/// the upgrade tree, a hidden HUD or the intro, a right click in placement mode (cancels it), a
+/// camera button click, and a build key for an unlocked type (`hud_build_all_types` = 0..7).
+/// (A cut-scene and the tasks popup return earlier, in [`hud_begin_step`].)
+pub fn hud_reaches_placement(sim: &Sim, input: &StepInput) -> bool {
+    use crate::mushrooms::{mushroom_type_unlocked, MushroomKind};
+    use crate::sim::{Command, Key};
+    if sim.pause_open || input.debug_open || sim.title_open || input.logo_open || input.menu_open {
+        return false;
+    }
+    if input.hud_hidden || sim.intro_active {
+        return false;
+    }
+    if input.rmb.pressed && input.placement.is_some() {
+        return false;
+    }
+    if input.commands.iter().any(|c| {
+        matches!(
+            c,
+            Command::CameraJumpEdge { .. } | Command::CameraJumpOrigin
+        )
+    }) {
+        return false;
+    }
+    for (k, t) in MushroomKind::ALL.iter().enumerate().take(8) {
+        let digit = char::from(b'1' + k as u8);
+        if input.keys_pressed.contains(&Key::Char(digit))
+            || input.keys_pressed.contains(&Key::Numpad(1 + k as u8))
+        {
+            // the first build key pressed: an unlocked type opens the bar and returns
+            return !mushroom_type_unlocked(&sim.state, *t);
+        }
+    }
+    true
 }
 
 /// `load_game`'s progress part: `upgrade_grow` from owned upgrades, the tutorial tips merged

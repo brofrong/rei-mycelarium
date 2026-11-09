@@ -114,11 +114,21 @@ fn life_assets_match_love() {
         close(&format!("{name}.h"), t.h, f(&w["h"]));
     }
     for k in 0..2 {
-        for (n, w) in g["leaf_art"]["faces"][k].as_array().unwrap().iter().enumerate() {
-            row(&format!("faces[{k}][{n}]"), &a.leaf_art.faces[k][n].to_vec(), w);
+        for (n, w) in g["leaf_art"]["faces"][k]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            row(&format!("faces[{k}][{n}]"), &a.leaf_art.faces[k][n], w);
         }
-        for (n, w) in g["leaf_art"]["turns"][k].as_array().unwrap().iter().enumerate() {
-            row(&format!("turns[{k}][{n}]"), &a.leaf_art.turns[k][n].to_vec(), w);
+        for (n, w) in g["leaf_art"]["turns"][k]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            row(&format!("turns[{k}][{n}]"), &a.leaf_art.turns[k][n], w);
         }
     }
 }
@@ -204,7 +214,11 @@ fn funcs_match_love() {
             squirrel::squirrel_climb_x(-side, 90.0 * side, &t, side, py),
             squirrel::squirrel_climb_x(side, 0.0, &t, side, py),
         ];
-        row(&format!("edges[{n}]"), &got, &Value::from(w.as_array().unwrap()[4..].to_vec()));
+        row(
+            &format!("edges[{n}]"),
+            &got,
+            &Value::from(w.as_array().unwrap()[4..].to_vec()),
+        );
     }
     for (n, w) in fz["sky"].as_array().unwrap().iter().enumerate() {
         let t = tree(w[0].as_str().unwrap(), f(&w[1]), sy, 1.0);
@@ -214,7 +228,11 @@ fn funcs_match_love() {
             w: 1920.0,
             h: 1080.0,
         };
-        close(&format!("sky[{n}]"), squirrel::squirrel_sky_y(&t, &v), f(&w[3]));
+        close(
+            &format!("sky[{n}]"),
+            squirrel::squirrel_sky_y(&t, &v),
+            f(&w[3]),
+        );
     }
     let mut s = life::Squirrel {
         x: 10.0,
@@ -264,7 +282,11 @@ fn funcs_match_love() {
             w: 1920.0,
             h: 1080.0,
         };
-        close(&format!("crow_sky[{n}]"), crow::crow_sky_y(&v, f(&w[1])), f(&w[2]));
+        close(
+            &format!("crow_sky[{n}]"),
+            crow::crow_sky_y(&v, f(&w[1])),
+            f(&w[2]),
+        );
     }
     row(
         "worm",
@@ -345,7 +367,7 @@ fn funcs_match_love() {
     ];
     for (n, w) in fz["leaf_art"].as_array().unwrap().iter().enumerate() {
         let a = leaves::leaf_art_frame(&poses[n]);
-        row(&format!("leaf_art[{n}]"), &a.to_vec(), w);
+        row(&format!("leaf_art[{n}]"), &a, w);
     }
     for (mi, wrow) in fz["checks"].as_array().unwrap().iter().enumerate() {
         let mut k = 0;
@@ -414,7 +436,10 @@ fn funcs_match_love() {
     }
     row(
         "any",
-        &[b(boar::boar_any_target(&sim)), b(squirrel::squirrel_any_target(&sim))],
+        &[
+            b(boar::boar_any_target(&sim)),
+            b(squirrel::squirrel_any_target(&sim)),
+        ],
         &fz["any"],
     );
     let mut k = 0;
@@ -469,7 +494,10 @@ fn funcs_match_love() {
     for (n, (p, w)) in sim.life.boar_pack.iter().zip(pack).enumerate() {
         row(&format!("pack[{n}]"), &[p.x, p.dir, p.wait], w);
     }
-    assert_eq!(sim.life.boars[0].targets.len() as i64, i(&fz["pack_targets"]));
+    assert_eq!(
+        sim.life.boars[0].targets.len() as i64,
+        i(&fz["pack_targets"])
+    );
 }
 
 fn timers(sim: &Sim) -> Vec<f64> {
@@ -519,7 +547,15 @@ fn snap_eq(p: &str, sim: &Sim, w: &Value) {
     for (n, (a, w)) in l.animals.iter().zip(&wa).enumerate() {
         row(
             &format!("{p}.animals[{n}]"),
-            &[a.x, a.y, a.dir, a.speed, a.frame, a.frame_timer, a.carrying as f64],
+            &[
+                a.x,
+                a.y,
+                a.dir,
+                a.speed,
+                a.frame,
+                a.frame_timer,
+                a.carrying as f64,
+            ],
             w,
         );
     }
@@ -869,7 +905,10 @@ fn game_step_matches_love() {
 fn new_game_save_load_save_is_identical() {
     let sim = Sim::new_game(GameMode::Exploration, "t10", Some(31607));
     let (st1, _) = sim.to_save();
-    assert!(st1.state.timers.boar.is_some(), "new game saves timers.boar");
+    assert!(
+        st1.state.timers.boar.is_some(),
+        "new game saves timers.boar"
+    );
     let j1 = serde_json::to_string(&st1).unwrap();
     let sim2 = Sim::from_save(serde_json::from_str(&j1).unwrap()).unwrap();
     let (st2, _) = sim2.to_save();
@@ -935,7 +974,10 @@ fn placement_preview_gated_like_hud() {
     // open: preview computed
     let mut sim = base();
     sim.step(&input(&|_| {}));
-    assert!(sim.mushrooms.place_preview.is_some(), "preview while placing");
+    assert!(
+        sim.mushrooms.place_preview.is_some(),
+        "preview while placing"
+    );
     type Case = (&'static str, Box<dyn Fn(&mut Sim, &mut StepInput)>);
     let cases: Vec<Case> = vec![
         ("tasks popup", Box::new(|_, i| i.tasks_popup_open = true)),
@@ -953,7 +995,10 @@ fn placement_preview_gated_like_hud() {
                 i.rmb.down = true
             }),
         ),
-        ("number key", Box::new(|_, i| i.keys_pressed.push(Key::Char('1')))),
+        (
+            "number key",
+            Box::new(|_, i| i.keys_pressed.push(Key::Char('1'))),
+        ),
     ];
     for (name, set) in cases {
         let mut sim = base();

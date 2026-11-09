@@ -472,27 +472,6 @@ pub fn placement_step(sim: &mut Sim, input: &StepInput) {
     };
 }
 
-// ---------------------------------------------------------------------------------------------
-// Task 10's squirrel functions the placement needs.
-
-/// `squirrel_tree_has_mushroom(tree)` (Task 10's): a tree mushroom already on the tree.
-pub fn squirrel_tree_has_mushroom(sim: &Sim, tree_uid: u64) -> bool {
-    let Some(t) = sim.forest.tree(tree_uid) else {
-        return false;
-    };
-    let off = vis("tree_mushroom_offset_x");
-    sim.state
-        .mushrooms
-        .iter()
-        .any(|m| m.kind == 3 && !m.stolen && (m.x - off - t.x).abs() < 2.0)
-}
-
-/// HOOK (Task 10): `squirrel_edge_x(tree, side, y)`, the trunk edge at a height (needs the
-/// trunk pixel edges). Neutral body: the trunk centre.
-pub fn squirrel_edge_x(sim: &Sim, tree_uid: u64, _side: f64, _y: f64) -> f64 {
-    sim.forest.tree(tree_uid).map_or(0.0, |t| t.x)
-}
-
 /// The hover-bar progress of mushroom `i` by type, as `hover_bar_step_draw` picks it
 /// (`predator_progress`, `tree_shroom_progress`, `experience_progress`, `consumptor_progress`,
 /// `repeller_regen_progress`); `None`: no bar.

@@ -306,7 +306,7 @@ impl Sim {
         sim
     }
 
-    fn mark(&mut self, name: &'static str) {
+    pub(crate) fn mark(&mut self, name: &'static str) {
         if let Some(t) = &mut self.trace {
             t.push(name);
         }
@@ -365,14 +365,20 @@ impl Sim {
     /// `game_mode_start(mode)`: apply the mode, reset the animal timers and starting food and
     /// water, thin the resources of an existing world in survival.
     pub fn game_mode_start(&mut self, mode: GameMode) {
-        // game_mode_apply: global.game_mode; `bal` follows `state.state.mode`
-        self.state.state.mode = mode;
+        self.game_mode_apply(mode);
         life::animal_timers_init(self);
         self.state.state.food = self.bal("start_food");
         self.state.state.water_free = self.bal("start_water");
         if balance::game_mode(&self.state) == GameMode::Survival {
             world::survival_thin_all(self);
         }
+    }
+
+    /// `game_mode_apply(mode)`: `global.game_mode`. `bal` follows `state.state.mode`; the
+    /// world's copy (`WorldRt::mode`, read where no `Sim` is at hand) is kept in step.
+    pub fn game_mode_apply(&mut self, mode: GameMode) {
+        self.state.state.mode = mode;
+        self.world.mode = mode;
     }
 
     // port: food_add
@@ -424,12 +430,9 @@ impl Sim {
         // Begin Step
         self.mark("hud.begin_step");
         progress::hud_begin_step(self, input);
-        // Step: obj_game (game_step, save_step; display/focus/audio steps are the app's,
-        // cheats_step is compiled out, steam_step is skipped)
-        self.mark("game.step");
-        game::step(self, input);
-        self.mark("save.step");
-        self.save_step();
+        // Step: obj_game (game_step, save_step, cheats_step; display/focus/audio steps are the
+        // app's, steam_step is skipped)
+        game::obj_game_step(self, input);
         self.mark("forest.step");
         forest::step(self, input);
         self.mark("mycelium.step");
@@ -553,6 +556,8 @@ impl Sim {
         state.apply_load_defaults();
         let mut sim = Sim::create_room(None);
         sim.state = state;
+        let mode = sim.state.state.mode;
+        sim.game_mode_apply(mode);
         let st = &mut sim.state;
         // game_mode_apply(st.mode): `bal` follows state.mode (missing mode reads as exploration)
         if !st.state.cave_yellow.as_ref().is_some_and(|v| v.is_object()) {

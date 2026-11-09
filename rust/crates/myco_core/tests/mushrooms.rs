@@ -413,6 +413,7 @@ fn run_frame(sim: &mut Sim, k: u64) {
             frame: 0.0,
             frame_timer: 4.0,
             carrying: -1,
+            ..Default::default()
         });
     }
     if k == 300 {
@@ -423,6 +424,7 @@ fn run_frame(sim: &mut Sim, k: u64) {
             y: sy,
             dir: -1.0,
             fleeing: false,
+            ..Default::default()
         });
     }
     mushrooms::step(sim);
