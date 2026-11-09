@@ -13,7 +13,7 @@ tmp="$out.tmp"
 rm -f "$tmp"
 trap 'rm -f "$tmp"' EXIT INT TERM
 cd "$root"
-MYCO_FOCUS=1 MYCO_GOLDEN="$script" MYCO_GOLDEN_OUT="$tmp" "$love" game
+MYCO_IDENTITY="${MYCO_IDENTITY:-MycelariumTest}" MYCO_FOCUS=1 MYCO_GOLDEN="$script" MYCO_GOLDEN_OUT="$tmp" "$love" game
 [ -s "$tmp" ] || { echo "golden: $topic produced no output" >&2; exit 1; }
 mv "$tmp" "$out"
 echo "golden: wrote $out"

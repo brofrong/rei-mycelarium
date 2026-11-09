@@ -88,6 +88,8 @@ end
 -- Room1 shown) run the script; it returns a plain Lua table, written as JSON (numbers as %.17g),
 -- then quit. MYCO_DUMP=<frame>:<file.json> writes what save_game would save at that frame (same
 -- JSON, no slot written) and quits. MYCO_SEED=<int> fixes the world seed (see world_init).
+-- MYCO_IDENTITY=<name> (conf.lua) moves the LÖVE save folder: use it for any automated session
+-- that starts a game, so autosaves never touch the real slots in LOVE/Mycelarium.
 local golden_script, golden_out = os.getenv("MYCO_GOLDEN"), os.getenv("MYCO_GOLDEN_OUT")
 local dump_frame, dump_path = (os.getenv("MYCO_DUMP") or ""):match("^(%d+):(.+)$")
 dump_frame = tonumber(dump_frame)

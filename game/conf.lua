@@ -1,5 +1,6 @@
 function love.conf(t)
-  t.identity = "Mycelarium"
+  -- MYCO_IDENTITY=<name> redirects the save folder (automated runs must not touch real slots)
+  t.identity = os.getenv("MYCO_IDENTITY") or "Mycelarium"
   t.version = "11.5"
   t.window.title = "Mycelarium"
   t.window.width = 1280
