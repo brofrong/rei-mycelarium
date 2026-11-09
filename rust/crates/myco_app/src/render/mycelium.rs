@@ -679,6 +679,7 @@ pub fn tiles_step_system(mut sim: ResMut<SimRes>, mut bake: ResMut<MycBake>) {
         }
     }
     tiles_step(&mut sim.0.mycelium, &mut bake);
+    crate::render::mycelium_glow::prune_pulses(&mut sim.0);
     let m = &sim.0.mycelium;
     bake.sounding = m
         .growths

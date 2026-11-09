@@ -464,10 +464,9 @@ pub fn pulse_add(col: f64, seed_a: f64, ring_a: f64, strength: f64) -> f64 {
     (t[0] * col * t[3] * strength).min(1.0)
 }
 
-/// Drop the pulses that ran past their reach (the pruning in `myc_glow_composite`); after each
-/// fixed step, so the draw stays read-only.
-fn prune_pulses_system(mut sim: ResMut<SimRes>) {
-    let sim = &mut sim.0;
+/// Drop the pulses that ran past their reach (the pruning in `myc_glow_composite`); called after
+/// each fixed step from `mycelium::tiles_step_system`, so the draw stays read-only.
+pub fn prune_pulses(sim: &mut myco_core::sim::Sim) {
     if sim.mycelium.pulses.is_empty() {
         return;
     }
@@ -479,7 +478,7 @@ fn prune_pulses_system(mut sim: ResMut<SimRes>) {
         .copied()
         .filter(|p| myc::pulse_radius(s, p) >= 0.0)
         .collect();
-    if keep.len() != sim.mycelium.pulses.len() {
+    if keep.len() != s.mycelium.pulses.len() {
         sim.mycelium.pulses = keep;
     }
 }
@@ -487,7 +486,7 @@ fn prune_pulses_system(mut sim: ResMut<SimRes>) {
 // port: anon__73025__gml_Object_obj_mycelium_controller_Create_0
 /// `myc_glow_composite` (obj_game Draw_75): add the blurred seed over the world, and the pulse
 /// rings masked by it ([`pulse_add`]). Pulses that ran past their reach are skipped here and
-/// dropped from the logic by `prune_pulses_system` after the next fixed step.
+/// dropped from the logic by [`prune_pulses`] after the next fixed step.
 fn glow_composite_system(
     sim: Res<SimRes>,
     glow: Option<Res<MycGlow>>,
@@ -623,10 +622,7 @@ impl Plugin for MyceliumGlowPlugin {
         if !app.is_plugin_added::<Material2dPlugin<GlowMaterial>>() {
             app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
         }
-        app.add_systems(
-            FixedUpdate,
-            prune_pulses_system.in_set(crate::sim_bridge::SimSet::After),
-        );
+
         app.add_systems(
             FixedUpdate,
             perk_hook
