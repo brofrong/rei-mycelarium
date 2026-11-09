@@ -13,6 +13,21 @@ pub struct CameraRt {
     pub vy: f64,
     pub width: f64,
     pub height: f64,
+    /// `camera_view_x/y`: the drawn top-left corner (floored, shake applied; Task 5's forest
+    /// step writes it)
+    pub view_x: f64,
+    pub view_y: f64,
+    /// `global.camera_fly`: easing toward an animal marker (Task 21's `camera_fly_to_marker`
+    /// starts it and keeps the target in sync with the marker; Task 5's forest step runs it)
+    pub fly: Option<CameraFly>,
+}
+
+/// `global.camera_fly` (`___struct___113`): seconds flown and the marker position.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CameraFly {
+    pub t: f64,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Default for CameraRt {
@@ -24,6 +39,9 @@ impl Default for CameraRt {
             vy: 0.0,
             width: 1920.0,
             height: 1080.0,
+            view_x: 0.0,
+            view_y: 0.0,
+            fly: None,
         }
     }
 }
@@ -59,3 +77,13 @@ pub fn cine_step(_sim: &mut Sim) {}
 pub fn cine_blocking(_sim: &Sim) -> bool {
     false
 }
+
+/// `cine_showing` (Task 21): a cut-scene is in its "show" phase (camera input frozen). Until
+/// then: never.
+pub fn cine_showing(_sim: &Sim) -> bool {
+    false
+}
+
+/// `forest_fit_view` (Task 21, ruling R12b): re-centre the camera on a new view size. Called by
+/// the forest step when the camera size differs from the logical view.
+pub fn forest_fit_view(_sim: &mut Sim, _view_w: f64, _view_h: f64) {}
