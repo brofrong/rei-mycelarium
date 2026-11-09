@@ -46,6 +46,8 @@ pub struct PendingInput {
     pub debug_open: bool,
     pub logo_open: bool,
     pub hud_hidden: bool,
+    /// a slot name is being typed (`hud_slot_naming != -1`; set by the menus)
+    pub slot_naming: bool,
 }
 
 impl PendingInput {
@@ -105,6 +107,7 @@ impl PendingInput {
             debug_open: self.debug_open,
             logo_open: self.logo_open,
             hud_hidden: self.hud_hidden,
+            slot_naming: self.slot_naming,
         };
         for b in [&mut self.lmb, &mut self.rmb] {
             b.pressed = false;

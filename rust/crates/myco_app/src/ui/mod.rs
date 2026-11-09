@@ -295,6 +295,7 @@ pub fn menu_step(
     pending.debug_open = flags.debug_open;
     pending.hud_hidden = flags.hud_hidden;
     pending.logo_open = menus.logo.open;
+    pending.slot_naming = menus.slot_naming >= 0;
     // the tree adds its own flag and screen after this (it runs next)
     let menus_up = sim.0.title_open || sim.0.pause_open || menus.logo.open || flags.debug_open;
     // the tree screen writes its own blocker (`UiBlockers::tree`)
