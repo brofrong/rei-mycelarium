@@ -28,6 +28,10 @@ return {
     assert(out:find("void effect%(%)") and out:find("love_PixelColor =") and out:find("uniform float u_t;"))
     assert(not out:find("varying vec2 v_vTexcoord;", 1, true) and not out:find("gl_FragColor", 1, true))
   end,
+  shader_precision_removed = function()
+    local out = shader_conv.fragment("precision mediump float;\n#define LOWPREC lowp\nvoid main()\n{\n gl_FragColor = vec4(1.0);\n}\n")
+    assert(not out:find("precision mediump", 1, true) and not out:find("#define LOWPREC lowp", 1, true))
+  end,
   ini_roundtrip = function()
     local d = ini.parse('[display]\r\nfullscreen="1.000000"\r\n[audio]\r\nmusic="0.5"\r\n')
     assert(ini.read(d, "display", "fullscreen", "x") == "1.000000" and ini.read(d, "audio", "nope", "def") == "def")

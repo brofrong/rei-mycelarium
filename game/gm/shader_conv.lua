@@ -6,6 +6,9 @@ function M.fragment(src)
   out = out:gsub("varying%s+vec2%s+v_vTexcoord%s*;", "")
   out = out:gsub("varying%s+vec4%s+v_vColour%s*;", "")
   out = out:gsub("uniform%s+sampler2D%s+gm_BaseTexture%s*;", "")
+  -- desktop GLSL 1.20 has no precision statements or qualifiers
+  out = out:gsub("precision%s+%w+%s+%w+%s*;", "")
+  out = out:gsub("#define%s+LOWPREC%s+lowp", "#define LOWPREC")
   out = out:gsub("void%s+main%s*%(%s*%)", "void effect()")
   out = out:gsub("gl_FragColor", "love_PixelColor")
   local header = table.concat({
