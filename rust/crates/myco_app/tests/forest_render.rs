@@ -315,6 +315,10 @@ fn layer_order_matches_original_draw_events() {
         Z_WEATHER_FRONT,
         Z_WEATHER_SPLASHES,
         Z_POST,
+        // mycelium Draw_64 (GUI surface) over the world, the glow just below it (Task 14)
+        Z_MYC_GLOW,
+        Z_MYC_STRANDS,
+        Z_MYC_KNOTS,
     ];
     for w in order.windows(2) {
         assert!(w[0] + LAYER_SPAN <= w[1], "{} then {}", w[0], w[1]);

@@ -12,6 +12,7 @@ use myco_app::autopilot::{seed_from_env, AutopilotPlugin};
 use myco_app::camera::CameraPlugin;
 use myco_app::display::{self, Display, DisplayPlugin, SaveDir};
 use myco_app::render::forest::ForestRenderPlugin;
+use myco_app::render::mycelium::MyceliumRenderPlugin;
 use myco_app::render::weather::WeatherRenderPlugin;
 use myco_app::sim_bridge::{SimBridgePlugin, SimRes};
 use myco_app::ui::UiPlugin;
@@ -61,6 +62,7 @@ fn main() {
         UiPlugin,
         ForestRenderPlugin,
         WeatherRenderPlugin,
+        MyceliumRenderPlugin,
     ));
     if let Some(s) = screen {
         app.insert_resource(s);

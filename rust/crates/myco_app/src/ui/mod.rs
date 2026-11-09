@@ -2,6 +2,7 @@
 //! screen ([`tree`]); [`LocaleRes`] holds the language strings and the UI font.
 
 pub mod gm_draw;
+pub mod myc_prompts;
 pub mod tree;
 
 use crate::assets::GameAssets;

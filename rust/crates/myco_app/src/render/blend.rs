@@ -43,6 +43,9 @@ pub enum GmBlendMode {
     Multiply,
     /// `bm_normal`: `dst = src·a + dst·(1 − a)` (GUI primitives, Task 19)
     Alpha,
+    /// opaque geometry that also writes its alpha (Task 14: the hyphae, which the glow buffer
+    /// reads by alpha): `dst = src`
+    Opaque,
 }
 
 impl GmBlendMode {
@@ -63,6 +66,12 @@ impl GmBlendMode {
                 dst_factor: BlendFactor::OneMinusSrcAlpha,
                 operation: BlendOperation::Add,
             },
+            GmBlendMode::Opaque => {
+                return BlendState {
+                    color: BlendComponent::REPLACE,
+                    alpha: BlendComponent::REPLACE,
+                }
+            }
         };
         BlendState {
             color,
