@@ -326,3 +326,35 @@ fn camera_fly_to_marker_starts_a_fly_and_follows_the_marker() {
     camera::camera_fly_track(&mut sim, 1.0, 2.0);
     assert_eq!(sim.camera.fly, None);
 }
+
+/// obj_hud Step_1 (ui_4.lua:1052+): the camera buttons and tree purchases come after the
+/// cut-scene / popup / pause / debug / title / logo returns; the marker fly comes before them.
+#[test]
+fn hud_camera_commands_wait_for_the_gates() {
+    use myco_core::progress;
+    use myco_core::sim::{Command, StepInput};
+    let mut sim = open_sim();
+    sim.state.state.cam_box = [-8000.0, 0.0, 8000.0, 4000.0];
+    sim.mycelium.growths.clear();
+    sim.mycelium.x = 3000.0;
+    let input = StepInput {
+        commands: vec![Command::CameraJumpOrigin, Command::CameraFlyTo { x: 1.0, y: 2.0 }],
+        ..Default::default()
+    };
+    sim.camera.x = 0.0;
+    sim.pause_open = true;
+    progress::hud_begin_step(&mut sim, &input);
+    assert_eq!(sim.camera.x, 0.0, "the pause returns before the camera buttons");
+    assert!(sim.camera.fly.is_some(), "the marker click runs before the gates");
+    sim.pause_open = false;
+    cine::cine_show_start(&mut sim);
+    sim.camera.fly = None;
+    progress::hud_begin_step(&mut sim, &input);
+    // the cut-scene moved the camera to its first stop; the origin button did not run after it
+    let c = sim.progress.tasks.cine.as_ref().unwrap();
+    let stop = &c.stops[c.stop as usize];
+    assert_eq!(sim.camera.x, stop.x - sim.camera.width * 0.5);
+    sim.progress.tasks.cine = None;
+    progress::hud_begin_step(&mut sim, &input);
+    assert_eq!(sim.camera.x, 3000.0 - sim.camera.width * 0.5);
+}

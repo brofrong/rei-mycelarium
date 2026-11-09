@@ -1,8 +1,14 @@
-//! Camera and cut-scene state the logic depends on (ruling R12c). Task 21 ports
-//! `camera_bounds`, `boar_shake` and the `cine_*` logic into these hooks; drawing and zoom
-//! stay in the app.
+//! Camera state the logic depends on (ruling R12c): the 1× game camera, its bounds, the HUD's
+//! camera jumps, the fly-to-marker, the shake and the intro. The cut-scene logic is in
+//! [`crate::cine`] (re-exported here for the callers); drawing and zoom stay in the app.
 
+use crate::balance::vis;
+use crate::gml;
 use crate::sim::Sim;
+
+pub use crate::cine::{
+    cine_active, cine_blocking, cine_release_hold, cine_show_start, cine_showing, cine_step,
+};
 
 /// The game camera (`obj_forest_controller.camera_*`), logical 1× view in world pixels.
 #[derive(Clone, Debug, PartialEq)]
@@ -55,10 +61,9 @@ pub struct CamBounds {
     pub y2: f64,
 }
 
+// port: camera_bounds
 /// `camera_bounds(vw, vh)`: the camera box (`state.cam_box`, grown by the mycelium's reach)
 /// less the view, clipped to the world bottom; a box narrower than the view centres it.
-/// (Task 21's row, ported here unmarked because the animals' world span needs it; Task 21
-/// marks it.)
 pub fn camera_bounds(sim: &Sim, vw: f64, vh: f64) -> CamBounds {
     let [bx1, by1, bx2, by2] = sim.state.state.cam_box;
     let mut x1 = bx1;
@@ -75,48 +80,114 @@ pub fn camera_bounds(sim: &Sim, vw: f64, vh: f64) -> CamBounds {
     CamBounds { x1, x2, y1, y2 }
 }
 
-/// `boar_shake(vx, vw)` (Task 21): camera shake offset `[dx, dy]`. Until then: none.
-pub fn boar_shake(_sim: &mut Sim, _vx: f64, _vw: f64) -> [f64; 2] {
-    [0.0, 0.0]
+// port: camera_jump_to
+/// Centre the camera on `(x, y)` within the bounds and stop it.
+pub fn camera_jump_to(sim: &mut Sim, x: f64, y: f64) {
+    let (w, h) = (sim.camera.width, sim.camera.height);
+    let b = camera_bounds(sim, w, h);
+    let cam = &mut sim.camera;
+    cam.x = gml::clamp(x - w * 0.5, b.x1, b.x2);
+    cam.y = gml::clamp(y - h * 0.5, b.y1, b.y2);
+    cam.vx = 0.0;
+    cam.vy = 0.0;
 }
 
-/// `cine_step` (Task 21).
-pub fn cine_step(_sim: &mut Sim) {}
-
-/// `cine_blocking` (Task 21): a cut-scene holds the input. Until then: never.
-pub fn cine_blocking(_sim: &Sim) -> bool {
-    false
+// port: camera_jump_origin
+/// The HUD's origin button: centre on the mycelium controller, top of the bounds, stopped.
+pub fn camera_jump_origin(sim: &mut Sim) {
+    let ox = sim.mycelium.x;
+    let (w, h) = (sim.camera.width, sim.camera.height);
+    let b = camera_bounds(sim, w, h);
+    let cam = &mut sim.camera;
+    cam.x = gml::clamp(ox - w * 0.5, b.x1, b.x2);
+    cam.y = gml::clamp(0.0, b.y1, b.y2);
+    cam.vx = 0.0;
+    cam.vy = 0.0;
 }
 
-/// `cine_showing` (Task 21): a cut-scene is in its "show" phase (camera input frozen). Until
-/// then: never.
-pub fn cine_showing(_sim: &Sim) -> bool {
-    false
+// port: camera_jump_edge
+/// The HUD's left (-1) / right (1) buttons: jump to the mycelium's extreme tip on that side, or
+/// to the origin without growths.
+pub fn camera_jump_edge(sim: &mut Sim, dir: f64) {
+    match crate::mycelium::mycelium_extreme_tip(sim, dir) {
+        Some((x, y)) => camera_jump_to(sim, x, y),
+        None => camera_jump_origin(sim),
+    }
 }
 
-/// `forest_fit_view` (Task 21, ruling R12b): re-centre the camera on a new view size. Called by
-/// the forest step when the camera size differs from the logical view.
-pub fn forest_fit_view(_sim: &mut Sim, _view_w: f64, _view_h: f64) {}
+// port: camera_fly_to_marker
+/// `global.camera_fly = { marker, t = 0 }`: ease the camera toward a clicked animal marker
+/// (the forest step flies it). The marker lives in the app; [`camera_fly_track`] keeps the
+/// target on it while it moves.
+pub fn camera_fly_to_marker(sim: &mut Sim, x: f64, y: f64) {
+    sim.camera.fly = Some(CameraFly { t: 0.0, x, y });
+}
 
-/// `cine_show_start` (Task 21): start the migration spore cut-scene (the tasks popup's
-/// "spores" button). Until then: nothing.
-pub fn cine_show_start(_sim: &mut Sim) {}
+/// The flown marker moved (the original reads `fly.marker.x/y` live every step): update the
+/// target of a running fly; nothing when none runs.
+pub fn camera_fly_track(sim: &mut Sim, x: f64, y: f64) {
+    if let Some(f) = sim.camera.fly.as_mut() {
+        f.x = x;
+        f.y = y;
+    }
+}
 
-/// The cut-scene part of `tasks_popup_close` (Task 21): `if cine_active() and
-/// tasks.cine.phase == "hold" then phase = "out"; t = 0`. Until then: nothing (no cut-scene
-/// can be active).
-pub fn cine_release_hold(_sim: &mut Sim) {}
+// port: boar_shake
+/// Camera shake offset `[dx, dy]` for the view `[vx, vx + vw]`: the cut-scene's shake while it
+/// tours; otherwise none while the UI blocks; otherwise the decaying repeller kick (random, so it
+/// draws from the game RNG every step) plus a rumble from the nearest boar, fading over
+/// `boar_shake_falloff_px` outside the view. `ui_blocking` is `ui_blocking()` (its menu / debug
+/// / logo / popup parts come from the app's `StepInput`).
+pub fn boar_shake(sim: &mut Sim, vx: f64, vw: f64, ui_blocking: bool) -> [f64; 2] {
+    if let Some(c) = crate::cine::cine_shake(sim) {
+        return c;
+    }
+    if ui_blocking {
+        return [0.0, 0.0];
+    }
+    let k = sim.mushrooms.repel_kick;
+    sim.mushrooms.repel_kick = k * 0.82;
+    if sim.mushrooms.repel_kick < 0.2 {
+        sim.mushrooms.repel_kick = 0.0;
+    }
+    let bx = k * sim.rng.random_range(-0.5, 0.5);
+    let by = k * sim.rng.random_range(-1.0, 1.0);
+    let base = [bx, by];
+    if sim.life.boars.is_empty() {
+        return base;
+    }
+    let mut best: f64 = 0.0;
+    let fall = vis("boar_shake_falloff_px").max(1.0);
+    for b in &sim.life.boars {
+        let d = 0f64.max(vx - b.x).max(b.x - (vx + vw));
+        best = best.max(1.0 - d / fall);
+    }
+    if best <= 0.0 {
+        return base;
+    }
+    let amp = vis("boar_shake_px") * best * best;
+    let t = sim.now_ms();
+    [
+        base[0] + amp * 0.45 * ((t * 0.031).sin() * 0.6 + (t * 0.057 + 1.3).sin() * 0.4),
+        base[1] + amp * ((t * 0.043 + 0.7).sin() * 0.6 + (t * 0.089 + 2.1).sin() * 0.4),
+    ]
+}
 
-/// `camera_jump_edge(dir)` (Task 21): the HUD's left/right camera buttons. Until then: nothing.
-pub fn camera_jump_edge(_sim: &mut Sim, _dir: f64) {}
-
-/// `camera_jump_origin()` (Task 21): the HUD's origin button. Until then: nothing.
-pub fn camera_jump_origin(_sim: &mut Sim) {}
+// port: anon__799__gml_Object_obj_forest_controller_Create_0
+/// `forest_fit_view` (ruling R12b): the view size changed (window resize, fullscreen); keep the
+/// camera centre and take the new size. (Its `camera_set_view_size` / `view_set_wport/hport`
+/// half is the app's: `Cameras::set_window` sizes the Bevy world camera and viewport.)
+pub fn forest_fit_view(sim: &mut Sim, view_w: f64, view_h: f64) {
+    let cam = &mut sim.camera;
+    cam.x += (cam.width - view_w) * 0.5;
+    cam.y += (cam.height - view_h) * 0.5;
+    cam.width = view_w;
+    cam.height = view_h;
+}
 
 // ---------------------------------------------------------------------------------------------
-// The intro (scr_life `intro_*`; Task 21's rows, ported here unmarked because `game_init` starts
-// every game with `intro_active` and obj_life Step_0 runs `intro_step`; Task 21 marks them and
-// adds `intro_draw`).
+// The intro (scr_life `intro_*`; ported by Task 10 for `game_init`, which starts every game with
+// `intro_active`, and obj_life Step_0, which runs `intro_step`). `intro_draw` is the app's.
 
 /// `global.intro` (`___struct___105`): the hedgehog that brings the origin mushroom.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -130,9 +201,10 @@ pub struct Intro {
     pub shroom_speed: f64,
 }
 
+// port: intro_init
 /// `intro_init()`: the hedgehog starts half a screen and a frame left of the start.
 pub fn intro_init(sim: &mut Sim) {
-    use crate::balance::{vis, wld};
+    use crate::balance::wld;
     sim.life.intro = Intro {
         x: sim.state.state.start_x - vis("screen_width_px") * 0.5 - crate::life::hedgehog_frame_w(),
         y: wld("surface_height_px"),
@@ -144,10 +216,11 @@ pub fn intro_init(sim: &mut Sim) {
     };
 }
 
+// port: intro_step
 /// `intro_step()`: true while the intro holds the rest of obj_life's step. The hedgehog walks to
 /// the start and drops the origin mushroom; when it lands, `intro_finish`.
 pub fn intro_step(sim: &mut Sim) -> bool {
-    use crate::balance::{vis, wld};
+    use crate::balance::wld;
     if !sim.intro_active {
         return false;
     }
@@ -182,10 +255,10 @@ pub fn intro_step(sim: &mut Sim) -> bool {
     }
 }
 
+// port: intro_finish
 /// `intro_finish()`: the intro ends; its hedgehog walks on as a normal one and the origin knot
 /// is placed at the mycelium controller.
 pub fn intro_finish(sim: &mut Sim) {
-    use crate::balance::vis;
     sim.intro_active = false;
     let it = sim.life.intro.clone();
     let id = sim.life.new_id(crate::mycelium::source::ANIMAL);

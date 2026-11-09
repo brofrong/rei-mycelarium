@@ -14,7 +14,6 @@ use crate::mushrooms::types::{
     mushroom_cell_width, mushroom_sprite_now, mushroom_variant, shroom_sprite,
 };
 use crate::mycelium::source;
-use crate::rng::Rng;
 use crate::sim::Sim;
 use crate::state::{GameMode, MushroomSave};
 
