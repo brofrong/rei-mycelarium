@@ -263,8 +263,28 @@ pub struct MushroomSave {
     /// current_time at creation; written by save_game, removed by load_game
     #[serde(skip_serializing_if = "Option::is_none")]
     pub born: Option<f64>,
+    /// a repeller's autoregen counter (set by `mushrooms_step` on repellers only)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub regen_timer: Option<f64>,
+    /// a stinky mushroom's column was in view on the last step (set by `stinky_step`)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stench_live: Option<bool>,
+    /// runtime only (Task 9): stable id, host reference, stench particle pool
+    #[serde(skip)]
+    pub live: MushroomLive,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+/// The runtime part of a mushroom (not saved; `save_game` writes the host as its save id).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MushroomLive {
+    /// stable id (`SimEvent::Resource::source`), 0 until assigned
+    pub id: u64,
+    /// `m.host`: the tree or stump a consumptor eats
+    pub host: Option<crate::forest::HostId>,
+    /// `m.stench` as a pool struct (`stinky_pool`)
+    pub pool: Option<Box<crate::mushrooms::stinky::StinkyPool>>,
 }
 
 impl Default for MushroomSave {
@@ -291,6 +311,9 @@ impl Default for MushroomSave {
             hold_yscale: 1.0,
             flash: 0.0,
             born: None,
+            regen_timer: None,
+            stench_live: None,
+            live: MushroomLive::default(),
             extra: Extra::new(),
         }
     }

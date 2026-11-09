@@ -116,6 +116,10 @@ pub struct StepInput {
     pub hud_hidden: bool,
     /// a slot name is being typed (`obj_hud.hud_slot_naming != -1`): the F glow key is text
     pub slot_naming: bool,
+    /// the HUD's placement mode (`obj_hud.hud_place_type >= 0`): the type being placed. While
+    /// set, `myc_place_check` runs for the cursor every step (`MushroomsRt::place_preview`,
+    /// ruling R22) and `Command::QuickNode` is ignored (a right click cancels placement).
+    pub placement: Option<MushroomKind>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
