@@ -16,9 +16,12 @@
 //! composites the result; its shader adds the glow and computes the rings analytically (the
 //! original's 96-segment strips interpolate the same radial ramps).
 //!
-//! The pulse buffer follows the LÖVE port's blend mapping: `bm_dest_alpha, bm_zero` is
-//! "multiply" there (`game/gm/draw.lua`), so a pulse texel is the blurred seed times the ring
-//! (alpha = seed · ring, colour white where the ring strip covers).
+//! The pulse buffer follows the GML (ruling R25): the blurred seed is drawn into the ring buffer
+//! with `gpu_set_blendmode_ext(bm_dest_alpha, bm_zero)`, which scales all four channels by the
+//! ring's alpha. The seed is white after the blur, so a pulse texel is
+//! `(ring_a, ring_a, ring_a, seed_a · ring_a)` ([`pulse_texel`]) and the `bm_add` composite adds
+//! `col · ring_a · seed_a · ring_a · strength` ([`pulse_add`]), quadratic in the ring alpha. (The
+//! LÖVE port maps that blend to "multiply", which is linear in the ring and does not match.)
 
 use crate::camera::Cameras;
 use crate::render::layers::Z_MYC_GLOW;
@@ -80,7 +83,7 @@ pub fn glow_layout(v: &ViewRect, ds: f64) -> GlowLayout {
 }
 
 /// [`GlowMaterial`]'s uniform. Lengths are in buffer texels.
-#[derive(ShaderType, Clone, Copy, Debug, Default)]
+#[derive(ShaderType, Clone, Copy, Debug, Default, PartialEq)]
 pub struct GlowParams {
     /// x: mode (0 copy, 1 thicken, 2 blur, 3 composite); y: thicken offset; zw: blur step
     pub mode: Vec4,
@@ -402,18 +405,25 @@ fn draw_glow_system(
                 *tf = Transform::from_scale(Vec3::new(w, h, 1.0));
             }
         }
-        if let Some(mut mat) = materials.get_mut(&p.material) {
-            mat.tex = glow.images[p.src].clone();
-            // blur passes alternate across (odd index) and down
-            let step = if i == 0 {
-                Vec2::ZERO
-            } else if i % 2 == 1 {
-                Vec2::new(r, 0.0)
-            } else {
-                Vec2::new(0.0, r)
-            };
-            let mode = mat.params.mode.x;
-            mat.params.mode = Vec4::new(mode, gv.thicken as f32, step.x, step.y);
+        // blur passes alternate across (odd index) and down
+        let step = if i == 0 {
+            Vec2::ZERO
+        } else if i % 2 == 1 {
+            Vec2::new(r, 0.0)
+        } else {
+            Vec2::new(0.0, r)
+        };
+        let tex = glow.images[p.src].clone();
+        let Some(cur) = materials.get(&p.material) else {
+            continue;
+        };
+        let mode = Vec4::new(cur.params.mode.x, gv.thicken as f32, step.x, step.y);
+        // write (and so rebuild the bind group) only on a resize or a changed step
+        if cur.tex != tex || cur.params.mode != mode {
+            if let Some(mut mat) = materials.get_mut(&p.material) {
+                mat.tex = tex;
+                mat.params.mode = mode;
+            }
         }
     }
     glow.at = Some(lay);
@@ -440,11 +450,46 @@ pub fn pulse_ring_alpha(d: f64, r: f64, w: f64, a: f64) -> Option<f64> {
     })
 }
 
+/// A pulse buffer texel: the blurred seed (white, alpha `seed_a`) drawn over the rings (summed
+/// alpha `ring_a`, saturated) with `bm_dest_alpha, bm_zero`.
+pub fn pulse_texel(seed_a: f64, ring_a: f64) -> [f64; 4] {
+    let ra = ring_a.clamp(0.0, 1.0);
+    [ra, ra, ra, seed_a * ra]
+}
+
+/// One colour channel the pulse composite adds: `draw_surface_ext(pulse, …, col, min(1, s))`
+/// with `bm_add` repeated while `s > 0`, i.e. `texel.rgb · col · texel.a · s`, saturated.
+pub fn pulse_add(col: f64, seed_a: f64, ring_a: f64, strength: f64) -> f64 {
+    let t = pulse_texel(seed_a, ring_a);
+    (t[0] * col * t[3] * strength).min(1.0)
+}
+
+/// Drop the pulses that ran past their reach (the pruning in `myc_glow_composite`); after each
+/// fixed step, so the draw stays read-only.
+fn prune_pulses_system(mut sim: ResMut<SimRes>) {
+    let sim = &mut sim.0;
+    if sim.mycelium.pulses.is_empty() {
+        return;
+    }
+    let s: &myco_core::sim::Sim = sim;
+    let keep: Vec<myc::Pulse> = s
+        .mycelium
+        .pulses
+        .iter()
+        .copied()
+        .filter(|p| myc::pulse_radius(s, p) >= 0.0)
+        .collect();
+    if keep.len() != sim.mycelium.pulses.len() {
+        sim.mycelium.pulses = keep;
+    }
+}
+
 // port: anon__73025__gml_Object_obj_mycelium_controller_Create_0
 /// `myc_glow_composite` (obj_game Draw_75): add the blurred seed over the world, and the pulse
-/// rings masked by it; pulses that ran past their reach are dropped here, as in the original.
+/// rings masked by it ([`pulse_add`]). Pulses that ran past their reach are skipped here and
+/// dropped from the logic by `prune_pulses_system` after the next fixed step.
 fn glow_composite_system(
-    mut sim: ResMut<SimRes>,
+    sim: Res<SimRes>,
     glow: Option<Res<MycGlow>>,
     mut materials: ResMut<Assets<GlowMaterial>>,
     mut q: Query<(&mut Transform, &mut Visibility)>,
@@ -475,7 +520,6 @@ fn glow_composite_system(
         (sim_ref.mycelium.y - g.oy) / g.step,
     );
     let glow_on = sim_ref.mycelium.glow_on;
-    sim.0.mycelium.pulses = keep;
     let Ok((mut tf, mut visibility)) = q.get_mut(glow.composite) else {
         return;
     };
@@ -498,10 +542,11 @@ fn glow_composite_system(
         scale: Vec3::new(ww as f32, wh as f32, 1.0),
         ..default()
     });
-    let Some(mut mat) = materials.get_mut(&glow.composite_material) else {
+    let Some(cur) = materials.get(&glow.composite_material) else {
         return;
     };
-    mat.tex = glow.images[glow.final_image].clone();
+    let tex = glow.images[glow.final_image].clone();
+    let mut params = cur.params;
     let enc = |col: f64| {
         let c = gm_colour_f(col, 1.0).to_srgba();
         Vec3::new(c.red, c.green, c.blue)
@@ -512,22 +557,28 @@ fn glow_composite_system(
     } else {
         0.0
     };
-    mat.params.glow = enc(vis("myc_glow_colour")).extend(gs as f32);
-    mat.params.pulse =
-        enc(vis("myc_pulse_colour")).extend(vis("myc_pulse_strength").max(0.0) as f32);
+    params.glow = enc(vis("myc_glow_colour")).extend(gs as f32);
+    params.pulse = enc(vis("myc_pulse_colour")).extend(vis("myc_pulse_strength").max(0.0) as f32);
     let n = rings.len().min(MAX_PULSES);
-    mat.params.origin = Vec4::new(
+    params.origin = Vec4::new(
         ox_px as f32,
         oy_px as f32,
         (vis("myc_pulse_band_px") / g.step) as f32,
         n as f32,
     );
-    for (i, slot) in mat.params.rings.iter_mut().enumerate() {
+    for (i, slot) in params.rings.iter_mut().enumerate() {
         *slot = rings.get(i).map_or(Vec4::ZERO, |&(r, a)| {
             Vec4::new(r as f32, a as f32, 0.0, 0.0)
         });
     }
-    mat.params.mode = Vec4::new(3.0, g.w as f32, g.h as f32, 0.0);
+    params.mode = Vec4::new(3.0, g.w as f32, g.h as f32, 0.0);
+    // write (and so rebuild the bind group) only when something changed
+    if cur.params != params || cur.tex != tex {
+        if let Some(mut mat) = materials.get_mut(&glow.composite_material) {
+            mat.params = params;
+            mat.tex = tex;
+        }
+    }
 }
 
 /// `MYCO_PERK=<frame>:<perk>` (development aid for render comparisons, like `MYCO_FORCE_RAIN`):
@@ -574,6 +625,10 @@ impl Plugin for MyceliumGlowPlugin {
         }
         app.add_systems(
             FixedUpdate,
+            prune_pulses_system.in_set(crate::sim_bridge::SimSet::After),
+        );
+        app.add_systems(
+            FixedUpdate,
             perk_hook
                 .in_set(crate::sim_bridge::SimSet::Prepare)
                 .after(crate::autopilot::run_script),
@@ -590,6 +645,25 @@ impl Plugin for MyceliumGlowPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pulse_texel_is_the_seed_scaled_by_the_ring_alpha_on_every_channel() {
+        // bm_dest_alpha, bm_zero: the seed (white after the blur, alpha 0.5) times the ring's
+        // alpha (0.4) on all four channels
+        let t = pulse_texel(0.5, 0.4);
+        for (got, want) in t.iter().zip([0.4, 0.4, 0.4, 0.2]) {
+            assert!((got - want).abs() < 1e-12, "{t:?}");
+        }
+        // summed rings saturate at 1; no ring, nothing
+        assert_eq!(pulse_texel(1.0, 1.7), [1.0, 1.0, 1.0, 1.0]);
+        assert_eq!(pulse_texel(0.8, 0.0), [0.0; 4]);
+        // the bm_add composite: col · ring_a · seed_a · ring_a · strength (quadratic in the ring)
+        let add = pulse_add(0.5, 0.5, 0.4, 3.0);
+        assert!((add - 0.5 * 0.4 * 0.5 * 0.4 * 3.0).abs() < 1e-12);
+        assert!((pulse_add(1.0, 1.0, 0.5, 1.0) - 0.25).abs() < 1e-12);
+        // saturating
+        assert_eq!(pulse_add(1.0, 1.0, 1.0, 3.0), 1.0);
+    }
 
     #[test]
     fn perk_hook_parses_frame_and_perk() {

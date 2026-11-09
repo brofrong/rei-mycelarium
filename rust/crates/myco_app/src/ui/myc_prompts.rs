@@ -255,9 +255,13 @@ pub fn draw_aim(gm: &mut Gm, sim: &Sim, ctx: &PromptCtx, units_imperial: bool) {
 
 /// Draw_64's buttons: spore / regen prompt and the build menu with its hint. `mouse` is the GUI
 /// cursor for the hover look.
+///
+/// `build_ok[i]` is `myc_can_build_option(option i)`, evaluated after the last fixed step
+/// ([`BuildAffordable`]): the check may generate surface chunks, so it stays out of the draw.
 pub fn draw_buttons(
     gm: &mut Gm,
-    sim: &mut Sim,
+    sim: &Sim,
+    build_ok: &[bool],
     cams: &Cameras,
     loc: &dyn Fn(&str) -> String,
     mouse: (f64, f64),
@@ -299,8 +303,8 @@ pub fn draw_buttons(
         let hint = (!sim.mycelium.build_hint.is_empty()).then(|| build_hint_rect(sim, &ctx));
         // myc_build_hover: the first option under the cursor
         let hover_i = opt_rects.iter().position(|r| r.contains(mouse.0, mouse.1));
-        for (i, (r, o)) in opt_rects.into_iter().zip(&opts).enumerate() {
-            let ok = can_build_option(sim, o);
+        for (i, r) in opt_rects.into_iter().enumerate() {
+            let ok = build_ok.get(i).copied().unwrap_or(false);
             rects.push((r, hover_i == Some(i), ok));
         }
         if let Some(h) = hint {
@@ -384,8 +388,27 @@ fn click_system(
 }
 
 /// Every frame: the aim preview and the buttons into [`GuiDraw`].
+/// `myc_can_build_option` for each open build-menu option, refreshed after every fixed step.
+#[derive(Resource, Default, Debug, Clone, PartialEq)]
+pub struct BuildAffordable(pub Vec<bool>);
+
+fn build_affordable_system(mut sim: ResMut<SimRes>, mut ok: ResMut<BuildAffordable>) {
+    let sim = &mut sim.0;
+    let v: Vec<bool> = if sim.mycelium.mushroom_prompt {
+        let opts = sim.mycelium.build_options.clone();
+        opts.iter().map(|o| can_build_option(sim, o)).collect()
+    } else {
+        Vec::new()
+    };
+    if ok.0 != v {
+        ok.0 = v;
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn draw_system(
-    mut sim: ResMut<SimRes>,
+    sim: Res<SimRes>,
+    build_ok: Res<BuildAffordable>,
     cams: Res<Cameras>,
     assets: Res<GameAssets>,
     locale: Option<Res<LocaleRes>>,
@@ -406,7 +429,7 @@ fn draw_system(
         let imperial = flags.is_some_and(|f| f.units_imperial);
         draw_aim(&mut gm, &sim.0, &ctx, imperial);
     }
-    draw_buttons(&mut gm, &mut sim.0, &cams, &loc, mouse);
+    draw_buttons(&mut gm, &sim.0, &build_ok.0, &cams, &loc, mouse);
     draw.lists.insert(MYC_DRAW_ORDER, gm.items);
 }
 
@@ -415,6 +438,8 @@ pub struct MycPromptsPlugin;
 impl Plugin for MycPromptsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GuiDraw>()
+            .init_resource::<BuildAffordable>()
+            .add_systems(FixedUpdate, build_affordable_system.in_set(SimSet::After))
             .add_systems(
                 FixedUpdate,
                 click_system.in_set(SimSet::Prepare).after(run_script),

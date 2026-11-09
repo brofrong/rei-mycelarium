@@ -109,17 +109,16 @@ fn fragment(in: FragIn) -> @location(0) vec4<f32> {
     let n = i32(params.origin.w);
     if n > 0 {
         let d = length(pos - params.origin.xy);
-        var covered = 0.0;
         var ra = 0.0;
         for (var i = 0; i < 8; i++) {
             if i < n {
                 let r = ring(d, params.rings[i].x, params.origin.z, params.rings[i].y);
-                covered = max(covered, r.x);
                 ra += r.y;
             }
         }
         ra = min(ra, 1.0);
-        v += params.pulse.rgb * (covered * sa * ra * params.pulse.a);
+        // pulse texel (ra, ra, ra, sa * ra), added as rgb * col * a * strength
+        v += params.pulse.rgb * (ra * sa * ra * params.pulse.a);
     }
     v = min(v, vec3<f32>(1.0));
     var out = v;

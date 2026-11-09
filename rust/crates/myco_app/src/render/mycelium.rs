@@ -436,36 +436,30 @@ pub fn live_strands(m: &MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64))
 }
 
 // port: anon__62655__gml_Object_obj_mycelium_controller_Create_0
-/// `myc_draw_strands(col, view)`: bake queued growths that are in view now (the rest wait for
-/// `myc_tiles_step`), then the live strands. Tile and pending meshes are entities already; Bevy
-/// culls them by their bounds as the original culls by tile box.
+/// `myc_draw_strands(col, view)`: the live strands (tile and pending meshes are entities already;
+/// Bevy culls them by their bounds as the original culls by tile box).
+///
+/// The original first bakes queued growths that are in view. Here baking (which changes the
+/// logic's state: cells dropped, `myc_tile_add`) happens only in [`tiles_step`] after each fixed
+/// step, which bakes the whole queue — the queue is always empty by draw time, so the result is
+/// the same and the draw stays read-only. Right after the `Sim` was replaced (before the next
+/// bake step resets the bake state) nothing live is drawn for that frame.
 ///
 /// `leaf_tendrils_draw(col)`, called at the end of the original, is Task 15's.
-pub fn draw_strands(m: &mut MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64)) -> Vec<V2> {
-    let (vx1, vy1, vx2, vy2) = view;
-    sync_reset(m, b);
-    let queued: Vec<usize> = m.dirty_growths.clone();
-    for gi in queued {
-        if b.vbuf(gi) != Vbuf::Unbaked {
-            continue;
-        }
-        let Some(e) = m.growths.get(gi) else { continue };
-        if !(e.bx2 < vx1 || e.bx1 > vx2 || e.by2 < vy1 || e.by1 > vy2) {
-            growth_bake(m, b, gi);
-        }
+pub fn draw_strands(m: &MyceliumRt, b: &mut MycBake, view: (f64, f64, f64, f64)) -> Vec<V2> {
+    if m.tiles_reset || replaced(m, b) {
+        return Vec::new();
     }
     live_strands(m, b, view)
 }
 
-/// `shroom_grow_scale(m)` (Task 9's row, scr_life_b_1): the back-out pop of a new smallshroom.
-/// TODO(T9): call the canonical port once it lands.
-fn shroom_grow_scale(sim: &Sim, k: &Knot) -> f64 {
-    let Some(born) = k.born else { return 1.0 };
-    let t = ((sim.now_ms() - born) / vis("shroom_grow_ms").max(1.0)).clamp(0.0, 1.0);
-    let c1 = 1.70158;
-    let u = t - 1.0;
-    let c3 = c1 + 1.0;
-    (1.0 + c3 * u * u * u + c1 * u * u).max(0.0)
+/// The smallshroom's grow pop: Task 9's `shroom_grow_scale(m)` on the knot's `born`.
+fn knot_grow_scale(sim: &Sim, k: &Knot) -> f64 {
+    let m = myco_core::state::MushroomSave {
+        born: k.born,
+        ..Default::default()
+    };
+    myco_core::mushrooms::types::shroom_grow_scale(sim, &m)
 }
 
 // port: gml_Object_obj_mycelium_controller_Draw_0
@@ -490,7 +484,7 @@ pub fn draw_0(sim: &Sim, view_x: f64, view_w: f64) -> Vec<SpriteCmd> {
         let Some(sh) = &k.shroom else { continue };
         if k.x >= view_x - 64.0 && k.x <= view_x + view_w + 64.0 {
             let r = myc::knots::smallshroom_rect(sh);
-            let s = vis("spore_shroom_scale") * shroom_grow_scale(sim, k);
+            let s = vis("spore_shroom_scale") * knot_grow_scale(sim, k);
             out.push(SpriteCmd::part(
                 r.sprite,
                 r.left,
@@ -701,11 +695,11 @@ fn draw_view(cams: &Cameras) -> (f64, f64, f64, f64) {
 }
 
 // port: gml_Object_obj_mycelium_controller_Draw_64
-/// Draw_64's world part every frame: strands (eager bakes + live strands), spores and knots. The
+/// Draw_64's world part every frame (read-only on the sim): live strands, spores and knots. The
 /// glow is `mycelium_glow`, the aim preview and buttons `ui::myc_prompts`. Draw_64's debug
 /// overlay is not drawn: `myc_debug_draw` can never turn on (its key check is `if false and …`).
 pub fn draw_64_system(
-    mut sim: ResMut<SimRes>,
+    sim: Res<SimRes>,
     mut bake: ResMut<MycBake>,
     cams: Res<Cameras>,
     rend: Option<Res<MycRender>>,
@@ -713,7 +707,7 @@ pub fn draw_64_system(
 ) {
     let Some(rend) = rend else { return };
     let view = draw_view(&cams);
-    let m = &mut sim.0.mycelium;
+    let m = &sim.0.mycelium;
     let live = draw_strands(m, &mut bake, view);
     if let Some(mut mesh) = meshes.get_mut(&rend.live) {
         fill_strand_mesh(&mut mesh, &live);
