@@ -281,8 +281,7 @@ pub(crate) fn gml_truthy(v: Option<&Value>) -> bool {
 // port: perk_cost_mult
 /// `perk_cost_mult()`: the green cave perk discounts mushroom costs.
 pub fn perk_cost_mult(state: &GameState) -> f64 {
-    // perk_has("green") (Task 6 ports perk_has; it reads global.cave_perks the same way)
-    if gml_truthy(state.state.cave_perks.get("green")) {
+    if crate::world::perks::perk_has(state, "green") {
         return 1.0 - bal(game_mode(state), "perk_green_discount");
     }
     1.0

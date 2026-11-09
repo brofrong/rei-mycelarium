@@ -37,14 +37,6 @@ pub trait TextMeasure {
     fn string_height_ext(&self, s: &str, sep: f64, w: f64) -> f64;
 }
 
-/// Cave perk ids (`cave_defs()[i].id`, scr_world; Task 6 ports the cave definitions).
-const CAVE_IDS: [&str; 5] = ["blue", "purple", "red", "green", "yellow"];
-
-/// `perk_has(id)` (Task 6 ports it; it reads `global.cave_perks` the same way).
-fn perk_has(sim: &Sim, id: &str) -> bool {
-    gml_truthy(sim.state.state.cave_perks.get(id))
-}
-
 // port: goal_spore_count
 /// Spore mushrooms in the colony (not stolen, not carried); the debug flag
 /// `tasks.debug_spores` counts the goal as reached.
@@ -75,7 +67,9 @@ pub fn goal_met(sim: &Sim, id: Goal) -> bool {
             }
             sim.water_total() >= sim.bal("migration_water")
         }
-        Goal::Magic => CAVE_IDS.iter().all(|id| perk_has(sim, id)),
+        Goal::Magic => crate::world::caves::cave_defs()
+            .iter()
+            .all(|d| crate::world::perks::perk_has(&sim.state, d.kind.id())),
     }
 }
 
