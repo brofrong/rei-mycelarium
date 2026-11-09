@@ -4,7 +4,7 @@
 //! (Task 17), which also toggles `tasks.open` / `tasks.goal_open` (`tasks_block_toggle`).
 
 use super::goals::{self, Goal};
-use super::mycelium_cm;
+use crate::mycelium::soil::mycelium_cm;
 use super::tutorial::{self, Tip, TipState};
 use super::upgrades::upg_is_owned;
 use crate::balance::{gml_truthy, vis};

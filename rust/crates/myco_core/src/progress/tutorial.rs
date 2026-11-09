@@ -3,7 +3,7 @@
 //! camera animations live in [`TutorialRt`]. Drawing is the app's (Task 17); a tip that
 //! appears is also announced as `SimEvent::TutorialTip`.
 
-use super::mycelium_cm;
+use crate::mycelium::soil::mycelium_cm;
 use super::upgrades::upg_is_owned;
 use crate::balance::{vis, wld};
 use crate::events::SimEvent;
