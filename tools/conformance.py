@@ -4,7 +4,11 @@
 Usage: python3 -I tools/conformance.py <scenario> [--keep DIR] [--rust-bin PATH]
        python3 -I tools/conformance.py --all
 
-A scenario is rust/conformance/scenarios/<name>.txt (see that folder's README). Both ports run
+A scenario is rust/conformance/scenarios/<name>.txt, `key: value` lines (`#` comments):
+`seed`, `dump` (frame), `input` (MYCO_INPUT entries, `;`-separated, several lines append),
+`input.love` / `input.rust` (entries for one port only), `fixture` (a save JSON placed in slot 1),
+`cross_from: rust, love` + `cross_input` + `cross_dump` (cross_save: each producer's dump becomes
+the slot 1 save both ports load), `timeout` (seconds per run). Both ports run
 with the same MYCO_SEED, the same MYCO_INPUT and MYCO_DUMP at the scenario's frame, in a
 1280x720 window (the same logical view in both), with MYCO_FOCUS=1, MYCO_SHOT_EXACT=1 and
 MYCO_RNG_SEED (game_init's clock-seeded randomise() reseeds the same way in both):

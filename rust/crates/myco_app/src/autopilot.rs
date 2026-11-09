@@ -289,6 +289,92 @@ pub fn ui_demo(
     }
 }
 
+/// `MYCO_FPS_LOG=<steps>` (long runs): every that many fixed steps print the frame rate, the
+/// fixed step rate, the mean and worst frame time and the mean CPU time of a frame (First to
+/// Last, without waiting for the display), e.g. `FPS step 600: 60.0 frames/s, 60.0 steps/s,
+/// frame 16.67 ms, worst 20.1 ms, cpu 4.2 ms`; and the window's size once.
+#[derive(Default)]
+pub struct FpsLog {
+    every: Option<u64>,
+    frames: u64,
+    span_start: Option<std::time::Instant>,
+    steps_at_start: u64,
+    worst_ms: f64,
+    last: Option<std::time::Instant>,
+    busy_ms: f64,
+    window_logged: bool,
+}
+
+/// When this frame started (`First`), for [`FpsLog`]'s CPU time.
+#[derive(Resource, Default)]
+pub struct FrameStart(pub Option<std::time::Instant>);
+
+fn frame_start(mut s: ResMut<FrameStart>) {
+    s.0 = Some(std::time::Instant::now());
+}
+
+fn fps_log(
+    ap: Res<Autopilot>,
+    start_of_frame: Res<FrameStart>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut log: Local<FpsLog>,
+    mut init: Local<bool>,
+) {
+    if !*init {
+        *init = true;
+        log.every = std::env::var("MYCO_FPS_LOG")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .filter(|n| *n > 0);
+    }
+    let Some(every) = log.every else { return };
+    let now = std::time::Instant::now();
+    if let Some(t0) = start_of_frame.0 {
+        log.busy_ms += (now - t0).as_secs_f64() * 1000.0;
+    }
+    if !log.window_logged {
+        if let Ok(w) = windows.single() {
+            if w.physical_width() > 0 && ap.frame > 10 {
+                log.window_logged = true;
+                println!(
+                    "WINDOW {}x{} px, scale {}, {:?}",
+                    w.physical_width(),
+                    w.physical_height(),
+                    w.scale_factor(),
+                    w.mode
+                );
+            }
+        }
+    }
+    if let Some(last) = log.last {
+        let ms = (now - last).as_secs_f64() * 1000.0;
+        if ms > log.worst_ms {
+            log.worst_ms = ms;
+        }
+    }
+    log.last = Some(now);
+    log.frames += 1;
+    let start = *log.span_start.get_or_insert(now);
+    let steps = ap.frame - log.steps_at_start;
+    if steps >= every {
+        let secs = (now - start).as_secs_f64().max(1e-9);
+        println!(
+            "FPS step {}: {:.1} frames/s, {:.1} steps/s, frame {:.2} ms, worst {:.1} ms, cpu {:.2} ms",
+            ap.frame,
+            log.frames as f64 / secs,
+            steps as f64 / secs,
+            secs * 1000.0 / log.frames as f64,
+            log.worst_ms,
+            log.busy_ms / log.frames as f64
+        );
+        log.frames = 0;
+        log.busy_ms = 0.0;
+        log.span_start = Some(now);
+        log.steps_at_start = ap.frame;
+        log.worst_ms = 0.0;
+    }
+}
+
 pub struct AutopilotPlugin;
 
 impl Plugin for AutopilotPlugin {
@@ -310,7 +396,10 @@ impl Plugin for AutopilotPlugin {
                     dump_state.in_set(SimSet::After),
                 ),
             )
-            .add_systems(Update, (track_occlusion, take_screenshot).chain());
+            .add_systems(Update, (track_occlusion, take_screenshot).chain())
+            .init_resource::<FrameStart>()
+            .add_systems(First, frame_start)
+            .add_systems(Last, fps_log);
     }
 }
 
