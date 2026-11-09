@@ -337,13 +337,14 @@ fn cave_popups_follow_the_zoom() {
         );
         g.items
             .iter()
+            .rev()
             .filter_map(|i| match i {
                 DrawItem::Text { x, y, .. } | DrawItem::Quad { x, y, .. } => {
                     Some(DVec2::new(*x, *y))
                 }
                 _ => None,
             })
-            .last()
+            .next()
             .expect("popup text (glyph quads of the GM font)")
     };
     let at_origin = draw(&|_, _| (0.0, 0.0));
