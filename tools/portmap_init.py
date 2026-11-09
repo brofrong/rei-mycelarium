@@ -91,7 +91,12 @@ for _task, _names in {
            # R9a: rebaking from dirty state is render work; myc_tiles_step drives bake/merge
            "myc_tiles_step",
     # camera shake from boars (called from the forest controller Step, reads ui_blocking)
-    "T21": "boar_shake",
+    "T21": "boar_shake "
+           # forest camera/view port setup and teardown (camera_set_view_size, view ports, camera_destroy)
+           "forest_fit_view gml_Object_obj_forest_controller_CleanUp_0",
+    # R10: forest controller Step is forest logic (it reaches render only via ui_blocking and
+    # tasks_popup_open, which R9/R11 replace with StepInput state)
+    "T5": "gml_Object_obj_forest_controller_Step_0",
 }.items():
     for _n in _names.split():
         MANUAL[_n] = _task
@@ -263,12 +268,35 @@ def assign(name, alias, chunk, body):
     return draw_reassign(task, body, name)
 
 
+def forest_logic_to_core(tasks, graph, draws):
+    """Ruling R10: a T16 row that neither draws itself nor (transitively) calls render code moves to
+    T5 (myco_core src/forest.rs). `draws` is the set of rows whose own body draws. A T16 row stays
+    when it draws, or calls a row of another render task, or calls a T16 row that stays (so render
+    wrappers such as weather_draw_front keep T16). Mutates and returns `tasks`."""
+    stay = {n for n, t in tasks.items() if t == "T16" and n in draws}
+    grew = True
+    while grew:
+        grew = False
+        for n, t in tasks.items():
+            if t != "T16" or n in stay:
+                continue
+            if any((tasks[c] in RENDER and tasks[c] != "T16") or c in stay for c in graph.get(n, ())):
+                stay.add(n)
+                grew = True
+    for n, t in tasks.items():
+        if t == "T16" and n not in stay:
+            tasks[n] = "T5"
+    return tasks
+
+
 def build(gen=GEN):
     """[(name, alias, task)] in file order, with propagation applied."""
     funcs, aliases = collect(gen)
     tasks = {n: assign(n, aliases.get(n), c, b) for n, c, b in funcs}
     fixed = {n for n in tasks if n in MANUAL or aliases.get(n) in MANUAL or n in DRAW_KEEP}
-    propagate(tasks, call_graph(funcs, aliases), fixed)
+    graph = call_graph(funcs, aliases)
+    propagate(tasks, graph, fixed)
+    forest_logic_to_core(tasks, graph, {n for n, _, b in funcs if draw_calls(b)})
     return [(n, aliases.get(n), tasks[n]) for n, _, _ in funcs]
 
 

@@ -84,3 +84,18 @@ def test_call_graph_uses_aliases_and_skips_gm():
     graph = P.call_graph(funcs, {"anon__2__x": "myc_b"})
     assert graph["anon__1__x"] == {"anon__2__x"}
     assert graph["f"] == {"anon__2__x"}
+
+
+def test_forest_non_drawing_rows_go_to_core():
+    tasks = {"bush_draw": "T16", "stump_make": "T16", "surface_get_chunk": "T16", "weather_draw_front": "T16",
+             "rain_gloom_draw": "T16", "fg_init": "T16", "art": "T15", "hud_thing": "T17", "logic": "T8"}
+    graph = {"stump_make": {"surface_get_chunk"},          # state only -> T5
+             "weather_draw_front": {"rain_gloom_draw"},     # wrapper of a drawing T16 row -> stays
+             "fg_init": {"art"},                            # calls another render task -> stays
+             "logic": {"stump_make"}}
+    draws = {"bush_draw", "rain_gloom_draw"}
+    out = P.forest_logic_to_core(dict(tasks), graph, draws)
+    assert out["stump_make"] == "T5" and out["surface_get_chunk"] == "T5"
+    assert out["bush_draw"] == "T16" and out["rain_gloom_draw"] == "T16"
+    assert out["weather_draw_front"] == "T16" and out["fg_init"] == "T16"
+    assert out["hud_thing"] == "T17" and out["logic"] == "T8"
