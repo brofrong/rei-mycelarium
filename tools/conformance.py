@@ -144,8 +144,8 @@ class Scenario:
     port_inputs: dict = field(default_factory=lambda: {"love": [], "rust": []})
     # save fixture (JSON file, relative to the scenario folder) placed in slot 1 before the run
     fixture: str | None = None
-    # cross_save: <producer>:<frame>: the producer port's dump at that frame becomes the slot 1
-    # save that both ports then load through the menu
+    # cross_save: producer ports ("rust,love"); each one's dump at cross_dump (played with
+    # cross_input) becomes the slot 1 save that both ports then load through the menu
     cross_from: str | None = None
     cross_inputs: list = field(default_factory=list)
     cross_dump: int = 0
@@ -255,35 +255,45 @@ def run_port(port: str, seed: int, script: str, dump_frame: int, out: Path, save
     return json.loads(out.read_text().rstrip("\0"))
 
 
-def run_scenario(sc: Scenario, work: Path, rust_bin: Path, verbose: bool = True) -> list:
-    work.mkdir(parents=True, exist_ok=True)
-    save_text = None
-    if sc.fixture:
-        save_text = (SCENARIOS / sc.fixture).read_text()
-    if sc.cross_from:
-        # the producer port plays and dumps; that dump is the save both ports load
-        prod = sc.cross_from
-        if verbose:
-            print(f"[{sc.name}] {prod}: producing the save (dump at {sc.cross_dump})")
-        made = run_port(prod, sc.seed, ";".join(sc.cross_inputs), sc.cross_dump, work / f"{prod}_made.json",
-                        None, sc.timeout, rust_bin, work / f"{prod}_made.log")
-        save_text = json.dumps(made)
-        (work / "cross_save.json").write_text(save_text)
+def run_both(sc: Scenario, work: Path, rust_bin: Path, save_text: str | None, tag: str, verbose: bool) -> dict:
     dumps = {}
     for port in ("love", "rust"):
         if verbose:
-            print(f"[{sc.name}] {port}: running to frame {sc.dump}")
-        dumps[port] = run_port(port, sc.seed, sc.input_for(port), sc.dump, work / f"{port}.json", save_text, sc.timeout,
-                               rust_bin, work / f"{port}.log")
-    diffs = compare_dumps(dumps["love"], dumps["rust"])
+            print(f"[{sc.name}{tag}] {port}: running to frame {sc.dump}")
+        dumps[port] = run_port(port, sc.seed, sc.input_for(port), sc.dump, work / f"{port}{tag}.json", save_text,
+                               sc.timeout, rust_bin, work / f"{port}{tag}.log")
     if TRACE_RNG:
-        first_rng_divergence(work / "love.log", work / "rust.log")
-    if sc.cross_from:
-        # the loading port's dump against the save itself (load → save keeps every compared field)
-        made = json.loads(save_text)
-        other = "love" if sc.cross_from == "rust" else "rust"
+        first_rng_divergence(work / f"love{tag}.log", work / f"rust{tag}.log")
+    return dumps
+
+
+def run_scenario(sc: Scenario, work: Path, rust_bin: Path, verbose: bool = True) -> list:
+    work.mkdir(parents=True, exist_ok=True)
+    if not sc.cross_from:
+        save_text = (SCENARIOS / sc.fixture).read_text() if sc.fixture else None
+        dumps = run_both(sc, work, rust_bin, save_text, "", verbose)
+        return compare_dumps(dumps["love"], dumps["rust"])
+    # cross_save: each producer port plays and dumps (the text save_game writes); both ports
+    # then load that file through the title's Load Game and dump right after
+    diffs = []
+    for prod in [p.strip() for p in sc.cross_from.split(",")]:
+        other = "love" if prod == "rust" else "rust"
+        if verbose:
+            print(f"[{sc.name}] {prod}: producing the save (dump at {sc.cross_dump})")
+        made_path = work / f"{prod}_made.json"
+        run_port(prod, sc.seed, ";".join(sc.cross_inputs), sc.cross_dump, made_path, None, sc.timeout, rust_bin,
+                 work / f"{prod}_made.log")
+        save_text = made_path.read_text()
+        made = json.loads(save_text.rstrip("\0"))
+        dumps = run_both(sc, work, rust_bin, save_text, f"_from_{prod}", verbose)
+        for p, a, b in compare_dumps(dumps["love"], dumps["rust"]):
+            diffs.append((f"[{prod} save, love vs rust after load] {p}", a, b))
+        # the loading port keeps every compared field of the other port's save, except the
+        # lakes' flare_seq: load_game drops the sparkles (lk.flares) and the first draw after it
+        # restarts them (lake_init_flares sets flare_seq = 0 and counts again), in both ports
         for p, a, b in compare_dumps(made, dumps[other]):
-            diffs.append((f"[{sc.cross_from} save vs {other} after load] {p}", a, b))
+            if not p.endswith(".flare_seq"):
+                diffs.append((f"[{prod} save vs {other} after load] {p}", a, b))
     return diffs
 
 
