@@ -83,10 +83,97 @@ local function run_script()
   end
 end
 
+-- Reference capture for the Rust port.
+-- MYCO_GOLDEN=<script.lua> MYCO_GOLDEN_OUT=<file.json>: on the first frame (game booted, menu or
+-- Room1 shown) run the script; it returns a plain Lua table, written as JSON (numbers as %.17g),
+-- then quit. MYCO_DUMP=<frame>:<file.json> writes what save_game would save at that frame (same
+-- JSON, no slot written) and quits. MYCO_SEED=<int> fixes the world seed (see world_init).
+local golden_script, golden_out = os.getenv("MYCO_GOLDEN"), os.getenv("MYCO_GOLDEN_OUT")
+local dump_frame, dump_path = (os.getenv("MYCO_DUMP") or ""):match("^(%d+):(.+)$")
+dump_frame = tonumber(dump_frame)
+
+local function json_encode(v)
+  local t = type(v)
+  if t == "number" then
+    if v ~= v or v == math.huge or v == -math.huge then return "null" end
+    return string.format("%.17g", v)
+  elseif t == "boolean" then return tostring(v)
+  elseif t == "string" then
+    return '"' .. v:gsub('[%c"\\]', function(c)
+      return ({ ['"'] = '\\"', ["\\"] = "\\\\", ["\n"] = "\\n", ["\r"] = "\\r", ["\t"] = "\\t" })[c]
+        or string.format("\\u%04x", c:byte())
+    end) .. '"'
+  elseif t == "table" then
+    local n = #v
+    local count = 0
+    for _ in pairs(v) do count = count + 1 end
+    local parts = {}
+    if count == n then
+      for i = 1, n do parts[i] = json_encode(v[i]) end
+      return "[" .. table.concat(parts, ",") .. "]"
+    end
+    local keys = {}
+    for k in pairs(v) do keys[#keys + 1] = tostring(k) end
+    table.sort(keys)
+    for _, k in ipairs(keys) do
+      local val = v[k]
+      if val == nil then val = v[tonumber(k)] end
+      parts[#parts + 1] = json_encode(k) .. ":" .. json_encode(val)
+    end
+    return "{" .. table.concat(parts, ",") .. "}"
+  elseif v == nil then return "null" end
+  error("json_encode: unsupported type " .. t)
+end
+
+local function write_file(path, text)
+  local f = assert(io.open(path, "wb"))
+  f:write(text)
+  f:close()
+end
+
+local function run_golden()
+  local fn = assert(loadfile(golden_script))
+  local ok, res = xpcall(fn, debug.traceback)
+  if not ok then
+    print("GOLDEN error: " .. tostring(res))
+    os.exit(1)
+  end
+  write_file(assert(golden_out, "MYCO_GOLDEN_OUT not set"), json_encode(res) .. "\n")
+  print("GOLDEN wrote " .. golden_out)
+  gm.__ended = true -- skip Game End (it autosaves)
+  love.event.quit()
+end
+
+-- save_game builds the save table and writes it through save_write_text; capture that text
+-- instead, lifting the title/intro/slot guards for the duration of the call.
+local function run_dump()
+  local captured
+  local saved_write, saved_timer = save_write_text, global.save_timer
+  local saved_slot, saved_title, saved_intro = global.save_slot, global.title_open, global.intro_active
+  save_write_text = function(self, other, path, text)
+    if not captured then captured = text end
+  end
+  if gm.is_undefined(global.save_slot) or global.save_slot < 0 then global.save_slot = 0 end
+  global.title_open, global.intro_active = false, false
+  local ok, err = pcall(save_game, global, global)
+  save_write_text, global.save_timer = saved_write, saved_timer
+  global.save_slot, global.title_open, global.intro_active = saved_slot, saved_title, saved_intro
+  if not ok or not captured then
+    print("DUMP failed: " .. tostring(err or "save_game wrote nothing"))
+    os.exit(1)
+  end
+  write_file(dump_path, captured)
+  print("DUMP wrote " .. dump_path)
+  gm.__ended = true -- skip Game End (it autosaves)
+  love.event.quit()
+end
+
 function love.draw()
   frame = frame + 1
   if gm then run_script() end
   if demo then demo.draw() else gm.render() end
+  if gm and golden_script and frame == 1 then run_golden() end
+  if gm and dump_frame and frame == dump_frame then run_dump() end
   if shot_frame and frame == shot_frame then
     love.graphics.captureScreenshot(function(img)
       local f = assert(io.open(shot_path, "wb"))

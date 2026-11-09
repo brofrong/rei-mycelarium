@@ -25,8 +25,12 @@ function world_init(self, other, start_x)
   local rows = gm.ceil(wld(self, other, "underground_screen_depth") * vis(self, other, "screen_height_px") / tile)
   local cols = wld(self, other, "chunk_cols")
   local hard_rows = gm.max(4.0, rows - wld(self, other, "bottom_water_layer_tiles") - gm.ceil(vis(self, other, "screen_height_px") / tile))
+  local seed = gm.irandom(99999)
+  -- port: MYCO_SEED fixes the world seed for reference captures (the draw above is still consumed)
+  local seed_env = tonumber(os.getenv("MYCO_SEED") or "")
+  if seed_env then seed = gm.floor(seed_env) end
   global.world = gm.new(___struct___291__world_init__scr_world, tile, surface_h, cols, cols * tile,
-    surface_h + 1000000.0 * tile, hard_rows, hard_rows, gm.irandom(99999), gm.asset_get_index("trintrava1"),
+    surface_h + 1000000.0 * tile, hard_rows, hard_rows, seed, gm.asset_get_index("trintrava1"),
     start_x, gm.array())
   global.stones_moving = gm.array()
   world_start_guarantee(self, other)

@@ -1,0 +1,11 @@
+[package]
+name = "myco_core"
+description = "Mycelarium simulation core: GML semantics, RNG, game logic (no Bevy)"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+serde_json.workspace = true
