@@ -98,7 +98,12 @@ impl BwQuad {
     pub fn new(image: Handle<Image>, p: &BwParams, linear: bool) -> BwQuad {
         BwQuad {
             image,
-            tone: Vec4::new(p.gain as f32, p.pivot as f32, p.contrast as f32, p.gamma as f32),
+            tone: Vec4::new(
+                p.gain as f32,
+                p.pivot as f32,
+                p.contrast as f32,
+                p.gamma as f32,
+            ),
             extra: Vec4::new(
                 p.threshold as f32,
                 p.bright as f32,
@@ -277,7 +282,7 @@ struct PostState {
 }
 
 fn spawn_post_cameras(mut commands: Commands) {
-    for i in 0..3 {
+    for (i, &layer) in POST_LAYERS.iter().enumerate() {
         let clear = if i == 2 {
             ClearColorConfig::None
         } else {
@@ -291,7 +296,7 @@ fn spawn_post_cameras(mut commands: Commands) {
                 is_active: false,
                 ..default()
             },
-            RenderLayers::layer(POST_LAYERS[i]),
+            RenderLayers::layer(layer),
             COMPOSITING,
             PostCamera(i, None),
         ));

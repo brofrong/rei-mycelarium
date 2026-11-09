@@ -69,7 +69,18 @@ pub fn mushroom_draw(
     let ox = -(def.origin.x as f64) * xs;
     let oy = -(def.origin.y as f64) * s;
     if ang == 0.0 {
-        b.sprite_part_ext(a, spr, 0, [left, 0.0, w, h], x + ox, y + oy, xs, s, col, alpha);
+        b.sprite_part_ext(
+            a,
+            spr,
+            0,
+            [left, 0.0, w, h],
+            x + ox,
+            y + oy,
+            xs,
+            s,
+            col,
+            alpha,
+        );
         return;
     }
     let c = gml::dcos(ang);
@@ -341,7 +352,17 @@ pub fn repeller_cloud_draw_flash(
     let mut i = 0.0;
     while i < layers {
         let halo = rad * 1.8 / half;
-        centred(b, &fx.repel_flash, 256.0, sx, sy, halo, halo, C_WHITE, a * 0.6);
+        centred(
+            b,
+            &fx.repel_flash,
+            256.0,
+            sx,
+            sy,
+            halo,
+            halo,
+            C_WHITE,
+            a * 0.6,
+        );
         let core_x = rad / half;
         let core_y = rad * 0.85 / half;
         centred(
@@ -550,7 +571,7 @@ fn build_fx_art(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 }
 
 fn spawn_cloud_cameras(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    for i in 0..2 {
+    for (i, &layer) in CLOUD_LAYERS.iter().enumerate() {
         let img = images.add(surface_image(8, 8));
         let clear = if i == 0 { Color::NONE } else { Color::BLACK };
         commands.spawn((
@@ -562,7 +583,7 @@ fn spawn_cloud_cameras(mut commands: Commands, mut images: ResMut<Assets<Image>>
                 ..default()
             },
             RenderTarget::Image(img.clone().into()),
-            RenderLayers::layer(CLOUD_LAYERS[i]),
+            RenderLayers::layer(layer),
             COMPOSITING,
             CloudCamera(i, img.id()),
         ));

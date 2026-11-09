@@ -562,7 +562,18 @@ pub fn crows_draw(d: &mut LifeDraw, a: &GameAssets, sim: &Sim, vx: f64, vw: f64)
         }
         let b = d.seg(LifeKey::Crow(c.id));
         if let Some(m) = mushroom_by_id(sim, c.mushroom).filter(|m| m.stolen) {
-            mushroom_draw(b, a, sim, m, m.x.floor(), m.y.floor(), C_WHITE, 1.0, 0.0, 1.0);
+            mushroom_draw(
+                b,
+                a,
+                sim,
+                m,
+                m.x.floor(),
+                m.y.floor(),
+                C_WHITE,
+                1.0,
+                0.0,
+                1.0,
+            );
         }
         let xs = -c.dir * sc;
         b.sprite_part_ext(
@@ -819,7 +830,14 @@ pub fn worms_draw(b: &mut QuadBatch, sim: &Sim, vx: f64, vy: f64, vw: f64, vh: f
                 } else {
                     body_col
                 };
-                b.rect(px - hs, py - hs, px - hs + sz - 1.0, py - hs + sz - 1.0, c, a);
+                b.rect(
+                    px - hs,
+                    py - hs,
+                    px - hs + sz - 1.0,
+                    py - hs + sz - 1.0,
+                    c,
+                    a,
+                );
                 k += 1.0;
             }
             acc += d;
@@ -946,7 +964,7 @@ pub fn life_draw_system(
         fg: fg.as_deref(),
         fx: fx.as_deref(),
         clouds: clouds.as_deref(),
-        start_linear: world.map_or(true, |w| w.end_linear),
+        start_linear: world.is_none_or(|w| w.end_linear),
     };
     let d = life_draw(&sim.0, &ctx, &cams.render_view());
     let mut t = BatchTarget {

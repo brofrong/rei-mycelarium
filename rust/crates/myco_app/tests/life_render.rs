@@ -100,14 +100,18 @@ fn animal_entities_follow_sim_ids() {
     assert_eq!(entities_of(&mut app, LifeKey::Hedgehog(5)), 1);
 
     // it leaves the sim: the entity goes
-    app.world_mut().resource_mut::<SimRes>().0.life.animals.clear();
+    app.world_mut()
+        .resource_mut::<SimRes>()
+        .0
+        .life
+        .animals
+        .clear();
     app.update();
     assert_eq!(entities_of(&mut app, LifeKey::Hedgehog(5)), 0);
     let world = app.world_mut();
     let mut q = world.query::<&LifeEntity>();
     assert!(
-        q.iter(world)
-            .all(|e| !matches!(e.0, LifeKey::Hedgehog(_))),
+        q.iter(world).all(|e| !matches!(e.0, LifeKey::Hedgehog(_))),
         "no hedgehog entity left"
     );
 }
@@ -180,12 +184,14 @@ fn mushroom_draw_places_the_variant_cell_at_its_origin() {
     let spr = myco_core::mushrooms::types::mushroom_sprite_now(&m);
     let def = assets.sprite(spr);
     let mut b = myco_app::render::batch::QuadBatch::new();
-    mushroom_draw(&mut b, &assets, &sim, &m, 100.0, 200.0, 16777215.0, 1.0, 0.0, 1.0);
+    mushroom_draw(
+        &mut b, &assets, &sim, &m, 100.0, 200.0, 16777215.0, 1.0, 0.0, 1.0,
+    );
     assert_eq!(b.quad_count(), 1);
     let v = &b.runs[0].verts;
-    let (minx, miny) = v
-        .iter()
-        .fold((f32::MAX, f32::MAX), |a, p| (a.0.min(p.pos[0]), a.1.min(p.pos[1])));
+    let (minx, miny) = v.iter().fold((f32::MAX, f32::MAX), |a, p| {
+        (a.0.min(p.pos[0]), a.1.min(p.pos[1]))
+    });
     let maxy = v.iter().fold(f32::MIN, |a, p| a.max(p.pos[1]));
     // the cell's untrimmed top-left is at (x - xoff, y - yoff); trimming only moves inwards
     assert!(minx >= 100.0 - def.origin.x - 0.01, "{minx}");
@@ -194,10 +200,15 @@ fn mushroom_draw_places_the_variant_cell_at_its_origin() {
 
     // rotated: the origin stays put (rotation is about the foot)
     let mut r = myco_app::render::batch::QuadBatch::new();
-    mushroom_draw(&mut r, &assets, &sim, &m, 100.0, 200.0, 16777215.0, 1.0, 90.0, 1.0);
+    mushroom_draw(
+        &mut r, &assets, &sim, &m, 100.0, 200.0, 16777215.0, 1.0, 90.0, 1.0,
+    );
     let c: Vec<[f32; 2]> = r.runs[0].verts.iter().map(|p| p.pos).collect();
     let cx = c.iter().map(|p| p[0]).sum::<f32>() / c.len() as f32;
-    assert!(cx < 100.0, "turned 90° counter-clockwise: the cap leans left ({cx})");
+    assert!(
+        cx < 100.0,
+        "turned 90° counter-clockwise: the cap leans left ({cx})"
+    );
 }
 
 #[test]
@@ -251,7 +262,10 @@ fn pixel_inits_match_core_embedded_art() {
     let back = hedgehog_back_init(&px, &assets);
     assert_eq!(back.len(), 8);
     for (a, b) in back.iter().zip(&core.hedgehog_back) {
-        assert!((a[0] - b[0]).abs() < 1e-9 && (a[1] - b[1]).abs() < 1e-9, "{a:?} {b:?}");
+        assert!(
+            (a[0] - b[0]).abs() < 1e-9 && (a[1] - b[1]).abs() < 1e-9,
+            "{a:?} {b:?}"
+        );
     }
     for t in ["tree01", "tree02", "tree03"] {
         let e = squirrel_trunk_edges(&px, &assets, t);
@@ -270,7 +284,11 @@ fn pixel_inits_match_core_embedded_art() {
         assert_eq!(got.len(), want.len());
         for (g, w) in got.iter().zip(want.iter()) {
             for k in 0..8 {
-                assert!((g.data[k] - w[k]).abs() < 1e-9, "{spr} {k}: {:?} {w:?}", g.data);
+                assert!(
+                    (g.data[k] - w[k]).abs() < 1e-9,
+                    "{spr} {k}: {:?} {w:?}",
+                    g.data
+                );
             }
         }
     }

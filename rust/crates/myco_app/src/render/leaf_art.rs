@@ -294,7 +294,8 @@ pub fn build_leaf_art(
     commands.insert_resource(leaf_fg_art_init(&assets, &px));
     // leaf_art_init (Task 15) measures the frames and makes the silhouettes
     let art = crate::render::life::leaf_art_init(&px, &assets);
-    let mut add = |v: Vec<Image>| -> Vec<Handle<Image>> { v.into_iter().map(|i| images.add(i)).collect() };
+    let mut add =
+        |v: Vec<Image>| -> Vec<Handle<Image>> { v.into_iter().map(|i| images.add(i)).collect() };
     let [f0, f1] = art.faces;
     let [t0, t1] = art.turns;
     let shapes = LeafShapes {
