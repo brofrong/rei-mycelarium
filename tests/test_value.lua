@@ -75,5 +75,11 @@ return {
     local r, o = m(caller, nil, 2, 3) -- called like f(self, other, a, b)
     assert(r == 16 and o == caller)
   end,
+  fractional_index_floors = function()
+    local a = gm.array(10, 20, 30)
+    assert(a[1.7] == 20)
+    a[2.2] = 99
+    assert(a[2] == 99 and gm.array_length(a) == 3)
+  end,
 }
 

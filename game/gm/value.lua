@@ -8,11 +8,15 @@ M.undefined = UNDEFINED
 -- Arrays ----------------------------------------------------------------------
 -- Elements live at raw integer keys 0..n-1; the length is kept in a.__n.
 local ARRAY = {}
+-- GML floors array indices; missing integer keys fall through to here.
 ARRAY.__index = function(a, k)
+  if type(k) == "number" and k ~= math.floor(k) then return rawget(a, math.floor(k)) end
   return nil
 end
 ARRAY.__newindex = function(a, k, v)
   if type(k) == "number" then
+    k = math.floor(k)
+    if rawget(a, k) ~= nil then rawset(a, k, v); return end
     local n = rawget(a, "__n")
     for i = n, k - 1 do rawset(a, i, 0) end
     rawset(a, k, v)
