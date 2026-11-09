@@ -34,6 +34,23 @@ pub struct GameState {
     pub extra: Extra,
 }
 
+impl Default for GameState {
+    /// An empty version-1 save (what a fresh `Sim` starts from before `game_init`).
+    fn default() -> Self {
+        GameState {
+            version: 1,
+            name: String::new(),
+            forest: ForestSave::default(),
+            mycelium: MyceliumSave::default(),
+            mushrooms: Vec::new(),
+            water: Vec::new(),
+            state: RunState::default(),
+            world: WorldSave::default(),
+            extra: Extra::new(),
+        }
+    }
+}
+
 impl GameState {
     /// `load_game`'s merges for partially present data: tutorial tips missing from the save are
     /// taken from the fresh tutorial (`tut.order` loop), task stats are laid over fresh stats.

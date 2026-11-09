@@ -153,6 +153,7 @@ function ___struct___8__balance_defaults__scr_balance(self, other)
   self.upg_repeller_autoregen_per_level = 1.0
   self.upg_repeller_autoregen_max_level = 5.0
   self.repeller_autoregen_minutes_first = 5.0
+  self.repeller_autoregen_minutes_step = 1.0
   self.repeller_autoregen_minutes_min = 1.0
   self.upg_repeller_regen_cost_per_level = 0.15
   self.upg_repeller_regen_cost_max_level = 4.0

@@ -23,10 +23,12 @@ pub fn save_dir() -> PathBuf {
     home.join("Library/Application Support/LOVE/Mycelarium")
 }
 
+// port: save_path
 pub fn save_path(dir: &Path, slot: usize) -> PathBuf {
     dir.join(format!("save_{}.json", slot + 1))
 }
 
+// port: save_meta_path
 pub fn meta_path(dir: &Path, slot: usize) -> PathBuf {
     dir.join(format!("save_{}_meta.json", slot + 1))
 }
@@ -78,6 +80,7 @@ pub enum SlotStatus {
     Corrupt(String),
 }
 
+// port: save_read_text
 /// File text up to the first NUL (`save_read_text`).
 fn read_text(path: &Path) -> Result<Vec<u8>, SaveError> {
     let mut bytes = std::fs::read(path)?;
@@ -87,6 +90,7 @@ fn read_text(path: &Path) -> Result<Vec<u8>, SaveError> {
     Ok(bytes)
 }
 
+// port: save_write_text
 /// `save_write_text`: text + NUL into `<path>.tmp`, then replace `path`.
 fn write_text(path: &Path, text: &str) -> io::Result<()> {
     let mut tmp = path.as_os_str().to_owned();
@@ -121,9 +125,57 @@ pub fn write_slot(dir: &Path, slot: usize, state: &GameState, meta: &SlotMeta) -
     write_text(&meta_path(dir, slot), &to_love_json(meta)?)
 }
 
+// port: save_slot_meta
 pub fn read_meta(dir: &Path, slot: usize) -> Result<SlotMeta, SaveError> {
     let text = read_text(&meta_path(dir, slot))?;
     Ok(serde_json::from_slice(&text)?)
+}
+
+// port: save_any_exists
+/// `save_any_exists()`: one of the three slots has a readable meta (enables "load game").
+pub fn any_save_exists(dir: &Path) -> bool {
+    (0..3).any(|slot| read_meta(dir, slot).is_ok())
+}
+
+/// GameMaker `date_current_datetime()`: days since 1899-12-30 in local time, computed like the
+/// LÖVE port (`(now + utc offset) / 86400 + 25569`, whole seconds).
+pub fn date_current_datetime() -> f64 {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    (now + utc_offset_secs(now)) as f64 / 86400.0 + 25569.0
+}
+
+#[cfg(unix)]
+fn utc_offset_secs(now: i64) -> i64 {
+    // struct tm on macOS and glibc: nine ints, then long tm_gmtoff and char *tm_zone
+    #[repr(C)]
+    struct Tm {
+        ints: [i32; 9],
+        gmtoff: std::os::raw::c_long,
+        zone: *const std::os::raw::c_char,
+    }
+    extern "C" {
+        fn localtime_r(t: *const i64, out: *mut Tm) -> *mut Tm;
+    }
+    let mut tm = Tm {
+        ints: [0; 9],
+        gmtoff: 0,
+        zone: std::ptr::null(),
+    };
+    // SAFETY: localtime_r only writes into the struct we pass; both pointers are valid.
+    let res = unsafe { localtime_r(&now, &mut tm) };
+    if res.is_null() {
+        0
+    } else {
+        tm.gmtoff as i64
+    }
+}
+
+#[cfg(not(unix))]
+fn utc_offset_secs(_now: i64) -> i64 {
+    0
 }
 
 /// Slot list for the menu. Like `save_slot_meta`, a slot without a meta file is empty; a broken
@@ -211,6 +263,78 @@ pub fn write_settings(dir: &Path, s: &DisplaySettings) -> io::Result<()> {
     let tmp = dir.join("settings.ini.tmp");
     std::fs::write(&tmp, settings_to_ini(s))?;
     std::fs::rename(&tmp, &path)
+}
+
+// ---------------------------------------------------------------------------------------------
+// GameMaker INI text (game/gm/ini.lua): [section] key="value", CRLF, order kept
+
+type IniData = Vec<(String, Vec<(String, String)>)>;
+
+fn ini_parse(text: &str) -> IniData {
+    const WS: [char; 6] = [' ', '\t', '\n', '\r', '\x0b', '\x0c'];
+    let mut d: IniData = Vec::new();
+    let mut cur: Option<usize> = None;
+    for line in text.split(['\r', '\n']).filter(|l| !l.is_empty()) {
+        let t = line.trim_matches(WS);
+        if t.len() >= 2 && t.starts_with('[') && t.ends_with(']') {
+            let name = &t[1..t.len() - 1];
+            cur = Some(d.iter().position(|(n, _)| n == name).unwrap_or_else(|| {
+                d.push((name.to_string(), Vec::new()));
+                d.len() - 1
+            }));
+        } else if let Some(si) = cur {
+            let Some((k, v)) = line.split_once('=') else {
+                continue;
+            };
+            let k = k.trim_matches(WS);
+            if k.is_empty() {
+                continue;
+            }
+            let v = v.trim_matches(WS);
+            let v = if v.len() >= 2 && v.starts_with('"') && v.ends_with('"') {
+                &v[1..v.len() - 1]
+            } else {
+                v
+            };
+            ini_set(&mut d[si].1, k, v);
+        }
+    }
+    d
+}
+
+fn ini_set(values: &mut Vec<(String, String)>, k: &str, v: &str) {
+    match values.iter_mut().find(|(n, _)| n == k) {
+        Some(slot) => slot.1 = v.to_string(),
+        None => values.push((k.to_string(), v.to_string())),
+    }
+}
+
+/// `ini_read_string(section, key, undefined)` on INI text.
+pub fn ini_read(text: &str, section: &str, key: &str) -> Option<String> {
+    let d = ini_parse(text);
+    let (_, values) = d.iter().find(|(n, _)| n == section)?;
+    values
+        .iter()
+        .find(|(k, _)| k == key)
+        .map(|(_, v)| v.clone())
+}
+
+/// `ini_write_string(section, key, value)` then `ini_close()`: the whole text re-serialized.
+pub fn ini_write(text: &str, section: &str, key: &str, value: &str) -> String {
+    let mut d = ini_parse(text);
+    let si = d.iter().position(|(n, _)| n == section).unwrap_or_else(|| {
+        d.push((section.to_string(), Vec::new()));
+        d.len() - 1
+    });
+    ini_set(&mut d[si].1, key, value);
+    let mut out: Vec<String> = Vec::new();
+    for (name, values) in &d {
+        out.push(format!("[{name}]"));
+        for (k, v) in values {
+            out.push(format!("{k}=\"{v}\""));
+        }
+    }
+    out.join("\r\n") + "\r\n"
 }
 
 // ---------------------------------------------------------------------------------------------
