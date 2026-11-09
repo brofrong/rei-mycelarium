@@ -36,6 +36,7 @@ pub mod hud;
 pub mod logo_screen;
 pub mod markers;
 pub mod menu;
+pub mod myc_prompts;
 pub mod name;
 pub mod pause;
 pub mod placement;
