@@ -123,8 +123,8 @@ pub fn mushroom_type_water_cost_base(st: &GameState, t: MushroomKind) -> f64 {
         }
         MushroomKind::Consumptor => bal(mode, "consumptor_mushroom_water_cost"),
         MushroomKind::Digger => {
-            let k = upg_level(st, "digger_length") as f64
-                / upg_max_level(st, "digger_length").max(1.0);
+            let k =
+                upg_level(st, "digger_length") as f64 / upg_max_level(st, "digger_length").max(1.0);
             gml::round(gml::lerp(
                 bal(mode, "digger_water_cost_min"),
                 bal(mode, "digger_water_cost_max"),

@@ -415,10 +415,8 @@ pub fn step(sim: &mut Sim, input: &StepInput) {
                         sim.emit(SimEvent::NodeRejected { reason, x, y });
                     }
                 }
-                Command::OpenBuildMenu { x, y } => {
-                    if !place::open_build_menu_at(sim, x, y) {
-                        knots::clear_prompts(sim);
-                    }
+                Command::OpenBuildMenu { x, y } if !place::open_build_menu_at(sim, x, y) => {
+                    knots::clear_prompts(sim);
                 }
                 _ => {}
             }

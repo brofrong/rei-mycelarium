@@ -272,7 +272,11 @@ pub fn add_spore_knot(sim: &mut Sim, px: f64) -> bool {
         born: Some(now),
         extra: Extra::new(),
     });
-    let ev = audio::mushroom_grow(&mut sim.rng, Some((px, sy)), Some(vis("smallshroom_grow_volume")));
+    let ev = audio::mushroom_grow(
+        &mut sim.rng,
+        Some((px, sy)),
+        Some(vis("smallshroom_grow_volume")),
+    );
     sim.emit(ev);
     soil::reach_expand(sim, px, sy);
     true

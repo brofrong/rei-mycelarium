@@ -1,5 +1,7 @@
 //! The shot: its parameters (range, spread, water and node costs, budding chance), the water
 //! and food a shot costs, and the growth itself (main strand plus side branches).
+// `!(a < b)` keeps the original's behaviour for NaN
+#![allow(clippy::neg_cmp_op_on_partial_ord)]
 
 use super::{place, source, Branch, Cell, Growth, GrowthSound, Pt};
 use crate::audio;
@@ -132,7 +134,14 @@ impl Default for GrowthOpts {
 /// `myc_add_growth_from(px, py, dir, len, opts)`: pay for the shot (unless free), build the
 /// main strand and the side branches, report the tutorial events, roll budding and the hyphae
 /// sound and file the growth. Emits `Resource{Water|Food, -n}` at the origin for what it costs.
-pub fn add_growth_from(sim: &mut Sim, px: f64, py: f64, dir: f64, len: f64, opts: &GrowthOpts) -> bool {
+pub fn add_growth_from(
+    sim: &mut Sim,
+    px: f64,
+    py: f64,
+    dir: f64,
+    len: f64,
+    opts: &GrowthOpts,
+) -> bool {
     if len < sim.mycelium.min_growth_len {
         return false;
     }
@@ -221,8 +230,12 @@ pub fn add_growth_from(sim: &mut Sim, px: f64, py: f64, dir: f64, len: f64, opts
             k += 1.0;
         }
     }
-    let (mut bx1, mut by1, mut bx2, mut by2) =
-        (branches[0].bx1, branches[0].by1, branches[0].bx2, branches[0].by2);
+    let (mut bx1, mut by1, mut bx2, mut by2) = (
+        branches[0].bx1,
+        branches[0].by1,
+        branches[0].bx2,
+        branches[0].by2,
+    );
     for b in &branches[1..] {
         bx1 = bx1.min(b.bx1);
         by1 = by1.min(b.by1);

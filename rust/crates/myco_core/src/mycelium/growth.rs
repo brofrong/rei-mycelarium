@@ -2,7 +2,9 @@
 //! shoves, harvest, length), finishing (budding), link growths to mushrooms, the node burst of
 //! the blue cave and the digger burst.
 
-use super::{shot, soil, source, BurstKnot, DiggerJob, Growth, GrowthOpts, GrowthSound, Pt, GRID_CELL};
+use super::{
+    shot, soil, source, BurstKnot, DiggerJob, Growth, GrowthOpts, GrowthSound, Pt, GRID_CELL,
+};
 use crate::audio;
 use crate::balance::{vis, wld};
 use crate::events::{ResourceKind, SimEvent};
@@ -189,7 +191,13 @@ pub fn scan_growth(sim: &mut Sim, gi: usize) {
         if prog >= 1.0 && !sim.mycelium.growths[gi].branches[i].shoved {
             sim.mycelium.growths[gi].branches[i].shoved = true;
             let (a, c) = (pt(sim, n - 1), pt(sim, n - 2));
-            stones::stones_shove(sim, a.x, a.y, gml::point_direction(c.x, c.y, a.x, a.y), power);
+            stones::stones_shove(
+                sim,
+                a.x,
+                a.y,
+                gml::point_direction(c.x, c.y, a.x, a.y),
+                power,
+            );
         }
         let count_len = i == 0 && !no_length;
         let (sd, mut sdl) = {

@@ -3,6 +3,8 @@
 //!
 //! Mushroom data and art belong to Task 9 (and squirrel trunk edges to Task 10): the calls
 //! into them go through the clearly marked hook section of `crate::mushrooms`.
+// `!(a < b)` keeps the original's behaviour for NaN
+#![allow(clippy::neg_cmp_op_on_partial_ord)]
 
 use super::{growth, knots, soil, source};
 use crate::balance::vis;
@@ -68,7 +70,15 @@ pub fn is_playable_clear_point(sim: &mut Sim, px: f64, py: f64, r: f64, cave: bo
 // port: anon__3225__gml_Object_obj_mycelium_controller_Create_0
 /// `myc_segment_is_playable(x1, y1, x2, y2, r, cave)`: clear points every `sample_step` and at
 /// the end. (`myc_place_check` passes the GML `true` as `r`, i.e. 1.)
-pub fn segment_is_playable(sim: &mut Sim, x1: f64, y1: f64, x2: f64, y2: f64, r: f64, cave: bool) -> bool {
+pub fn segment_is_playable(
+    sim: &mut Sim,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    r: f64,
+    cave: bool,
+) -> bool {
     let dist = gml::point_distance(x1, y1, x2, y2);
     if dist <= 0.0 {
         return is_playable_clear_point(sim, x1, y1, r, cave);
@@ -89,7 +99,14 @@ pub fn segment_is_playable(sim: &mut Sim, x1: f64, y1: f64, x2: f64, y2: f64, r:
 /// `myc_measure_allowed_len_from(px, py, dir, maxlen, cave)`: how far a shot gets: clear
 /// points every `sample_step`, paying `travel_cost` per step (clay and deep soil cost more,
 /// soil penetration helps) out of a budget of `maxlen`.
-pub fn measure_allowed_len_from(sim: &mut Sim, px: f64, py: f64, dir: f64, maxlen: f64, cave: bool) -> f64 {
+pub fn measure_allowed_len_from(
+    sim: &mut Sim,
+    px: f64,
+    py: f64,
+    dir: f64,
+    maxlen: f64,
+    cave: bool,
+) -> f64 {
     let pen = soil::soil_penetration(sim);
     let r = 2.0;
     let budget = maxlen.max(0.0);
@@ -134,8 +151,17 @@ impl OptionLabel {
     /// `<name>  <cost> <hud_food>` as the original builds it.
     pub fn text(&self, loc: &dyn Fn(&str) -> String) -> String {
         let name = loc(&self.key);
-        let name = if self.upper { name.to_uppercase() } else { name };
-        format!("{}  {} {}", name, soil::gml_string(self.cost), loc("hud_food"))
+        let name = if self.upper {
+            name.to_uppercase()
+        } else {
+            name
+        };
+        format!(
+            "{}  {} {}",
+            name,
+            soil::gml_string(self.cost),
+            loc("hud_food")
+        )
     }
 }
 
@@ -216,7 +242,16 @@ pub fn get_mushroom_at(sim: &Sim, px: f64, py: f64) -> MushroomHit {
             continue;
         }
         if let Some(b) = mushrooms::mushroom_hit_box(sim, i) {
-            if in_rect(px, py, &Rect { x1: b.0, y1: b.1, x2: b.2, y2: b.3 }) {
+            if in_rect(
+                px,
+                py,
+                &Rect {
+                    x1: b.0,
+                    y1: b.1,
+                    x2: b.2,
+                    y2: b.3,
+                },
+            ) {
                 return MushroomHit {
                     hit: true,
                     index: i as i64,
@@ -247,9 +282,17 @@ pub fn get_mushroom_at(sim: &Sim, px: f64, py: f64) -> MushroomHit {
 pub fn get_surface_build_at(sim: &Sim, px: f64, py: f64) -> growth::Hit {
     let sy = sim.mycelium.surface_y;
     if (py - sy).abs() <= sim.bal("surface_build_band_px") {
-        return growth::Hit { hit: true, x: px, y: sy };
+        return growth::Hit {
+            hit: true,
+            x: px,
+            y: sy,
+        };
     }
-    growth::Hit { hit: false, x: px, y: py }
+    growth::Hit {
+        hit: false,
+        x: px,
+        y: py,
+    }
 }
 
 // port: anon__14901__gml_Object_obj_mycelium_controller_Create_0
@@ -467,7 +510,9 @@ pub fn consumptor_spot(sim: &mut Sim, px: f64, py: f64) -> Option<ConsumptorSpot
             free: best_free && has_room,
         });
     }
-    let HostId::Tree(uid) = host else { unreachable!() };
+    let HostId::Tree(uid) = host else {
+        unreachable!()
+    };
     let (hx, hy) = sim.forest.tree(uid).map(|t| (t.x, t.y))?;
     let side = if px >= hx { 1.0 } else { -1.0 };
     let top = hy - TREE_YOFFSET + sim.bal("consumptor_tree_top_row");

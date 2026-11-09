@@ -96,7 +96,6 @@ pub fn on_load(sim: &mut Sim) {
 /// `save_game`'s progress part: everything saved already lives in `sim.state`.
 pub fn before_save(_sim: &Sim, _out: &mut GameState) {}
 
-
 // port: cheats_step
 /// obj_game Step_0: count the cheat flash down (the cheat keys themselves are compiled out).
 pub fn cheats_step(sim: &mut Sim) {

@@ -364,19 +364,35 @@ fn playability_matches_love() {
             b(place::is_playable_clear_point(&mut sim, x, y, 2.0, false)),
             b(place::is_playable_clear_point(&mut sim, x, y, 2.0, true)),
         ];
-        num_eq(&format!("point {x},{y}"), &got, &Value::from(row.as_array().unwrap()[2..].to_vec()));
+        num_eq(
+            &format!("point {x},{y}"),
+            &got,
+            &Value::from(row.as_array().unwrap()[2..].to_vec()),
+        );
     }
     // r = 1 is the GML `true` myc_place_check passes as the radius (the LÖVE crash, baff3b6)
     for row in p["segments"].as_array().unwrap() {
         let v: Vec<f64> = row.as_array().unwrap().iter().map(f).collect();
         let (x1, y1, x2, y2) = (v[0], v[1], v[2], v[3]);
         let got = [
-            b(place::segment_is_playable(&mut sim, x1, y1, x2, y2, 1.0, false)),
-            b(place::segment_is_playable(&mut sim, x1, y1, x2, y2, 1.0, false)),
-            b(place::segment_is_playable(&mut sim, x1, y1, x2, y2, 2.0, false)),
-            b(place::segment_is_playable(&mut sim, x1, y1, x2, y2, 2.0, true)),
+            b(place::segment_is_playable(
+                &mut sim, x1, y1, x2, y2, 1.0, false,
+            )),
+            b(place::segment_is_playable(
+                &mut sim, x1, y1, x2, y2, 1.0, false,
+            )),
+            b(place::segment_is_playable(
+                &mut sim, x1, y1, x2, y2, 2.0, false,
+            )),
+            b(place::segment_is_playable(
+                &mut sim, x1, y1, x2, y2, 2.0, true,
+            )),
         ];
-        num_eq(&format!("segment {v:?}"), &got, &Value::from(v[4..].to_vec()));
+        num_eq(
+            &format!("segment {v:?}"),
+            &got,
+            &Value::from(v[4..].to_vec()),
+        );
     }
     for row in p["measure"].as_array().unwrap() {
         let v: Vec<f64> = row.as_array().unwrap().iter().map(f).collect();
@@ -391,7 +407,11 @@ fn playability_matches_love() {
             shot::shot_cost_for(&mut sim, x, y, dir, maxlen),
             shot::shot_food_for(&mut sim, x, y, dir, maxlen),
         ];
-        num_eq(&format!("measure {v:?}"), &got, &Value::from(v[4..].to_vec()));
+        num_eq(
+            &format!("measure {v:?}"),
+            &got,
+            &Value::from(v[4..].to_vec()),
+        );
     }
 }
 
@@ -399,7 +419,8 @@ fn playability_matches_love() {
 fn shot_length_matches_love() {
     let g = golden("mycelium");
     let mut sim = fixture_sim(&g);
-    let cases: [(f64, f64, f64, &[(&str, i64)], Option<GrowthOpts>); 5] = [
+    type Case<'a> = (f64, f64, f64, &'a [(&'a str, i64)], Option<GrowthOpts>);
+    let cases: [Case; 5] = [
         (0.0, 480.0, 270.0, &[], None),
         (
             -44.58447299418679,
@@ -408,7 +429,13 @@ fn shot_length_matches_love() {
             &[("shot_range", 3), ("shot_width", 2)],
             None,
         ),
-        (0.0, 480.0, 315.0, &[("shot_range", 6), ("budding_chance", 4)], None),
+        (
+            0.0,
+            480.0,
+            315.0,
+            &[("shot_range", 6), ("budding_chance", 4)],
+            None,
+        ),
         (
             150.0,
             1800.0,
@@ -452,10 +479,23 @@ fn shot_length_matches_love() {
         assert_eq!(b(ok), f(&want["ok"]), "{p} ok");
         close(&format!("{p} food"), sim.state.state.food, f(&want["food"]));
         close(&format!("{p} water"), sim.water_total(), f(&want["water"]));
-        close(&format!("{p} water_free"), sim.state.state.water_free, f(&want["water_free"]));
+        close(
+            &format!("{p} water_free"),
+            sim.state.state.water_free,
+            f(&want["water_free"]),
+        );
         assert_eq!(sim.mycelium.growths.len(), n0 + 1);
-        growth_eq(&p, sim.mycelium.growths.last().unwrap(), &want["growth"], true);
-        close(&format!("{p} probe"), sim.rng.random(1.0), f(&want["probe"]));
+        growth_eq(
+            &p,
+            sim.mycelium.growths.last().unwrap(),
+            &want["growth"],
+            true,
+        );
+        close(
+            &format!("{p} probe"),
+            sim.rng.random(1.0),
+            f(&want["probe"]),
+        );
         for (id, lvl) in saved {
             set_upg(&mut sim, id, lvl);
         }
@@ -475,7 +515,11 @@ fn session_matches_love() {
     let digests = g["session"]["digests"].as_array().unwrap();
     for (k, inp) in g["session_inputs"].as_array().unwrap().iter().enumerate() {
         run(&mut sim, &step_input(inp));
-        num_eq(&format!("session frame {}", k + 1), &digest(&sim, (k + 1) as f64), &digests[k]);
+        num_eq(
+            &format!("session frame {}", k + 1),
+            &digest(&sim, (k + 1) as f64),
+            &digests[k],
+        );
     }
     let s = &g["session"];
     growths_eq("session", &sim, &s["growths"]);
@@ -523,12 +567,20 @@ fn session_matches_love() {
     let digests = s2["digests"].as_array().unwrap();
     for (k, inp) in g["session2_inputs"].as_array().unwrap().iter().enumerate() {
         run(&mut sim, &step_input(inp));
-        num_eq(&format!("session2 frame {}", k + 1), &digest(&sim, (k + 1) as f64), &digests[k]);
+        num_eq(
+            &format!("session2 frame {}", k + 1),
+            &digest(&sim, (k + 1) as f64),
+            &digests[k],
+        );
     }
     growths_eq("session2", &sim, &s2["growths"]);
     knots_eq("session2.knots", &sim, &s2["knots"]);
     num_eq("session2.cam_box", &sim.state.state.cam_box, &s2["cam_box"]);
-    close("session2.water_free", sim.state.state.water_free, f(&s2["water_free"]));
+    close(
+        "session2.water_free",
+        sim.state.state.water_free,
+        f(&s2["water_free"]),
+    );
     assert_eq!(sim.state.water.len() as i64, i(&s2["sources"]));
     events_eq("session2.events", &sim, &s2["events"]);
     close("session2.probe", sim.rng.random(1.0), f(&s2["probe"]));
@@ -543,7 +595,11 @@ fn session_matches_love() {
     assert_eq!(sim.mycelium.burst_queue.len() as i64, i(&bw["queue"]));
     for (k, want) in bw["digests"].as_array().unwrap().iter().enumerate() {
         run(&mut sim, &idle());
-        num_eq(&format!("burst frame {}", k + 1), &digest(&sim, (k + 1) as f64), want);
+        num_eq(
+            &format!("burst frame {}", k + 1),
+            &digest(&sim, (k + 1) as f64),
+            want,
+        );
     }
     growths_eq("burst", &sim, &bw["growths"]);
     knots_eq("burst.knots", &sim, &bw["knots"]);
@@ -557,7 +613,11 @@ fn session_matches_love() {
     assert_eq!(sim.mycelium.digger_queue.len() as i64, i(&gw["queue"]));
     for (k, want) in gw["digests"].as_array().unwrap().iter().enumerate() {
         run(&mut sim, &idle());
-        num_eq(&format!("digger frame {}", k + 1), &digest(&sim, (k + 1) as f64), want);
+        num_eq(
+            &format!("digger frame {}", k + 1),
+            &digest(&sim, (k + 1) as f64),
+            want,
+        );
     }
     growths_eq("digger", &sim, &gw["growths"]);
     close("digger.probe", sim.rng.random(1.0), f(&gw["probe"]));
@@ -572,9 +632,18 @@ fn session_matches_love() {
     assert_eq!(b(ok), f(&sw["ok"]));
     knots::spawn_spores_show(&mut sim, 300.0, 420.0, 5.0, 1.3);
     let rays = [
-        Ray { a: 80.0, power: 2.0 },
-        Ray { a: 100.0, power: 1.5 },
-        Ray { a: 60.0, power: 3.0 },
+        Ray {
+            a: 80.0,
+            power: 2.0,
+        },
+        Ray {
+            a: 100.0,
+            power: 1.5,
+        },
+        Ray {
+            a: 60.0,
+            power: 3.0,
+        },
     ];
     knots::spawn_spores_rays(&mut sim, -300.0, 400.0, 7.0, &rays, 1.7);
     let spores = |sim: &Sim| -> Vec<f64> {
@@ -582,7 +651,18 @@ fn session_matches_love() {
             .spores
             .iter()
             .flat_map(|s| {
-                [s.x, s.y, s.vx, s.vy, s.weight, s.age, s.life, s.phase, b(s.show), b(s.ray)]
+                [
+                    s.x,
+                    s.y,
+                    s.vx,
+                    s.vy,
+                    s.weight,
+                    s.age,
+                    s.life,
+                    s.phase,
+                    b(s.show),
+                    b(s.ray),
+                ]
             })
             .collect()
     };
@@ -673,8 +753,15 @@ fn session_matches_love() {
             b(place::surface_buildable_at(&mut sim, x, y)),
             b(place::has_mushroom_near(&sim, x, y, 50.0)),
         ];
-        num_eq(&format!("surface {x},{y}"), &got, &Value::from(row.as_array().unwrap()[..7].to_vec()));
-        assert_eq!(place::surface_block_reason(&sim, x, y), row[7].as_str().unwrap());
+        num_eq(
+            &format!("surface {x},{y}"),
+            &got,
+            &Value::from(row.as_array().unwrap()[..7].to_vec()),
+        );
+        assert_eq!(
+            place::surface_block_reason(&sim, x, y),
+            row[7].as_str().unwrap()
+        );
     }
     for row in g["menu"].as_array().unwrap() {
         let (x, y) = (f(&row[0]), f(&row[1]));
@@ -691,7 +778,11 @@ fn session_matches_love() {
             b(m.build_surface_ok),
             b(m.mushroom_prompt),
         ];
-        num_eq(&format!("menu {x},{y}"), &got, &Value::from(row.as_array().unwrap()[..9].to_vec()));
+        num_eq(
+            &format!("menu {x},{y}"),
+            &got,
+            &Value::from(row.as_array().unwrap()[..9].to_vec()),
+        );
         assert_eq!(m.build_hint, row[9].as_str().unwrap());
         let opts = row[10].as_array().unwrap();
         assert_eq!(m.build_options.len(), opts.len());
@@ -708,13 +799,21 @@ fn session_matches_love() {
 
     // pure helpers
     let ob = place::origin_box(&sim);
-    num_eq("origin_box", &[ob.x1, ob.y1, ob.x2, ob.y2], &g["origin_box"]);
+    num_eq(
+        "origin_box",
+        &[ob.x1, ob.y1, ob.x2, ob.y2],
+        &g["origin_box"],
+    );
     for row in g["smallshroom"].as_array().unwrap() {
         let r = knots::smallshroom_rect(&knots::Smallshroom {
             kind: i(&row[0]),
             cell: i(&row[1]),
         });
-        num_eq("smallshroom", &[f(&row[0]), f(&row[1]), r.left, r.top, r.width, r.height], row);
+        num_eq(
+            "smallshroom",
+            &[f(&row[0]), f(&row[1]), r.left, r.top, r.width, r.height],
+            row,
+        );
     }
     for row in g["tips"].as_array().unwrap() {
         let t = mycelium::mycelium_extreme_tip(&sim, f(&row[0])).unwrap();
@@ -746,7 +845,11 @@ fn session_matches_love() {
     let sim2 = Sim::from_save(st).unwrap();
     assert_eq!(knot_digest(&sim2), knot_digest(&sim));
     assert_eq!(sim2.mycelium.growths.len(), sim.mycelium.growths.len());
-    assert!(sim2.mycelium.growths.iter().all(|g| g.finished && g.no_length));
+    assert!(sim2
+        .mycelium
+        .growths
+        .iter()
+        .all(|g| g.finished && g.no_length));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -783,7 +886,10 @@ fn quick_node_rejections() {
     let g = golden("mycelium");
     // NotOnMycelium
     let mut sim = fixture_sim(&g);
-    assert_eq!(knots::quick_node(&mut sim, 500.0, 300.0), Err(NodeReject::NotOnMycelium));
+    assert_eq!(
+        knots::quick_node(&mut sim, 500.0, 300.0),
+        Err(NodeReject::NotOnMycelium)
+    );
 
     // success: one knot, food spent, Resource{Food, -cost} at the knot, tutorial "node"
     let mut sim = fixture_sim(&g);
@@ -798,8 +904,10 @@ fn quick_node_rejections() {
     let ev = sim.drain_events();
     let k = sim.mycelium.knots.last().unwrap().clone();
     assert!(
-        ev.iter().any(|e| matches!(e, SimEvent::Resource { kind: ResourceKind::Food, delta, x, y, .. }
-            if *delta == -cost && *x == k.x && *y == k.y)),
+        ev.iter().any(
+            |e| matches!(e, SimEvent::Resource { kind: ResourceKind::Food, delta, x, y, .. }
+            if *delta == -cost && *x == k.x && *y == k.y)
+        ),
         "{ev:?}"
     );
     assert!(sim.state.state.tutorial.events.contains_key("node"));
@@ -842,17 +950,29 @@ fn quick_node_rejections() {
         free: true,
         ..GrowthOpts::default()
     };
-    assert!(shot::add_growth_from(&mut sim, wx, wy - 60.0, 270.0, 120.0, &free));
+    assert!(shot::add_growth_from(
+        &mut sim,
+        wx,
+        wy - 60.0,
+        270.0,
+        120.0,
+        &free
+    ));
     for _ in 0..200 {
         run(&mut sim, &idle());
     }
-    let pts = sim.mycelium.growths.last().unwrap().branches[0].points.clone();
+    let pts = sim.mycelium.growths.last().unwrap().branches[0]
+        .points
+        .clone();
     let p = pts
         .iter()
         .find(|p| sim.world.water_shown_at(p.x, p.y))
         .copied()
         .expect("the strand crosses the lake");
-    assert_eq!(knots::quick_node(&mut sim, p.x, p.y), Err(NodeReject::InWater));
+    assert_eq!(
+        knots::quick_node(&mut sim, p.x, p.y),
+        Err(NodeReject::InWater)
+    );
 
     // Blocked: myc_add_knot refusing although the earlier checks pass (a knot just inside its
     // 1.6 r ring but outside the 2 r check cannot exist, so force it through the knot list)
@@ -865,7 +985,10 @@ fn quick_node_rejections() {
         "a fresh spot takes a node"
     );
     // a second application at the same spot skips quick_node's own ring check: add_knot refuses
-    assert_eq!(knots::apply_node_at(&mut sim, hit.x + r, hit.y), Err(NodeReject::Blocked));
+    assert_eq!(
+        knots::apply_node_at(&mut sim, hit.x + r, hit.y),
+        Err(NodeReject::Blocked)
+    );
 }
 
 #[test]
@@ -955,7 +1078,9 @@ fn shots_and_harvest_emit_resource_events() {
     };
     // straight into the food cluster around (180, 970)..(232, 1051) from (150, 900)
     let dir = myco_core::gml::point_direction(150.0, 900.0, 200.0, 1040.0);
-    assert!(shot::add_growth_from(&mut sim, 150.0, 900.0, dir, 160.0, &opts));
+    assert!(shot::add_growth_from(
+        &mut sim, 150.0, 900.0, dir, 160.0, &opts
+    ));
     for _ in 0..200 {
         run(&mut sim, &idle());
     }
@@ -976,7 +1101,10 @@ fn shots_and_harvest_emit_resource_events() {
     assert!(gained > 0.0, "the growth collects food");
     assert_eq!(food.iter().map(|e| e.0).sum::<f64>(), gained);
     let src = food[0].1;
-    assert!(food.iter().all(|e| e.1 == src), "one stable source per growth");
+    assert!(
+        food.iter().all(|e| e.1 == src),
+        "one stable source per growth"
+    );
 }
 
 #[test]
@@ -986,7 +1114,9 @@ fn hyphae_sounds_follow_the_growth() {
     sim.rng = Rng::new(3);
     sim.drain_events();
     let opts = GrowthOpts::default();
-    assert!(shot::add_growth_from(&mut sim, 0.0, 480.0, 270.0, 150.0, &opts));
+    assert!(shot::add_growth_from(
+        &mut sim, 0.0, 480.0, 270.0, 150.0, &opts
+    ));
     let id = sim.mycelium.growths.last().unwrap().id;
     let plan = sim.mycelium.growths.last().unwrap().sound.unwrap().plan;
     let mut steps = 0;
