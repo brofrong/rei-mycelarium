@@ -8,6 +8,7 @@ publish.workspace = true
 [dependencies]
 bevy = { version = "0.20.1", features = ["wav"] }
 myco_core = { path = "../myco_core" }
+ab_glyph = "0.2.32"
 serde.workspace = true
 serde_json.workspace = true
 

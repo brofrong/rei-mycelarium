@@ -41,6 +41,8 @@ pub enum GmBlendMode {
     Add,
     /// `gpu_set_blendmode_ext(bm_dest_colour, bm_zero)`: `dst *= src`
     Multiply,
+    /// `bm_normal`: `dst = src·a + dst·(1 − a)` (GUI primitives, Task 19)
+    Alpha,
 }
 
 impl GmBlendMode {
@@ -54,6 +56,11 @@ impl GmBlendMode {
             GmBlendMode::Multiply => BlendComponent {
                 src_factor: BlendFactor::Dst,
                 dst_factor: BlendFactor::Zero,
+                operation: BlendOperation::Add,
+            },
+            GmBlendMode::Alpha => BlendComponent {
+                src_factor: BlendFactor::SrcAlpha,
+                dst_factor: BlendFactor::OneMinusSrcAlpha,
                 operation: BlendOperation::Add,
             },
         };
