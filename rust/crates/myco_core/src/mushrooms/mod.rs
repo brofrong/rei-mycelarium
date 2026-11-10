@@ -21,7 +21,8 @@ pub use consumptor::{
     consume_info, consumptor_variant, consumptors_on, set_consumptor, ConsumeInfo,
 };
 pub use types::{
-    mushroom_type_affordable, mushroom_type_cost, mushroom_type_cost_base, mushroom_type_name_key,
+    mushroom_type_affordable, mushroom_type_cost, mushroom_type_cost_base, mushroom_type_count,
+    mushroom_type_name_key,
     mushroom_type_unlock_id, mushroom_type_unlocked, mushroom_type_water_cost,
     mushroom_type_water_cost_base, repeller_max_charges, repeller_regen_price,
 };

@@ -176,13 +176,17 @@ pub fn main_screen_info() -> Option<ScreenInfo> {
 /// Save folder: `MYCO_SAVE_DIR` if set; else, for an automated run (`MYCO_INPUT`, `MYCO_DUMP` or
 /// `MYCO_SHOT` set), a fresh temp folder; else the LÖVE port's folder (`save::save_dir`).
 pub fn save_dir() -> PathBuf {
-    let automated = ["MYCO_INPUT", "MYCO_DUMP", "MYCO_SHOT"]
-        .iter()
-        .any(|k| std::env::var_os(k).is_some_and(|v| !v.is_empty()));
     save_dir_for(
         std::env::var_os("MYCO_SAVE_DIR").map(PathBuf::from),
-        automated,
+        automated_run(),
     )
+}
+
+/// An automated run: `MYCO_INPUT`, `MYCO_DUMP` or `MYCO_SHOT` set.
+pub fn automated_run() -> bool {
+    ["MYCO_INPUT", "MYCO_DUMP", "MYCO_SHOT"]
+        .iter()
+        .any(|k| std::env::var_os(k).is_some_and(|v| !v.is_empty()))
 }
 
 /// [`save_dir`] from its inputs: an automated run never falls back to the real save folder.

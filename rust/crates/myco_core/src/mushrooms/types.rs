@@ -201,6 +201,16 @@ pub fn mushroom_type_affordable(sim: &Sim, t: MushroomKind) -> bool {
         && sim.water_total() >= mushroom_type_water_cost(&sim.state, t)
 }
 
+/// Rust only (the owner's request, shown in the build bar): the colony's mushrooms of the type
+/// on the map (not the ones stolen by an animal).
+pub fn mushroom_type_count(state: &GameState, t: MushroomKind) -> usize {
+    state
+        .mushrooms
+        .iter()
+        .filter(|m| m.kind == t.code() && !m.stolen)
+        .count()
+}
+
 // port: mushroom_type_sprite
 /// The sprite sheet of the type (by name).
 pub fn mushroom_type_sprite(t: MushroomKind) -> &'static str {

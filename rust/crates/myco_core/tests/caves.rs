@@ -272,6 +272,10 @@ fn spot_json(s: &Option<YellowSpot>) -> Value {
 }
 
 fn caves_seed_match(topic: &str, seed: i64) {
+    myco_core::balance::with_original_worldgen(|| caves_seed_match_original(topic, seed));
+}
+
+fn caves_seed_match_original(topic: &str, seed: i64) {
     let g = golden(topic);
     let mut sim = Sim::new_game(GameMode::Exploration, "Golden", Some(seed));
     let w = &mut sim.world;
@@ -590,6 +594,10 @@ fn mushrooms(timers: &[f64]) -> Vec<MushroomSave> {
 
 #[test]
 fn cave_touch_rewards_match_love() {
+    myco_core::balance::with_original_worldgen(cave_touch_rewards_match_love_original);
+}
+
+fn cave_touch_rewards_match_love_original() {
     let g = golden("caves_touch");
     let mut sim = Sim::from_save(fixture_state("exploration.json")).unwrap();
     sim.title_open = false;
@@ -811,8 +819,27 @@ fn perk_costs_match_love() {
 
 #[test]
 fn a_new_world_has_its_first_caves() {
-    let mut sim = Sim::new_game(GameMode::Exploration, "N", Some(31607));
+    let mut sim = myco_core::balance::with_original_worldgen(|| {
+        Sim::new_game(GameMode::Exploration, "N", Some(31607))
+    });
     assert_eq!(sim.world.cave_rects().len(), 4);
+}
+
+/// Rust override `caves_blue_more`: past `blue_0`, blue caves keep coming along both lanes.
+#[test]
+fn more_blue_caves_along_both_lanes() {
+    let mut sim = Sim::new_game(GameMode::Exploration, "N", Some(31607));
+    let start = sim.world.params.start_x;
+    let blue: Vec<(String, f64)> = sim
+        .world
+        .cave_rects()
+        .iter()
+        .filter(|r| r.kind == CaveKind::Blue)
+        .map(|r| (r.id.clone(), (r.x1 + r.x2) * 0.5))
+        .collect();
+    assert!(blue.iter().any(|(id, _)| id == "blue_0"), "{blue:?}");
+    assert!(blue.iter().any(|(id, x)| id != "blue_0" && *x > start), "{blue:?}");
+    assert!(blue.iter().any(|(id, x)| id != "blue_0" && *x < start), "{blue:?}");
 }
 
 #[test]

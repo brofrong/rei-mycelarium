@@ -512,6 +512,8 @@ pub const ZOOM_SMOOTH_SECONDS: f64 = 0.12;
 pub const ZOOM_PAD_PX: f64 = 256.0;
 /// Zoom factor per wheel notch.
 pub const ZOOM_WHEEL_STEP: f64 = 1.15;
+/// How far past the ocean line (world px) the zoomed-out view may look.
+pub const ZOOM_OCEAN_PEEK_PX: f64 = 384.0;
 
 /// The zoom the render camera eases toward.
 #[derive(Resource, Clone, Debug, PartialEq)]
@@ -526,10 +528,16 @@ impl Default for ZoomState {
 }
 
 /// World y range of the render camera: from the sky top (`surface_y − view_h`, but not above
-/// y = 0, where the forest backdrop starts and the 1× camera never goes) to the world bottom.
-pub fn render_y_limits(sim: &Sim, view_h: f64) -> (f64, f64) {
+/// y = 0, where the forest backdrop starts and the 1× camera never goes) to a little past the
+/// ocean line ([`ZOOM_OCEAN_PEEK_PX`]; the generated world is a million tiles deep, all ocean),
+/// never past the world bottom and never above the 1× view's bottom (`view_bottom`), so 1×
+/// shows what the original does.
+pub fn render_y_limits(sim: &Sim, view_h: f64, view_bottom: f64) -> (f64, f64) {
     let p = &sim.world.params;
-    ((p.surface_y - view_h).max(0.0), p.bottom_y)
+    let bottom = (sim.world.ocean_y() + ZOOM_OCEAN_PEEK_PX)
+        .max(view_bottom)
+        .min(p.bottom_y);
+    ((p.surface_y - view_h).max(0.0), bottom)
 }
 
 /// The zoom is held at 1×: the intro, a cut-scene (until it is gone) and the title.
@@ -567,7 +575,7 @@ pub fn explored_bbox(sim: &Sim) -> Option<[f64; 4]> {
 
 /// `(farthest, closest)` zoom: out until the explored bounding box plus [`ZOOM_PAD_PX`] fits the
 /// screen, but never past 1× in (1× is always allowed) and never so far that the view is taller
-/// than the sky top .. world bottom range; in to [`ZOOM_MAX`].
+/// than the sky top .. ocean line range ([`render_y_limits`]); in to [`ZOOM_MAX`].
 pub fn zoom_limits(sim: &Sim, cams: &Cameras) -> (f64, f64) {
     let (vw, vh) = (cams.game_view.w, cams.game_view.h);
     let mut lo: f64 = 1.0;
@@ -575,7 +583,7 @@ pub fn zoom_limits(sim: &Sim, cams: &Cameras) -> (f64, f64) {
         let fit = (vw / (x2 - x1 + 2.0 * ZOOM_PAD_PX)).min(vh / (y2 - y1 + 2.0 * ZOOM_PAD_PX));
         lo = lo.min(fit);
     }
-    let (top, bottom) = render_y_limits(sim, vh);
+    let (top, bottom) = render_y_limits(sim, vh, cams.game_view.y + vh);
     let range = bottom - top;
     if range > 0.0 {
         lo = lo.max((vh / range).min(1.0));
@@ -606,7 +614,8 @@ pub fn zoom_advance(
     anchor: Vec2,
     base: (f64, f64),
 ) -> Option<(f64, f64)> {
-    cams.y_limits = Some(render_y_limits(sim, cams.game_view.h));
+    let gv = cams.game_view;
+    cams.y_limits = Some(render_y_limits(sim, gv.h, gv.y + gv.h));
     if zoom_locked(sim) {
         cams.zoom = 1.0;
         zs.target = 1.0;

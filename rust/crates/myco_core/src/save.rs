@@ -15,12 +15,13 @@ use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// `~/Library/Application Support/LOVE/Mycelarium` (LÖVE identity "Mycelarium" on macOS).
+/// `~/Library/Application Support/Mycelarium`: where the packaged LÖVE app (fused, identity
+/// "Mycelarium") keeps its saves on macOS. An unfused `love game` run uses `LOVE/Mycelarium` instead.
 pub fn save_dir() -> PathBuf {
     let home = std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_default();
-    home.join("Library/Application Support/LOVE/Mycelarium")
+    home.join("Library/Application Support/Mycelarium")
 }
 
 // port: save_path

@@ -5,7 +5,7 @@ use myco_app::assets::GameAssets;
 use myco_app::ui::cursor_tip::{tip_text, CursorTip, TIP_LIFE};
 use myco_app::ui::hud::{step_game, step_pre, HudState, StepIn, UiFonts};
 use myco_app::ui::markers::AnimalMarkers;
-use myco_app::ui::popups::{Popups, CAP};
+use myco_app::ui::popups::{Popups, CAP, STACK_AGE};
 use myco_app::ui::LOCALE_EXTRA_CSV;
 use myco_core::events::{NodeReject, ResourceKind, SimEvent};
 use myco_core::locale::{Lang, Locale};
@@ -128,6 +128,53 @@ fn popups_cap_64_merges_into_nearest() {
     assert!(p.list.iter().all(|q| q.kind == ResourceKind::Food));
 }
 
+/// Planting a mushroom spends food and water at one spot: the second number goes a line up;
+/// a spot's lines free up once its numbers are older than `STACK_AGE`.
+#[test]
+fn popups_at_one_spot_stack_up() {
+    let mut p = Popups::default();
+    p.add_step(
+        [
+            res(ResourceKind::Food, -20.0, 100.0, 100.0, 1),
+            res(ResourceKind::Water, -10.0, 100.0, 100.0, 1),
+            res(ResourceKind::Food, 3.0, 400.0, 100.0, 2),
+        ]
+        .iter(),
+        &view(),
+    );
+    let rows: Vec<u32> = p.list.iter().map(|q| q.row).collect();
+    assert_eq!(rows, [0, 1, 0]);
+    // the next step at the same spot: a third line
+    p.add_step(
+        [res(ResourceKind::Food, -5.0, 105.0, 98.0, 3)].iter(),
+        &view(),
+    );
+    assert_eq!(p.list[3].row, 2);
+    p.tick(STACK_AGE + 0.01);
+    p.add_step(
+        [res(ResourceKind::Water, -1.0, 100.0, 100.0, 4)].iter(),
+        &view(),
+    );
+    assert_eq!(p.list.last().unwrap().row, 0);
+}
+
+#[test]
+fn food_and_water_icons_are_tinted() {
+    use myco_app::ui::hud::{icon_tint, COLOR_FOOD_ICON, COLOR_WATER_ICON};
+    assert_eq!(icon_tint("apple_bite"), COLOR_FOOD_ICON);
+    assert_eq!(icon_tint("water65"), COLOR_WATER_ICON);
+    assert_eq!(icon_tint("UPGRADE"), 16777215.0);
+    // GameMaker BGR: food reddest, water bluest
+    let rgb = |c: f64| {
+        let c = c as u32;
+        (c & 255, (c >> 8) & 255, c >> 16)
+    };
+    let (fr, fg, fb) = rgb(COLOR_FOOD_ICON);
+    let (wr, wg, wb) = rgb(COLOR_WATER_ICON);
+    assert!(fr > fg && fr > fb, "food red");
+    assert!(wb > wr && wb > wg, "water blue");
+}
+
 #[test]
 fn popups_skip_offscreen() {
     let mut p = Popups::default();
@@ -187,6 +234,7 @@ fn input(mx: f64, my: f64) -> StepIn {
         rclick: false,
         lmb_down: false,
         keys: vec![],
+        shift: false,
         gw: 1920.0,
         gh: 1080.0,
     }
@@ -485,6 +533,7 @@ fn locale_extra_covers_12_languages() {
         "tip_node_too_close",
         "tip_node_blocked",
         "hint_no_nodes_in_water",
+        "title_continue",
     ];
     assert_eq!(loc.langs().len(), 12);
     let en: Vec<String> = keys.iter().map(|k| loc.loc(k).to_string()).collect();
@@ -688,4 +737,160 @@ fn upgrade_click_marks_the_menu_open_in_the_same_step() {
         world.resource::<PendingInput>().menu_open,
         "this step's input already has menu_open"
     );
+}
+
+/// Rust only: a Shift-click places and keeps placement mode while another one is affordable; a
+/// plain click (or running out of food) closes it as the original does.
+#[test]
+fn shift_click_keeps_placing() {
+    use myco_app::ui::hud::hud_placed;
+    let mut s = sim();
+    s.state.state.food = 1.0e6;
+    let open = |hud: &mut HudState| {
+        hud.place_type = Some(MushroomKind::Spore);
+        hud.build_open = true;
+    };
+    let mut hud = HudState::new();
+    open(&mut hud);
+    let out = step_game(
+        &mut hud,
+        &s,
+        &StepIn {
+            click: true,
+            shift: true,
+            ..input(900.0, 500.0)
+        },
+    );
+    assert!(out
+        .commands
+        .iter()
+        .any(|c| matches!(c, Command::PlaceMushroom { kind: MushroomKind::Spore, .. })));
+    assert!(hud.place_keep);
+    hud_placed(&mut hud, &s, MushroomKind::Spore);
+    assert_eq!(hud.place_type, Some(MushroomKind::Spore), "still placing");
+    assert!(hud.build_open);
+    assert!(!hud.place_keep, "each Shift-click decides for itself");
+
+    // a plain click: closed after the place
+    step_game(&mut hud, &s, &StepIn { click: true, ..input(900.0, 500.0) });
+    assert!(!hud.place_keep);
+    hud_placed(&mut hud, &s, MushroomKind::Spore);
+    assert_eq!(hud.place_type, None);
+
+    // Shift, but the next one is not affordable: closed
+    open(&mut hud);
+    step_game(
+        &mut hud,
+        &s,
+        &StepIn {
+            click: true,
+            shift: true,
+            ..input(900.0, 500.0)
+        },
+    );
+    s.state.state.food = 0.0;
+    hud_placed(&mut hud, &s, MushroomKind::Spore);
+    assert_eq!(hud.place_type, None);
+}
+
+#[test]
+fn build_bar_counts_mushrooms_per_type() {
+    use myco_core::mushrooms::mushroom_type_count;
+    let mut s = sim();
+    s.state.mushrooms.clear();
+    for (kind, stolen) in [(0, false), (0, false), (2, false), (0, true)] {
+        s.state.mushrooms.push(myco_core::state::MushroomSave {
+            kind,
+            stolen,
+            ..Default::default()
+        });
+    }
+    assert_eq!(mushroom_type_count(&s.state, MushroomKind::Spore), 2);
+    assert_eq!(mushroom_type_count(&s.state, MushroomKind::Repeller), 1);
+    assert_eq!(mushroom_type_count(&s.state, MushroomKind::Digger), 0);
+}
+
+/// Rust only: a marker shows wherever its animal is (off screen: at the edge, toward it, so a
+/// click flies there from any zoom); an animal on screen has its marker just above it.
+#[test]
+fn markers_show_off_screen_and_sit_above_visible_animals() {
+    use myco_app::ui::gm_draw::Gm;
+    use myco_app::ui::markers::{animal_marker_at, animal_markers_draw, Marker, MARKER_ABOVE_PX};
+    use myco_core::balance::vis;
+    let Some(assets) = assets() else {
+        return;
+    };
+    let s = sim();
+    let hud = HudState::new();
+    let marker = |src, x, y| Marker {
+        src,
+        sprite: "boar",
+        frames: 6.0,
+        frame: 0.0,
+        mirror: 1.0,
+        x,
+        y,
+        w: 60.0,
+        h: 40.0,
+        warn: false,
+        alpha: 1.0,
+        vx: 0.0,
+        vy: 0.0,
+        gone: false,
+        seen: true,
+        follow: 0.0,
+        ui: None,
+    };
+    let mut markers = AnimalMarkers::default();
+    // the drawn view at zoom 0.5: world (0, 0)–(3840, 2160) on a 1920×1080 GUI
+    let rv = ViewRect {
+        x: 0.0,
+        y: 0.0,
+        w: 3840.0,
+        h: 2160.0,
+    };
+    markers.list.push(marker(1, 2000.0, 1000.0));
+    markers.list.push(marker(2, 90000.0, 1000.0));
+    let mut g = Gm::new(&assets);
+    // no live animals in the sim: both drift as "gone" for animal_marker_follow_seconds
+    animal_markers_draw(&mut g, &mut markers, &s, &assets, &hud, true, rv, 1920.0, 1080.0, 0.0);
+    let r = vis("animal_marker_radius");
+    let (ux, uy) = markers.list[0].ui.unwrap();
+    assert!((ux - 1000.0).abs() < 1e-9);
+    assert!((uy - (500.0 - 10.0 - r - MARKER_ABOVE_PX)).abs() < 1e-9, "{uy}");
+    let (ex, _) = markers.list[1].ui.unwrap();
+    assert!((ex - (1920.0 - r - vis("animal_marker_edge_px"))).abs() < 1e-9, "{ex}");
+    assert!(markers.list[1].alpha > 0.0, "the far boar is announced");
+    let (fx, fy) = markers.list[1].ui.unwrap();
+    assert_eq!(animal_marker_at(&markers, fx, fy), Some(2));
+}
+
+/// Rust only: the light shroom's (yellow) cave comes after 60 minutes of play, and has a
+/// marker until it is taken.
+#[test]
+fn yellow_cave_appears_after_an_hour_with_a_marker() {
+    use myco_app::ui::markers::{yellow_cave_marker, YELLOW_CAVE_MARKER};
+    use myco_core::world::caves::{cave_yellow_spot, cave_yellow_step};
+    let Some(assets) = assets() else {
+        return;
+    };
+    let mut s = sim();
+    assert!(yellow_cave_marker(&s, &assets).is_none(), "no cave yet");
+    s.state.state.play_frames = 60 * 3600 - 2;
+    cave_yellow_step(&mut s);
+    assert!(cave_yellow_spot(&s.world).is_none(), "not before the hour");
+    let mut n = 0;
+    while cave_yellow_spot(&s.world).is_none() && n < 400 {
+        cave_yellow_step(&mut s);
+        n += 1;
+    }
+    let spot = cave_yellow_spot(&s.world).expect("the yellow cave appeared").clone();
+    let m = yellow_cave_marker(&s, &assets).expect("its marker");
+    assert_eq!(m.src, YELLOW_CAVE_MARKER);
+    assert!((m.x - spot.x).abs() < 600.0 && (m.y - spot.y).abs() < 600.0, "{m:?} {spot:?}");
+    s.state
+        .state
+        .cave_perks
+        .insert("yellow".into(), serde_json::Value::Bool(true));
+    assert!(yellow_cave_marker(&s, &assets).is_none(), "taken: no marker");
 }

@@ -25,7 +25,7 @@
 )]
 
 use crate::assets::GameAssets;
-use crate::camera::{Cameras, COMPOSITING};
+use crate::camera::{Cameras, COMPOSITING, ZOOM_OCEAN_PEEK_PX};
 use crate::render::batch::{
     BatchPlugin, BatchPool, BatchTarget, GmQuad, QuadBatch, QuadBlend, WhiteTexture, C_WHITE,
 };
@@ -376,6 +376,58 @@ pub struct DrawCtx<'a> {
     pub now: f64,
     /// the texture filter the frame starts with (ruling R27; [`WorldDrawState::start_linear`])
     pub start_linear: bool,
+    /// Rust only: the soil rows, seams and dirt of rows `0..n` are the per-chunk static meshes
+    /// ([`chunk_static`]), so `world_draw` paints them only below; `None` paints them all.
+    pub static_rows: Option<f64>,
+}
+
+/// z of the per-chunk static meshes (soil, seams, dirt: each above the last, all under `back`).
+pub const Z_WORLD_STATIC: [f32; 3] = [Z_WORLD - 9.0, Z_WORLD - 7.0, Z_WORLD - 5.0];
+
+/// Rows the per-chunk static meshes cover from the surface: down to a little past the ocean line,
+/// where the zoomed view stops (the ocean or survival's rock bottom covers what is below).
+pub fn static_rows(w: &WorldRt) -> f64 {
+    let t = w.params.tile as f64;
+    (ocean_row() + (ZOOM_OCEAN_PEEK_PX / t).ceil() + 2.0)
+        .min(w.params.rows as f64)
+        .ceil()
+}
+
+/// The part of `world_draw`'s back pass that depends only on the world's seed, for chunk `cx` and
+/// rows `0..rows`: soil rows, band seams and dirt specks, one batch each (in that painting order).
+/// A sprite belongs to the chunk its left edge (dirt: its cell) starts in, so neighbouring chunks
+/// never paint the same sprite twice. Nearest filtering (the original's state after frame 1, R27).
+pub fn chunk_static(a: &GameAssets, w: &WorldRt, cx: i64, rows: f64) -> [QuadBatch; 3] {
+    let p = &w.params;
+    let (sy, t, cw) = (p.surface_y, p.tile as f64, p.chunk_w as f64);
+    let (x0, x1) = (cx as f64 * cw, (cx + 1) as f64 * cw);
+    let mut out = [QuadBatch::new(), QuadBatch::new(), QuadBatch::new()];
+    for b in &mut out {
+        b.set_filter(false);
+    }
+    let [soil, edges, dirt] = &mut out;
+    let mut r = 0.0;
+    while r < rows {
+        let yy = sy + r * t;
+        let spr = soil_sprite(r);
+        let mut xx = (x0 / t).ceil() * t;
+        while xx < x1 {
+            soil.sprite(a, spr, 0, xx, yy);
+            xx += t;
+        }
+        r += 1.0;
+    }
+    soil_edges_in(edges, a, w, sy, rows * t, [0.0, rows], |sw| {
+        ((x0 / sw).ceil() * sw, x1)
+    });
+    let sp = dirt_spacing(a);
+    dirt_cells(
+        dirt,
+        a,
+        w,
+        [(x0 / sp).ceil(), (x1 / sp).ceil() - 1.0, -1.0, (rows * t / sp).ceil() - 1.0],
+    );
+    out
 }
 
 /// The food glow request of one frame (`world_draw_food_glow`'s surface work).
@@ -457,11 +509,14 @@ fn world_rt_draw_generate(
 /// (never in `sim.world`, no game RNG: world generation is hash-based). For one frame's draw
 /// they are lent to `sim.world` where it has no chunk ([`RenderWorldCache::lend`]) and taken
 /// back right after ([`RenderWorldCache::give_back`]), so the game state is the same after the
-/// frame as before it.
+/// frame as before it. A game chunk generated only as deep as the 1× camera went gets the
+/// scratch copy's deeper layers appended for the frame the same way ([`Grown`]).
 #[derive(Resource, Default)]
 pub struct RenderWorldCache {
     scratch: Option<WorldRt>,
     session: u64,
+    /// game chunks grown last frame: rows before → after (a change rebuilds the mesh)
+    grown_rows: HashMap<i64, (i64, i64)>,
 }
 
 /// Chunks lent for one frame, and those whose content changed since last lent (to rebuild).
@@ -469,6 +524,66 @@ pub struct RenderWorldCache {
 pub struct Lent {
     pub keys: Vec<i64>,
     pub changed: Vec<i64>,
+    pub grown: Vec<Grown>,
+}
+
+/// A game chunk with render-only layers appended for one frame: its lengths before, to cut
+/// them off again (whatever the draw changed in the chunk's own part stays).
+#[derive(Debug)]
+pub struct Grown {
+    pub cx: i64,
+    pub rows: i64,
+    foods: usize,
+    lakes: usize,
+    stones: usize,
+    stone_cells: usize,
+    bones: usize,
+    map_keys: Vec<String>,
+}
+
+/// Append `src`'s rows past `ch.rows` (the same chunk, generated deeper in the scratch world)
+/// and the things its deeper layers placed (at or below the old bottom). Layers are generated
+/// one chunk at a time from hashes, so they are what the game will generate there (minus what
+/// the deeper layers would change above them, which the preview leaves out).
+fn grow_chunk(ch: &mut WorldChunkSave, src: &WorldChunkSave, cols: i64, surface_y: f64, t: f64) -> Option<Grown> {
+    let (i0, i1) = ((ch.rows * cols) as usize, (src.rows * cols) as usize);
+    if src.rows <= ch.rows
+        || ch.tiles.len() != i0
+        || ch.amount.len() != i0
+        || ch.connected.len() != i0
+        || src.tiles.len() < i1
+        || src.amount.len() < i1
+        || src.connected.len() < i1
+    {
+        return None;
+    }
+    let mut g = Grown {
+        cx: ch.cx,
+        rows: ch.rows,
+        foods: ch.foods.len(),
+        lakes: ch.lakes.len(),
+        stones: ch.stones.len(),
+        stone_cells: ch.stone_cells.len(),
+        bones: ch.bones.len(),
+        map_keys: Vec::new(),
+    };
+    let cut = surface_y + ch.rows as f64 * t;
+    ch.tiles.extend_from_slice(&src.tiles[i0..i1]);
+    ch.amount.extend_from_slice(&src.amount[i0..i1]);
+    ch.connected.extend_from_slice(&src.connected[i0..i1]);
+    ch.foods.extend(src.foods.iter().filter(|f| f.y >= cut).cloned());
+    ch.lakes.extend(src.lakes.iter().filter(|l| l.body_y >= cut).cloned());
+    ch.stones.extend(src.stones.iter().filter(|s| s.y >= cut).cloned());
+    ch.stone_cells.extend(src.stone_cells.iter().filter(|c| c.row >= g.rows).cloned());
+    ch.bones.extend(src.bones.iter().filter(|b| b.y >= cut).cloned());
+    for (k, v) in &src.stone_map {
+        if v.row >= g.rows && !ch.stone_map.contains_key(k) {
+            ch.stone_map.insert(k.clone(), v.clone());
+            g.map_keys.push(k.clone());
+        }
+    }
+    ch.rows = src.rows;
+    Some(g)
 }
 
 impl RenderWorldCache {
@@ -513,11 +628,60 @@ impl RenderWorldCache {
             }
         }
         lent.keys = keys;
+        // game chunks not generated as deep as the view reaches: the scratch copy's layers
+        let (surface_y, t, chunk_w, rows, cols) = {
+            let p = &w.params;
+            (p.surface_y, p.tile as f64, p.chunk_w as f64, p.rows, p.cols)
+        };
+        let mut grown_rows = HashMap::new();
+        if vy + vh >= surface_y {
+            let need = gml::clamp(((vy + vh - surface_y) / t).floor(), 0.0, (rows - 1) as f64) as i64;
+            for cx in (vx / chunk_w).floor() as i64..=((vx + vw) / chunk_w).floor() as i64 {
+                if !has.contains(&cx) || w.chunks.get(&cx).is_none_or(|ch| ch.rows > need) {
+                    continue;
+                }
+                scratch.get_chunk(cx);
+                scratch.chunk_reach(cx, need);
+                maze::world_paint_clusters_late(scratch, cx);
+                let (Some(src), Some(ch)) = (scratch.chunks.get(&cx), w.chunks.get_mut(&cx)) else {
+                    continue;
+                };
+                if let Some(g) = grow_chunk(ch, src, cols, surface_y, t) {
+                    grown_rows.insert(cx, (g.rows, ch.rows));
+                    lent.grown.push(g);
+                }
+            }
+        }
+        for (cx, r) in &grown_rows {
+            if self.grown_rows.get(cx) != Some(r) {
+                lent.changed.push(*cx);
+            }
+        }
+        self.grown_rows = grown_rows;
         lent
     }
 
-    /// Take the lent chunks back (the draw only read them).
+    /// Take the lent chunks back and cut the grown ones to their own rows (the draw only read
+    /// the lent parts).
     pub fn give_back(&mut self, w: &mut WorldRt, lent: Lent) {
+        for g in lent.grown {
+            let Some(ch) = w.chunks.get_mut(&g.cx) else {
+                continue;
+            };
+            let n = (g.rows * w.params.cols) as usize;
+            ch.tiles.truncate(n);
+            ch.amount.truncate(n);
+            ch.connected.truncate(n);
+            ch.foods.truncate(g.foods);
+            ch.lakes.truncate(g.lakes);
+            ch.stones.truncate(g.stones);
+            ch.stone_cells.truncate(g.stone_cells);
+            ch.bones.truncate(g.bones);
+            for k in &g.map_keys {
+                ch.stone_map.remove(k);
+            }
+            ch.rows = g.rows;
+        }
         let Some(scratch) = self.scratch.as_mut() else {
             return;
         };
@@ -564,7 +728,8 @@ pub fn world_draw(
     out.back.set_filter(ctx.start_linear);
     out.front.set_filter(ctx.start_linear);
     let b = &mut out.back;
-    let mut r = r0;
+    let cover = ctx.static_rows.unwrap_or(0.0);
+    let mut r = r0.max(cover);
     while r <= r1 {
         let yy = surface_y + r * t;
         let spr = soil_sprite(r);
@@ -575,8 +740,28 @@ pub fn world_draw(
         }
         r += 1.0;
     }
-    world_draw_soil_edges(b, a, &sim.world, vx, vy, vw, vh);
-    world_draw_dirt(b, a, &sim.world, vx, vy, vw, vh);
+    if cover <= 0.0 {
+        world_draw_soil_edges(b, a, &sim.world, vx, vy, vw, vh);
+        world_draw_dirt(b, a, &sim.world, vx, vy, vw, vh);
+    } else if vy + vh > surface_y + cover * t {
+        // below the static meshes: the same seams and dirt cells, none of theirs
+        soil_edges_in(b, a, &sim.world, vy, vh, [cover, f64::INFINITY], |sw| {
+            ((vx / sw).floor() * sw, vx + vw)
+        });
+        let sp = dirt_spacing(a);
+        let p = &sim.world.params;
+        let y1 = (vy + vh).min(p.bottom_y);
+        if y1 > vy.max(surface_y) {
+            let cy0 = ((vy.max(surface_y) - surface_y) / sp).floor() - 1.0;
+            let cells = [
+                (vx / sp).floor() - 1.0,
+                ((vx + vw) / sp).floor(),
+                cy0.max((cover * t / sp).ceil()),
+                ((y1 - surface_y) / sp).floor(),
+            ];
+            dirt_cells(b, a, &sim.world, cells);
+        }
+    }
     world_draw_bones(b, a, sim, ctx.now, vx, vy, vw, vh);
     world_draw_cave(&mut out.back, a, sim, ctx.now, vx, vy, vw, vh);
     out.chunks.extend(cx0..=cx1);
@@ -646,6 +831,22 @@ pub fn world_draw_soil_edges(
     vw: f64,
     vh: f64,
 ) {
+    soil_edges_in(b, a, w, y0, vh, [0.0, f64::INFINITY], |sw| {
+        ((x0 / sw).floor() * sw, x0 + vw)
+    });
+}
+
+/// [`world_draw_soil_edges`]'s loop for the seams of the rows in `[rows[0], rows[1])`; `xs(sw)`
+/// gives the first sprite's x and the end of the run.
+fn soil_edges_in(
+    b: &mut QuadBatch,
+    a: &GameAssets,
+    w: &WorldRt,
+    y0: f64,
+    vh: f64,
+    rows: [f64; 2],
+    xs: impl Fn(f64) -> (f64, f64),
+) {
     let p = &w.params;
     let (sy, tile) = (p.surface_y, p.tile as f64);
     let first = wld("soil_first_rows").max(1.0);
@@ -657,11 +858,11 @@ pub fn world_draw_soil_edges(
         let spr = soil_edge_sprite(band, row);
         let (sw, sh) = sprite_size(a, spr);
         band += 1.0;
-        if sw > 0.0 {
+        if sw > 0.0 && row >= rows[0] && row < rows[1] {
             let yy = sy + row * tile;
             if !(yy > y0 + vh) && !(yy + sh < y0) {
-                let mut xx = (x0 / sw).floor() * sw;
-                while xx < x0 + vw {
+                let (mut xx, x1) = xs(sw);
+                while xx < x1 {
                     b.sprite(a, spr, 0, xx, yy);
                     xx += sw;
                 }
@@ -685,7 +886,6 @@ pub fn world_draw_dirt(
     let p = &w.params;
     let (_, dh) = sprite_size(a, "dirt1");
     let sp = dh.max(wld("dirt_spacing_px"));
-    let chance = wld("dirt_chance");
     let y0 = vy.max(p.surface_y);
     let y1 = (vy + vh).min(p.bottom_y);
     if y1 <= y0 {
@@ -695,6 +895,21 @@ pub fn world_draw_dirt(
     let cx1 = ((vx + vw) / sp).floor();
     let cy0 = ((y0 - p.surface_y) / sp).floor() - 1.0;
     let cy1 = ((y1 - p.surface_y) / sp).floor();
+    dirt_cells(b, a, w, [cx0, cx1, cy0, cy1]);
+}
+
+/// Dirt spacing (px): one speck cell per `sp` square.
+fn dirt_spacing(a: &GameAssets) -> f64 {
+    sprite_size(a, "dirt1").1.max(wld("dirt_spacing_px"))
+}
+
+/// [`world_draw_dirt`]'s loop over the cells `[cx0, cx1, cy0, cy1]` (inclusive).
+fn dirt_cells(b: &mut QuadBatch, a: &GameAssets, w: &WorldRt, cells: [f64; 4]) {
+    let p = &w.params;
+    let (_, dh) = sprite_size(a, "dirt1");
+    let sp = dh.max(wld("dirt_spacing_px"));
+    let chance = wld("dirt_chance");
+    let [cx0, cx1, cy0, cy1] = cells;
     let jit = sp - dh;
     let mut cy = cy0;
     while cy <= cy1 {
@@ -1926,6 +2141,9 @@ struct WorldPools {
     glow: [BatchPool; 3],
     chunks: HashMap<i64, BatchPool>,
     built: HashMap<i64, bool>,
+    /// per-chunk static meshes ([`chunk_static`]) and the world seed they were built for
+    statics: HashMap<i64, [BatchPool; 3]>,
+    statics_seed: Option<i64>,
 }
 
 pub struct WorldRenderPlugin;
@@ -2070,12 +2288,14 @@ fn draw_world(
     }
     let now = sim.now_ms();
     let glow_out = glow.out.clone();
+    let srows = static_rows(&sim.world);
     let ctx = DrawCtx {
         assets: &assets,
         stones: stones.as_deref(),
         glow_image: Some(&glow_out),
         now,
         start_linear: draw_state.start_linear,
+        static_rows: Some(srows),
     };
     let frame = world_draw(sim, &ctx, &mut flares, rv.x, rv.y, rv.w, rv.h);
     let end_linear = if rv.y + rv.h < sim.world.params.surface_y {
@@ -2101,6 +2321,41 @@ fn draw_world(
         white: &white.0,
     };
     let world_layer = RenderLayers::layer(0);
+    // per-chunk static meshes (soil, seams, dirt) for the view's chunks and one either side
+    let seed = sim.world.params.seed;
+    if pools.statics_seed != Some(seed) {
+        for (_, mut ps) in pools.statics.drain() {
+            for p in &mut ps {
+                p.despawn(t.commands);
+            }
+        }
+        pools.statics_seed = Some(seed);
+    }
+    let cw = sim.world.params.chunk_w as f64;
+    let (s0, s1) = (
+        (rv.x / cw).floor() as i64 - 1,
+        ((rv.x + rv.w) / cw).floor() as i64 + 1,
+    );
+    pools.statics.retain(|cx, ps| {
+        let keep = (s0 - 2..=s1 + 2).contains(cx);
+        if !keep {
+            for p in ps.iter_mut() {
+                p.despawn(t.commands);
+            }
+        }
+        keep
+    });
+    for cx in s0..=s1 {
+        if pools.statics.contains_key(&cx) {
+            continue;
+        }
+        let batches = chunk_static(&assets, &sim.world, cx, srows);
+        let mut ps: [BatchPool; 3] = Default::default();
+        for (i, b) in batches.iter().enumerate() {
+            ps[i].sync(&mut t, b, Z_WORLD_STATIC[i], Z_STEP, &world_layer);
+        }
+        pools.statics.insert(cx, ps);
+    }
     pools
         .back
         .sync(&mut t, &frame.back, Z_WORLD, Z_STEP, &world_layer);

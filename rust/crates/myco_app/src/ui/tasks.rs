@@ -359,7 +359,7 @@ pub fn goal_sprite_fit(
     let s = (w / sw.max(1.0)).min(h / sh.max(1.0));
     let dy = (sh * 0.5 - def.origin.y as f64) * s;
     let dx = (sw * 0.5 - def.origin.x as f64) * s;
-    g.sprite_ext(spr, 0, cx - dx, cy - dy, s, s, C_WHITE, 1.0);
+    g.sprite_ext(spr, 0, cx - dx, cy - dy, s, s, super::hud::icon_tint(spr), 1.0);
 }
 
 // port: goal_sprite_part_fit
@@ -559,10 +559,13 @@ pub fn tutorial_draw(
     if nf > 0 && rt.hand_alpha > 0.0 {
         let spr = &frames[gml::gmod(rt.hand_frame.floor(), nf as f64) as usize];
         let sc = vis("tutorial_hand_scale");
+        // the sprite's origin is the centre of its "drag from here" square: the original shifts
+        // it `tutorial_hand_offset_x` (48 px) right of the node; here (the owner's request) the
+        // square sits on the node
         g.sprite_ext(
             spr,
             0,
-            mgx + vis("tutorial_hand_offset_x"),
+            mgx,
             mgy + vis("tutorial_hand_offset_y"),
             sc,
             sc,

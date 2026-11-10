@@ -240,10 +240,53 @@ pub fn vis_table_len() -> usize {
     visual().len()
 }
 
+/// Rust-only changes to `worldgen_defaults` asked for by the owner (the LÖVE port keeps the
+/// original's values): `caves_blue_more` adds blue caves past `blue_0` along both lanes as the
+/// world grows (`caves_extend`), every `caves_blue_every_x` screens, the gap growing by
+/// `caves_blue_gap_growth`; the light shroom's (yellow) cave appears after 60 minutes of play
+/// instead of 120.
+pub const WLD_OVERRIDES: &[(&str, f64)] = &[
+    ("caves_blue_more", 1.0),
+    ("caves_yellow_after_minutes", 60.0),
+];
+
+thread_local! {
+    static ORIGINAL_WORLDGEN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Run `f` with the original's worldgen values (no [`WLD_OVERRIDES`]) on this thread: the golden
+/// tests against the LÖVE port.
+pub fn with_original_worldgen<R>(f: impl FnOnce() -> R) -> R {
+    struct Restore(bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            ORIGINAL_WORLDGEN.with(|c| c.set(self.0));
+        }
+    }
+    let _restore = Restore(ORIGINAL_WORLDGEN.with(|c| c.replace(true)));
+    f()
+}
+
+/// The original's worldgen values: on this thread ([`with_original_worldgen`]) or for the whole
+/// run (`MYCO_ORIGINAL_WORLDGEN=1`, the LÖVE conformance runs).
+fn original_worldgen() -> bool {
+    static ENV: OnceLock<bool> = OnceLock::new();
+    *ENV.get_or_init(|| std::env::var("MYCO_ORIGINAL_WORLDGEN").is_ok_and(|v| v == "1"))
+        || ORIGINAL_WORLDGEN.with(|c| c.get())
+}
+
+fn wld_override(key: &str) -> Option<f64> {
+    let &(_, v) = WLD_OVERRIDES.iter().find(|(k, _)| *k == key)?;
+    (!original_worldgen()).then_some(v)
+}
+
 // port: wld
-/// `wld(key)` for a numeric entry.
+/// `wld(key)` for a numeric entry ([`WLD_OVERRIDES`] first).
 pub fn wld(key: &str) -> f64 {
-    num("worldgen", worldgen(), key)
+    match wld_override(key) {
+        Some(v) => v,
+        None => num("worldgen", worldgen(), key),
+    }
 }
 
 /// `wld(key)` for an array entry (`caves_*_x` / `caves_*_depth` / `bones_big_*` ranges).
@@ -252,6 +295,9 @@ pub fn wld_arr(key: &str) -> &'static [f64] {
 }
 
 pub fn wld_get(key: &str) -> Option<TableVal> {
+    if let Some(v) = wld_override(key) {
+        return Some(TableVal::Num(v));
+    }
     index_of(worldgen(), key).map(|i| worldgen()[i].1)
 }
 

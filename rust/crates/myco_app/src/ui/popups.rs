@@ -7,9 +7,12 @@
 //! - At most 64 at once: a new one then adds to the nearest live number of the same resource.
 //! - Numbers live in world coordinates and scale with the zoom, but stay at least 12 px tall
 //!   on screen.
+//! - A number born where another one still young is (planting a mushroom spends food and water
+//!   at one spot) takes the next line up, so both are readable.
+//! - Food icons are red-burgundy, water icons blue (`hud::icon_tint`).
 
 use super::gm_draw::{Gm, GuiDraw};
-use super::hud::{text_ex, HudState, UiFonts, COLOR_BAD, COLOR_GOOD, C_WHITE};
+use super::hud::{icon_tint, text_ex, HudState, UiFonts, COLOR_BAD, COLOR_GOOD};
 use super::{draw_order, min_text_scale};
 use crate::assets::GameAssets;
 use crate::camera::Cameras;
@@ -29,6 +32,11 @@ pub const CAP: usize = 64;
 pub const MIN_PX: f64 = 12.0;
 /// Text line height at zoom 1, world px.
 pub const LINE_PX: f64 = 30.0;
+/// A new number within this distance (world px) of a live one younger than [`STACK_AGE`]
+/// goes on the next free line above it.
+pub const STACK_PX: f64 = 24.0;
+/// Seconds a number keeps its line taken for numbers born at its spot.
+pub const STACK_AGE: f64 = 0.5;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Popup {
@@ -39,6 +47,8 @@ pub struct Popup {
     pub y: f64,
     /// seconds
     pub age: f64,
+    /// line above the spot (0: on it), so numbers born at one spot do not cover each other
+    pub row: u32,
 }
 
 impl Popup {
@@ -105,12 +115,22 @@ impl Popups {
                 continue;
             }
             if self.list.len() < CAP {
+                let taken: Vec<u32> = self
+                    .list
+                    .iter()
+                    .filter(|p| {
+                        p.age < STACK_AGE && (p.x - x).powi(2) + (p.y - y).powi(2) < STACK_PX.powi(2)
+                    })
+                    .map(|p| p.row)
+                    .collect();
+                let row = (0..).find(|r| !taken.contains(r)).unwrap_or(0);
                 self.list.push(Popup {
                     kind,
                     value: delta,
                     x,
                     y,
                     age: 0.0,
+                    row,
                 });
                 continue;
             }
@@ -171,8 +191,9 @@ pub fn popups_draw(g: &mut Gm, popups: &Popups, assets: &GameAssets, uf: &UiFont
         if a <= 0.0 {
             continue;
         }
-        let c = cams.world_to_gui(DVec2::new(p.x, p.y - p.rise()));
+        let mut c = cams.world_to_gui(DVec2::new(p.x, p.y - p.rise()));
         let sc = min_text_scale(LINE_PX / lh * cams.zoom, lh, MIN_PX);
+        c.y -= p.row as f64 * lh * sc * 1.05;
         let label = p.label();
         let tw = g.string_width(&label) * sc;
         let ih = lh * sc * 0.8;
@@ -200,7 +221,7 @@ pub fn popups_draw(g: &mut Gm, popups: &Popups, assets: &GameAssets, uf: &UiFont
                 c.y - ih * 0.5 + oy,
                 isc,
                 isc,
-                C_WHITE,
+                icon_tint(icon),
                 a,
             );
         }

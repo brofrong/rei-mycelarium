@@ -5,8 +5,8 @@ use myco_app::assets::GameAssets;
 use myco_app::render::batch::{QuadBatch, QuadBlend};
 use myco_app::render::leaf_art::PagePixels;
 use myco_app::render::world::{
-    caves_mask_init, chunk_tiles, lakes_init, merge_colour, plan_chunk_meshes, stone_tiles_init,
-    stones_init, world_draw, world_draw_turf, DrawCtx, LakeFlares,
+    caves_mask_init, chunk_static, chunk_tiles, lakes_init, merge_colour, plan_chunk_meshes,
+    static_rows, stone_tiles_init, stones_init, world_draw, world_draw_turf, DrawCtx, LakeFlares,
 };
 use myco_core::sim::Sim;
 use myco_core::state::GameMode;
@@ -181,6 +181,7 @@ fn world_draw_follows_the_original_passes() {
         glow_image: Some(&img),
         now: 1000.0,
         start_linear: false,
+        static_rows: None,
     };
     // above the surface: nothing
     let sy = sim.world.params.surface_y;
@@ -304,6 +305,7 @@ fn texture_filter_follows_the_original_state() {
         glow_image: Some(&img),
         now: 1000.0,
         start_linear: false,
+        static_rows: None,
     };
     let f = world_draw(
         &mut sim,
@@ -436,4 +438,94 @@ fn zoom_out_leaves_game_rng_and_chunks_alone() {
     after.sort_unstable();
     assert_eq!(after, keys);
     assert_eq!(s.world.dirty_chunks, dirty);
+
+    // a game chunk generated only as deep as the 1× camera went gets the deeper layers for the
+    // frame (a mesh rebuild asked once), and is cut back to exactly what it was
+    let cx = keys[keys.len() / 2];
+    let before = s.world.chunks[&cx].clone();
+    let (t, cw, cols) = {
+        let p = &s.world.params;
+        (p.tile as f64, p.chunk_w as f64, p.cols)
+    };
+    let view = (cx as f64 * cw, sy, cw - 1.0, (before.rows + 70) as f64 * t);
+    let lent = cache.lend(s.session, &mut s.world, view.0, view.1, view.2, view.3);
+    let ch = &s.world.chunks[&cx];
+    assert!(ch.rows > before.rows + 60, "{} rows (was {})", ch.rows, before.rows);
+    assert_eq!(ch.tiles.len(), (ch.rows * cols) as usize);
+    assert_eq!(&ch.tiles[..before.tiles.len()], &before.tiles[..]);
+    // the deeper layers' stones and food (their tiles are plain soil, as the game's own are)
+    assert!(ch.stones.len() + ch.foods.len() > before.stones.len() + before.foods.len());
+    assert!(lent.changed.contains(&cx));
+    assert!(!lent.keys.contains(&cx));
+    cache.give_back(&mut s.world, lent);
+    assert_eq!(s.world.chunks[&cx], before);
+    assert_eq!(s.world.dirty_chunks, dirty);
+    let lent = cache.lend(s.session, &mut s.world, view.0, view.1, view.2, view.3);
+    assert!(!lent.changed.contains(&cx), "same rows again: no rebuild");
+    cache.give_back(&mut s.world, lent);
+    assert_eq!(s.world.chunks[&cx], before);
+}
+
+/// Every quad of `b` whose left edge is in `[x0, x1)`, as its vertices' bits, sorted.
+fn quads_from(b: &QuadBatch, x0: f32, x1: f32) -> Vec<Vec<u32>> {
+    let mut out = Vec::new();
+    for run in &b.runs {
+        for q in run.verts.chunks(6) {
+            let left = q.iter().map(|v| v.pos[0]).fold(f32::INFINITY, f32::min);
+            if left >= x0 && left < x1 {
+                out.push(
+                    q.iter()
+                        .flat_map(|v| v.pos.iter().chain(&v.uv).chain(&v.col))
+                        .map(|f| f.to_bits())
+                        .collect(),
+                );
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// The per-chunk static meshes (soil, seams, dirt down to past the ocean line) plus what
+/// `world_draw` still paints with them (below them, bones, caves) are exactly its full back pass:
+/// no sprite missing, none twice.
+#[test]
+fn static_chunk_meshes_split_world_draw_exactly() {
+    let Some(a) = assets() else { return };
+    let mut sim = sim();
+    let mut flares = LakeFlares::default();
+    let img = Handle::<Image>::default();
+    let ctx = |static_rows| DrawCtx {
+        assets: &a,
+        stones: None,
+        glow_image: Some(&img),
+        now: 1000.0,
+        start_linear: false,
+        static_rows,
+    };
+    let (sy, t, cw) = {
+        let p = &sim.world.params;
+        (p.surface_y, p.tile as f64, p.chunk_w as f64)
+    };
+    let cover = static_rows(&sim.world);
+    assert!(cover > 100.0 && cover < sim.world.params.rows as f64);
+    // whole chunks, from just above the surface to past the static meshes
+    let (c0, n) = (-3_i64, 6_i64);
+    let view = (c0 as f64 * cw, sy - 10.0, n as f64 * cw, (cover + 12.0) * t + 10.0);
+    let full = world_draw(&mut sim, &ctx(None), &mut flares, view.0, view.1, view.2, view.3);
+    let rest = world_draw(&mut sim, &ctx(Some(cover)), &mut flares, view.0, view.1, view.2, view.3);
+    // the inner chunks (the view's edge chunks also hold sprites that start outside it)
+    let (x0, x1) = ((view.0 + cw) as f32, (view.0 + view.2 - cw) as f32);
+    let mut split = quads_from(&rest.back, x0, x1);
+    for cx in c0..c0 + n {
+        for b in &chunk_static(&a, &sim.world, cx, cover) {
+            split.extend(quads_from(b, x0, x1));
+        }
+    }
+    split.sort();
+    let whole = quads_from(&full.back, x0, x1);
+    assert!(whole.len() > 5000, "{} quads", whole.len());
+    assert!(quads_from(&rest.back, x0, x1).len() < whole.len() / 10);
+    assert_eq!(split.len(), whole.len());
+    assert!(split == whole, "the split paints other quads");
 }

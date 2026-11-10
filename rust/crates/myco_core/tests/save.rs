@@ -427,10 +427,10 @@ fn settings_ini_matches_love() {
 }
 
 #[test]
-fn save_dir_is_love_folder() {
+fn save_dir_is_packaged_love_app_folder() {
     let d = myco_core::save::save_dir();
     assert!(
-        d.ends_with("Library/Application Support/LOVE/Mycelarium"),
+        d.ends_with("Library/Application Support/Mycelarium"),
         "{}",
         d.display()
     );
@@ -438,6 +438,31 @@ fn save_dir_is_love_folder() {
 
 /// The owner's real LÖVE slots (read only; copies go to a temp dir) survive a Rust round trip
 /// byte for byte. Run with `cargo test -p myco_core --test save -- --ignored`.
+/// The owner's real slots (copied to a temp dir) load from the title screen and play a minute.
+/// Run with `cargo test -p myco_core --test save -- --ignored`.
+#[test]
+#[ignore]
+fn real_saves_load_and_run() {
+    use myco_core::sim::{Sim, StepInput};
+    for slot in 0..3 {
+        let p = myco_core::save::save_dir().join(format!("save_{}.json", slot + 1));
+        if !p.exists() {
+            continue;
+        }
+        let dir = temp_dir(&format!("real_run{slot}"));
+        std::fs::copy(&p, myco_core::save::save_path(&dir, slot)).unwrap();
+        let title = Sim::title_screen(Some(31607));
+        let mut sim = title.load_game_live(&dir, slot).unwrap();
+        let (frame, before) = (sim.frame, serde_json::to_value(sim.to_save().0).unwrap());
+        for _ in 0..3600 {
+            sim.step(&StepInput::default());
+        }
+        assert_eq!(sim.frame, frame + 3600);
+        assert!(!sim.pause_open && !sim.title_open);
+        assert_ne!(serde_json::to_value(sim.to_save().0).unwrap(), before, "the world moved on");
+    }
+}
+
 #[test]
 #[ignore]
 fn real_saves_roundtrip_bytes() {

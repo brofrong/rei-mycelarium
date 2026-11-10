@@ -4,6 +4,7 @@
 use bevy::math::{DVec2, Vec2};
 use myco_app::camera::{
     zoom_advance, zoom_limits, zoom_locked, zoom_wheel, Cameras, ZoomState, ZOOM_MAX,
+    ZOOM_OCEAN_PEEK_PX,
 };
 use myco_app::display::SafeArea;
 use myco_core::cine;
@@ -181,6 +182,29 @@ fn zoom_clamped_to_world_bounds() {
     let w = cams.screen_to_world(p);
     assert!((cams.world_to_screen(w) - p.as_dvec2()).length() < 1e-6);
     assert!((w.y - (rv.y + rv.h / 2.0)).abs() < 1e-6);
+}
+
+/// The generated world is a million tiles deep: zoomed all the way out the view spans the sky
+/// top to a little past the ocean line, wherever the cursor drags it.
+#[test]
+fn zoom_out_stops_just_past_the_ocean_line() {
+    let mut sim = big_colony();
+    // the colony reaches far down, so only the ocean limit holds the zoom
+    let x = sim.mycelium.x;
+    sim.mycelium.knots.push(knot(x, sim.world.ocean_y() + 40000.0));
+    let peek = sim.world.ocean_y() + ZOOM_OCEAN_PEEK_PX;
+    assert!(peek < sim.world.params.bottom_y);
+    let mut cams = Cameras::default();
+    cams.sync_game_view(&sim.camera);
+    let mut zs = ZoomState::default();
+    zoom_wheel(&mut zs, 0.0001);
+    settle(&mut cams, &mut sim, &mut zs, Vec2::new(960.0, 1075.0), 240);
+    let rv = cams.render_view();
+    let sky_top = (sim.world.params.surface_y - cams.game_view.h).max(0.0);
+    assert!((rv.h - (peek - sky_top)).abs() < 1e-6, "{} vs {}", rv.h, peek - sky_top);
+    assert!(rv.y >= sky_top - 1e-6 && rv.y + rv.h <= peek + 1e-6, "{rv:?}");
+    let (lo, _) = zoom_limits(&sim, &cams);
+    assert!((cams.zoom - lo).abs() < 1e-9);
 }
 
 #[test]

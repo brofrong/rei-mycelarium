@@ -43,6 +43,20 @@ pub const COLOR_GOOD: f64 = 9098922.0;
 pub const COLOR_BAD: f64 = 6846166.0;
 pub const COLOR_GOLD: f64 = 7914718.0;
 pub const COLOR_PANEL: f64 = 1185298.0;
+/// Rust only (the owner's request): food icons red-burgundy, rgb(214, 72, 88) as GameMaker BGR.
+pub const COLOR_FOOD_ICON: f64 = 5785814.0;
+/// Rust only (the owner's request): water icons blue, rgb(110, 175, 255) as GameMaker BGR.
+pub const COLOR_WATER_ICON: f64 = 16756590.0;
+
+/// Colour an icon sprite is drawn with: food (`apple_bite`) and water (`water65`) tinted so each
+/// resource reads at a glance, everything else white.
+pub fn icon_tint(spr: &str) -> f64 {
+    match spr {
+        "apple_bite" => COLOR_FOOD_ICON,
+        "water65" => COLOR_WATER_ICON,
+        _ => C_WHITE,
+    }
+}
 
 /// A rectangle (`x1, y1, x2, y2` structs of the original).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -220,6 +234,9 @@ pub struct HudState {
     pub place_type: Option<MushroomKind>,
     /// `hud_place_at` (the core's placement check, ruling R22)
     pub place_at: Option<PlaceAt>,
+    /// Rust only (the owner's request): the last place click had Shift held, so a successful
+    /// place keeps placement mode while the type stays affordable
+    pub place_keep: bool,
     /// `global.ui_capture_mouse`
     pub ui_capture_mouse: bool,
     /// `cave_hover_tip(...)` locale key under the cursor, computed in the Begin Step (it may
@@ -282,6 +299,7 @@ impl HudState {
             build_hover: -1,
             place_type: None,
             place_at: None,
+            place_keep: false,
             ui_capture_mouse: false,
             cave_tip: String::new(),
             right_click_used: false,
@@ -613,6 +631,8 @@ pub struct StepIn {
     pub rclick: bool,
     pub lmb_down: bool,
     pub keys: Vec<Key>,
+    /// Shift is held (Rust only: a Shift-click places and stays in placement mode)
+    pub shift: bool,
     pub gw: f64,
     pub gh: f64,
 }
@@ -629,6 +649,7 @@ impl StepIn {
             rclick: p.rmb.pressed,
             lmb_down: p.lmb.down,
             keys: p.keys_pressed.clone(),
+            shift: p.keys_down.contains(&Key::Shift),
             gw: cams.layout.view_w,
             gh: cams.layout.view_h,
         }
@@ -824,7 +845,8 @@ pub fn step_game(hud: &mut HudState, sim: &Sim, inp: &StepIn) -> GameStepOut {
         hud.place_at = None;
         if click && !on_circle && !hud.build_mouse_over(mx, my) {
             // myc_place_mushroom: Task 9 answers with SimEvent::MushroomPlaced, which closes
-            // the bar (`hud_events`)
+            // the bar (`hud_events`) unless Shift was held
+            hud.place_keep = inp.shift;
             out.commands.push(Command::PlaceMushroom {
                 kind: t,
                 x: wx,
@@ -973,12 +995,23 @@ pub fn hud_tasks_fill(mut sim: ResMut<SimRes>, hud: Res<HudState>, loc: Res<Loca
     ui_tasks::tasks_fill_step(&mut sim.0, &hud, &loc.locale);
 }
 
-/// Events after a step: a placed mushroom closes the bar (`if ok then hud_build_close()`).
-pub fn hud_events(mut hud: ResMut<HudState>, mut ev: MessageReader<SimEventMsg>) {
+/// Events after a step: a placed mushroom closes the bar (`if ok then hud_build_close()`),
+/// except after a Shift-click while another one of the type is affordable (Rust only).
+pub fn hud_events(mut hud: ResMut<HudState>, sim: Res<SimRes>, mut ev: MessageReader<SimEventMsg>) {
     for e in ev.read() {
-        if let SimEvent::MushroomPlaced { .. } = e.0 {
-            hud.build_close();
+        if let SimEvent::MushroomPlaced { kind, .. } = e.0 {
+            hud_placed(&mut hud, &sim.0, kind);
         }
+    }
+}
+
+/// [`hud_events`] for one placed mushroom.
+pub fn hud_placed(hud: &mut HudState, sim: &Sim, kind: MushroomKind) {
+    let keep = std::mem::take(&mut hud.place_keep)
+        && hud.place_type == Some(kind)
+        && mushrooms::mushroom_type_affordable(sim, kind);
+    if !keep {
+        hud.build_close();
     }
 }
 
@@ -1077,7 +1110,7 @@ pub fn hud_icon_number(
     let (w, h) = (s.x * iscale, s.y * iscale);
     let tw = g.string_width(text) * eff_scale(g, tscale);
     let x = cx - (w + hud.ui.icon_gap + tw) * 0.5;
-    g.sprite_ext(spr, 0, x, cy - h * 0.5, iscale, iscale, C_WHITE, 1.0);
+    g.sprite_ext(spr, 0, x, cy - h * 0.5, iscale, iscale, icon_tint(spr), 1.0);
     g.halign = 0;
     hud_text(g, x + w + hud.ui.icon_gap, cy, text, tscale);
 }
@@ -1472,6 +1505,27 @@ fn draw_build(
             true,
             false,
         );
+        // Rust only: how many of the type the colony has, in the key badges' row, right of the
+        // badge
+        let count = mushrooms::mushroom_type_count(&sim.state, t);
+        if count > 0 {
+            let kr = vis("build_key_badge_radius");
+            let cy0 = b.slot_y - b.icon * 0.5 - kr - vis("build_key_badge_gap");
+            let cx0 = x + kr + 6.0;
+            let s = format!("x{count}");
+            g.font = uf.small.clone();
+            g.halign = 0;
+            g.valign = 1;
+            g.set_colour(0.0);
+            g.set_alpha(0.8);
+            hud_text(g, cx0 + 2.0, cy0 + 2.0, &s, vis("build_key_badge_text"));
+            g.set_colour(COLOR_INK);
+            g.set_alpha(ialpha.max(0.8));
+            hud_text(g, cx0, cy0, &s, vis("build_key_badge_text"));
+            g.set_alpha(1.0);
+            g.font = uf.font.clone();
+            g.valign = 1;
+        }
         let key = HudState::build_key_of(t);
         if key > 0 {
             let kr = vis("build_key_badge_radius");
@@ -1500,7 +1554,7 @@ fn draw_build(
             price_y - apple.y * bs * 0.5,
             bs,
             bs,
-            C_WHITE,
+            COLOR_FOOD_ICON,
             falpha,
         );
         g.halign = 0;
@@ -1526,7 +1580,7 @@ fn draw_build(
                 wy + (wd.origin.y as f64 - wh * 0.5) * ws,
                 ws,
                 ws,
-                C_WHITE,
+                COLOR_WATER_ICON,
                 walpha,
             );
             g.set_colour(if can_w { COLOR_INK } else { COLOR_BAD });

@@ -20,6 +20,58 @@ use myco_core::life::{self, AnimalKind, AnimalView};
 use myco_core::mushrooms;
 use myco_core::sim::Sim;
 
+/// Rust only: gap (GUI px) between an on-screen animal's top and its marker's pointer.
+pub const MARKER_ABOVE_PX: f64 = 22.0;
+/// Rust only: markers keep this far (GUI px) above the bottom edge, clear of the build and
+/// camera buttons there (the original's `animal_marker_bottom_px` is 200: its markers only
+/// showed animals on screen, which seldom reached the bottom corners).
+pub const MARKER_BOTTOM_PX: f64 = 320.0;
+
+fn marker_bottom_px() -> f64 {
+    vis("animal_marker_bottom_px").max(MARKER_BOTTOM_PX)
+}
+
+/// Rust only: source id of the light shroom (yellow) cave's marker (animal ids are smaller).
+pub const YELLOW_CAVE_MARKER: u64 = u64::MAX - 1;
+
+/// Rust only (the owner's request): the light shroom's (yellow) cave, from when it appears
+/// until it is taken, has a marker like an animal's (its HUD icon; a click flies there).
+pub fn yellow_cave_marker(sim: &Sim, assets: &GameAssets) -> Option<Marker> {
+    if myco_core::world::perks::perk_has(&sim.state, "yellow") {
+        return None;
+    }
+    let spot = myco_core::world::caves::cave_yellow_spot(&sim.world)?;
+    let (x, y, w, h) = sim
+        .world
+        .caves()
+        .iter()
+        .find(|r| r.kind == myco_core::world::caves::CaveKind::Yellow)
+        .map_or((spot.x, spot.y, 200.0, 200.0), |r| {
+            ((r.x1 + r.x2) * 0.5, (r.y1 + r.y2) * 0.5, r.x2 - r.x1, r.y2 - r.y1)
+        });
+    let sprite = "Yellow";
+    assets.try_sprite(sprite)?;
+    Some(Marker {
+        src: YELLOW_CAVE_MARKER,
+        sprite,
+        frames: 1.0,
+        frame: 0.0,
+        mirror: 1.0,
+        x,
+        y,
+        w,
+        h,
+        warn: false,
+        alpha: 0.0,
+        vx: 0.0,
+        vy: 0.0,
+        gone: false,
+        seen: false,
+        follow: 0.0,
+        ui: None,
+    })
+}
+
 /// One marker (`___struct___108..112` plus the update's fields).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Marker {
@@ -174,8 +226,10 @@ pub fn animal_marker_list(views: &[AnimalView], assets: &GameAssets, now_ms: f64
 // port: animal_markers_update
 /// Match the live animals to the markers by source: new ones start transparent, live ones
 /// follow (not while the UI blocks); vanished ones keep drifting for
-/// `animal_marker_follow_seconds` (warnings stop at once); alpha eases to 1 while the animal is
-/// off the view's edge... and to 0 when on screen or gone.
+/// `animal_marker_follow_seconds` (warnings stop at once). Alpha eases to 1 while the animal
+/// lives and to 0 once it is gone. The original shows a marker only while its animal is in the
+/// view; here (the owner's request) it shows wherever the animal is, at any zoom, so an animal
+/// off screen is announced at the edge (`vx..vh` is kept for the original's signature).
 #[allow(clippy::too_many_arguments)]
 pub fn animal_markers_update(
     m: &mut AnimalMarkers,
@@ -237,16 +291,8 @@ pub fn animal_markers_update(
             o.frame = gml::gmod(o.frame + 0.25, o.frames);
             o.follow -= dt;
         }
-        let (sx, sy) = (o.x - vx, o.y - vy);
-        let on = sx + o.w * 0.5 > 0.0
-            && sx - o.w * 0.5 < vw
-            && sy + o.h * 0.5 > 0.0
-            && sy - o.h * 0.5 < vh;
-        let target = if !on || (o.gone && o.follow <= 0.0) {
-            0.0
-        } else {
-            1.0
-        };
+        let _ = (vx, vy, vw, vh);
+        let target = if o.gone && o.follow <= 0.0 { 0.0 } else { 1.0 };
         o.alpha = if target > o.alpha {
             target.min(o.alpha + dt / fade)
         } else {
@@ -260,10 +306,11 @@ pub fn animal_markers_update(
 }
 
 // port: animal_markers_draw
-/// Update, then draw each marker on the ray from the view centre to the animal, clamped to the
-/// edges: a pointer triangle, a dark disc with the animal's current frame, rings (doubled when
-/// hovered). `rv` is the drawn world view; the GUI is `vw`×`vh` (zoom = vw / rv.w; 1 in the
-/// original).
+/// Update, then draw each marker: an animal off screen on the ray from the view centre to it,
+/// clamped to the edges; one on screen just above it, pointing down (the original puts the disc
+/// on the animal). A pointer triangle, a dark disc with the animal's current frame, rings
+/// (doubled when hovered). `rv` is the drawn world view; the GUI is `vw`×`vh` (zoom =
+/// vw / rv.w; 1 in the original).
 #[allow(clippy::too_many_arguments)]
 pub fn animal_markers_draw(
     g: &mut Gm,
@@ -278,7 +325,8 @@ pub fn animal_markers_draw(
     dt: f64,
 ) {
     let now_ms = sim.frame as f64 * 1000.0 / 60.0;
-    let cur = animal_marker_list(&life::animal_views(sim), assets, now_ms);
+    let mut cur = animal_marker_list(&life::animal_views(sim), assets, now_ms);
+    cur.extend(yellow_cave_marker(sim, assets));
     animal_markers_update(m, cur, blocked, dt, rv.x, rv.y, rv.w, rv.h);
     let (vx, vy) = (rv.x, rv.y);
     let z = if rv.w > 0.0 { vw / rv.w } else { 1.0 };
@@ -302,15 +350,22 @@ pub fn animal_markers_draw(
             f64::INFINITY
         };
         let ty = if dy > 0.0 {
-            (vh - vis("animal_marker_bottom_px") - hh) / dy
+            (vh - marker_bottom_px() - hh) / dy
         } else if dy < 0.0 {
             (vis("animal_marker_top_px") - hh) / dy
         } else {
             f64::INFINITY
         };
-        let t = 1.0f64.min(tx).min(ty);
-        let (ux, uy) = (hw + dx * t, hh + dy * t);
-        let dir = gml::point_direction(hw, hh, sx, sy);
+        let (top, bottom) = (vis("animal_marker_top_px"), vh - marker_bottom_px());
+        let (bw, bh) = (o.w * z * 0.5, o.h * z * 0.5);
+        let on = sx + bw > 0.0 && sx - bw < vw && sy + bh > 0.0 && sy - bh < vh;
+        let (ux, uy, dir) = if on {
+            let uy = sy - bh - r - MARKER_ABOVE_PX;
+            (sx.clamp(edge, vw - edge), uy.clamp(top, bottom.max(top)), 270.0)
+        } else {
+            let t = 1.0f64.min(tx).min(ty);
+            (hw + dx * t, hh + dy * t, gml::point_direction(hw, hh, sx, sy))
+        };
         let hover = hud.animal_marker_hover == Some(o.src);
         o.ui = Some((ux, uy));
         g.set_alpha(a);

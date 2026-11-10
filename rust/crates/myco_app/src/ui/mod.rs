@@ -337,7 +337,10 @@ fn init_menus(
     loc: Res<LocaleRes>,
 ) {
     commands.insert_resource(MenuFonts::new(&assets, &loc.locale, loc.font_small.clone()));
-    commands.insert_resource(Menus::new(dir.map(|d| d.0.clone())));
+    let mut menus = Menus::new(dir.map(|d| d.0.clone()));
+    menus.continue_enabled = !crate::display::automated_run();
+    menus.autoload_pending = menus.continue_enabled;
+    commands.insert_resource(menus);
 }
 
 /// The menu input of this fixed step, from the latched pending input.
@@ -374,7 +377,9 @@ pub fn restart_to_title(sim: &mut Sim, menus: &mut Menus, flags: &mut UiFlags) {
     let mut fresh = sim.restart_title(seed_from_env());
     fresh.save_dir = menus.save_dir.clone();
     *sim = fresh;
+    let continue_enabled = menus.continue_enabled;
     *menus = Menus::new(menus.save_dir.clone());
+    menus.continue_enabled = continue_enabled;
     *flags = UiFlags {
         units_imperial: flags.units_imperial,
         ..UiFlags::default()

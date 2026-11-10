@@ -250,6 +250,8 @@ def run_port(port: str, seed: int, script: str, dump_frame: int, out: Path, save
         "MYCO_DUMP": f"{dump_frame}:{out}",
         "MYCO_FOCUS": "1",
         "MYCO_SHOT_EXACT": "1",
+        # the Rust port's worldgen overrides (more blue caves) off: LÖVE keeps the original's
+        "MYCO_ORIGINAL_WORLDGEN": "1",
     })
     if TRACE_RNG:
         env["MYCO_TRACE_RNG"] = "1"

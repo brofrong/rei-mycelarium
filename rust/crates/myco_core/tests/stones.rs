@@ -462,6 +462,10 @@ fn snapshot(w: &mut WorldRt) -> Value {
 }
 
 fn stone_world_matches(topic: &str, seed: i64) {
+    myco_core::balance::with_original_worldgen(|| stone_world_matches_original(topic, seed));
+}
+
+fn stone_world_matches_original(topic: &str, seed: i64) {
     let g = golden(topic);
     let mut sim = new_world(seed);
     chunks_eq(&sim.world, &g["init_chunks"], "init");

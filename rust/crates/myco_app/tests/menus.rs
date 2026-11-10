@@ -532,7 +532,7 @@ fn credits_open_and_close() {
     );
     assert!(!m.credits_open);
     let shown = texts(&cx.draw(&mut m, &sim));
-    assert!(shown.iter().any(|s| s == "v1.02") && shown.iter().any(|s| s == "Exploration Mode"));
+    assert!(shown.iter().any(|s| s == VERSION) && shown.iter().any(|s| s == "Exploration Mode"));
 }
 
 /// `display_init` / `display_cycle_size` as LÖVE reports a 14" MacBook (1512×982 points): the
@@ -645,4 +645,65 @@ fn menus_block_plus_hud_blocks_is_ui_blocking() {
             "bits {bits:07b}"
         );
     }
+}
+
+/// Rust only: with `continue_enabled` the title starts with "Continue", which loads the slot
+/// saved last; the start-up load does the same once, with the title already gone.
+#[test]
+fn continue_loads_the_latest_save() {
+    let dir = temp_dir("continue");
+    write_game(&dir, 0, "Old");
+    write_game(&dir, 2, "New");
+    // slot 1 ("Old") was saved long ago
+    let mut meta = save::read_meta(&dir, 0).unwrap();
+    meta.saved = 1.0;
+    let mut bytes = serde_json::to_vec(&meta).unwrap();
+    bytes.push(0);
+    std::fs::write(save::meta_path(&dir, 0), bytes).unwrap();
+    assert_eq!(latest_slot(&dir), Some(2));
+
+    // off (tests, automated runs): the original's items
+    let m = Menus::new(Some(dir.clone()));
+    assert_eq!(m.title_items(), TITLE_ITEMS.to_vec());
+
+    let mut sim = title(&dir);
+    let mut m = Menus::new(Some(dir.clone()));
+    m.continue_enabled = true;
+    let mut cx = Ctx::new();
+    let items = m.title_items();
+    assert_eq!(items[0], "continue");
+    assert_eq!(&items[1..], &TITLE_ITEMS[..]);
+    let shown = texts(&cx.draw(&mut m, &sim));
+    // (this test's locale is the game's file alone; the app adds locale_extra.csv's "Continue")
+    assert_eq!(shown[0], "title_continue", "{shown:?}");
+    let r = hud_title_button_rect(GW, sim.camera.view_y, 0);
+    cx.step(&mut m, &mut sim, click_at(r));
+    assert!(!sim.title_open);
+    assert_eq!((sim.save.slot, sim.save.name.as_str()), (2, "New"));
+
+    // the start-up load
+    let mut sim = title(&dir);
+    let mut m = Menus::new(Some(dir.clone()));
+    m.continue_enabled = true;
+    m.autoload_pending = true;
+    cx.step(&mut m, &mut sim, idle());
+    assert!(!sim.title_open);
+    assert_eq!(sim.save.slot, 2);
+    assert_eq!(m.title_alpha, 0.0);
+    assert!(!m.autoload_pending);
+
+    // no saves: no item, the start-up load does nothing
+    let empty = temp_dir("continue-empty");
+    let mut sim = title(&empty);
+    let mut m = Menus::new(Some(empty));
+    m.continue_enabled = true;
+    m.autoload_pending = true;
+    assert_eq!(m.title_items(), TITLE_ITEMS.to_vec());
+    cx.step(&mut m, &mut sim, idle());
+    assert!(sim.title_open);
+}
+
+#[test]
+fn version_is_the_rust_build() {
+    assert_eq!(VERSION, "v1.0.3-RUST");
 }

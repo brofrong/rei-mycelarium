@@ -6,7 +6,34 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
-bevy = { version = "0.20.1", features = ["wav"] }
+# Only what the game uses (2D meshes and sprites with our shaders, Text2d, audio, the macOS
+# window): Bevy's defaults add 3D/PBR, glTF, UI, picking, scenes, gizmos and gamepads, about a
+# third of the binary.
+bevy = { version = "0.20.1", default-features = false, features = [
+    "std",
+    "async_executor",
+    "multi_threaded",
+    "bevy_asset",
+    "bevy_log",
+    "bevy_winit",
+    "bevy_window",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_camera",
+    "bevy_color",
+    "bevy_image",
+    "bevy_mesh",
+    "bevy_shader",
+    "bevy_material",
+    "bevy_sprite",
+    "bevy_sprite_render",
+    "bevy_text",
+    "default_font",
+    "png",
+    "bevy_audio",
+    "vorbis",
+    "wav",
+] }
 myco_core = { path = "../myco_core" }
 ab_glyph = "0.2.32"
 serde.workspace = true

@@ -27,6 +27,7 @@ use myco_core::save;
 use myco_core::sim::Sim;
 
 fn main() {
+    myco_app::crash_log::install();
     let save_dir = display::save_dir();
     let settings = save::read_settings(&save_dir);
     // NSScreen must be queried on the main thread, before the event loop starts

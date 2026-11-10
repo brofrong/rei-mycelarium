@@ -146,7 +146,7 @@
 
 ## Сейвы
 
-Папка общая с LÖVE-портом: `~/Library/Application Support/LOVE/Mycelarium/`. Файлы:
+Папка общая с собранным LÖVE-приложением (`dist/Mycelarium.app`, fused): `~/Library/Application Support/Mycelarium/`. Запуск `love game` без упаковки пишет в `LOVE/Mycelarium/`, Rust её не читает. Файлы:
 
 - `save_<N>.json` — основной сейв слота (`N` = 1…, слот + 1);
 - `save_<N>_meta.json` — карточка слота для меню: `length_cm`, `mode`, `name`, `saved`;

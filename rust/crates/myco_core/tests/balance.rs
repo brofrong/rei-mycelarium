@@ -67,6 +67,11 @@ fn balance_matches_love() {
     ] {
         let t = g[table].as_object().unwrap();
         for (k, v) in t {
+            if let Some(&(_, x)) = balance::WLD_OVERRIDES.iter().find(|(o, _)| o == k) {
+                assert_eq!(name, "wld", "{k}: overrides are worldgen only");
+                assert_eq!(getter_num(k), x, "{name}.{k} (Rust override)");
+                continue;
+            }
             match num_or_bool(v) {
                 Some(x) => assert_eq!(getter_num(k), x, "{name}.{k}"),
                 None => assert_eq!(getter_arr(k), arr(v).as_slice(), "{name}.{k}"),

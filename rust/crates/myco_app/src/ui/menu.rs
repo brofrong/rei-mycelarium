@@ -21,7 +21,7 @@ use myco_core::state::GameMode;
 use std::path::{Path, PathBuf};
 
 /// The version shown under the title menu and the settings.
-pub const VERSION: &str = "v1.02";
+pub const VERSION: &str = "v1.0.3-RUST";
 
 // obj_hud Create_0 colours (GameMaker BGR)
 pub const COLOR_INK: f64 = 14873582.0;
@@ -235,6 +235,13 @@ pub struct Menus {
     pub logo: LogoState,
     /// this step's Escape closed or toggled a menu other than the tree (the tree ignores it)
     pub escape_used: bool,
+    /// Rust only (the owner's request): a "Continue" item tops the title and the latest save
+    /// loads at start. Off in tests and automated runs, which click the original's layout.
+    pub continue_enabled: bool,
+    /// load the latest save on the next menu step (once, at start)
+    pub autoload_pending: bool,
+    /// the slot saved last (newest `saved` in its meta), if any
+    pub latest_slot: Option<usize>,
 }
 
 impl Menus {
@@ -242,7 +249,6 @@ impl Menus {
     pub fn new(save_dir: Option<PathBuf>) -> Menus {
         let saves_exist = save_dir.as_deref().is_some_and(save::any_save_exists);
         Menus {
-            save_dir,
             title_alpha: 1.0,
             title_hover: -1,
             new_mode: GameMode::Exploration,
@@ -258,6 +264,39 @@ impl Menus {
             keyboard_string: String::new(),
             logo: LogoState::logo_init(),
             escape_used: false,
+            continue_enabled: false,
+            autoload_pending: false,
+            latest_slot: save_dir.as_deref().and_then(latest_slot),
+            save_dir,
+        }
+    }
+
+    /// The title's items: "continue" first when enabled and there is a save, then the original's.
+    pub fn title_items(&self) -> Vec<&'static str> {
+        let mut v = Vec::with_capacity(TITLE_ITEMS.len() + 1);
+        if self.continue_enabled && self.latest_slot.is_some() {
+            v.push("continue");
+        }
+        v.extend(TITLE_ITEMS);
+        v
+    }
+
+    /// Load the latest save into the world (the "Continue" item and the start-up load). A save
+    /// that fails to load drops the item and leaves the title as it was.
+    pub fn continue_latest(&mut self, sim: &mut Sim) -> bool {
+        let (Some(i), Some(dir)) = (self.latest_slot, self.save_dir.clone()) else {
+            return false;
+        };
+        match sim.load_game_live(&dir, i) {
+            Ok(loaded) => {
+                *sim = loaded;
+                self.hud_slot_close();
+                true
+            }
+            Err(_) => {
+                self.latest_slot = None;
+                false
+            }
         }
     }
 
@@ -277,6 +316,12 @@ impl Menus {
     /// The menu branches of obj_hud Step_1.
     pub fn step(&mut self, sim: &mut Sim, inp: &MenuInput, env: &mut MenuEnv) -> Vec<MenuEffect> {
         let mut fx = Vec::new();
+        if self.autoload_pending && sim.title_open {
+            self.autoload_pending = false;
+            if self.continue_latest(sim) {
+                self.title_alpha = 0.0;
+            }
+        }
         // GameMaker keeps keyboard_string up to date from typed text and Backspace
         self.keyboard_string.push_str(&inp.text);
         for _ in 0..inp.backspace {
@@ -352,12 +397,13 @@ impl Menus {
     // port: anon__15291__gml_Object_obj_hud_Create_0
     /// `hud_title_item_disabled(i)`: "Load Game" without any save.
     pub fn hud_title_item_disabled(&self, i: usize) -> bool {
-        TITLE_ITEMS[i] == "load_game" && !self.saves_exist
+        self.title_items().get(i) == Some(&"load_game") && !self.saves_exist
     }
 
     fn title_step(&mut self, sim: &mut Sim, inp: &MenuInput, fx: &mut Vec<MenuEffect>) {
         let cam_y = sim.camera.view_y;
-        let Some(i) = (0..TITLE_ITEMS.len())
+        let items = self.title_items();
+        let Some(i) = (0..items.len())
             .find(|&i| hud_title_button_rect(inp.gw, cam_y, i).contains(inp.mx, inp.my))
         else {
             return;
@@ -369,7 +415,10 @@ impl Menus {
         if !inp.click {
             return;
         }
-        match TITLE_ITEMS[i] {
+        match items[i] {
+            "continue" => {
+                self.continue_latest(sim);
+            }
             "exploration" => {
                 self.new_mode = GameMode::Exploration;
                 self.hud_slot_open(SlotMode::New);
@@ -399,7 +448,8 @@ impl Menus {
         cam_y: f64,
     ) {
         let ta = self.title_alpha;
-        for (i, item) in TITLE_ITEMS.iter().enumerate() {
+        let items = self.title_items();
+        for (i, item) in items.iter().enumerate() {
             let r = hud_title_button_rect(gw, cam_y, i);
             let label = loc.loc(&format!("title_{item}")).to_string();
             let sc = super::draw::hud_fit(
@@ -419,7 +469,7 @@ impl Menus {
             };
             shadow_text(d, r.cx(), r.cy(), &label, sc, col, ta, FontSel::Main, 1, 1);
         }
-        let lr = hud_title_button_rect(gw, cam_y, TITLE_ITEMS.len() - 1);
+        let lr = hud_title_button_rect(gw, cam_y, items.len() - 1);
         d.push(DrawCmd::Text {
             x: lr.cx(),
             y: lr.y2 + 12.0,
@@ -596,4 +646,13 @@ pub fn mode_str(m: GameMode) -> &'static str {
         GameMode::Exploration => "exploration",
         GameMode::Survival => "survival",
     }
+}
+
+/// The slot whose meta has the newest `saved` time (the game played last, in either port).
+pub fn latest_slot(dir: &Path) -> Option<usize> {
+    (0..super::slots::SLOTS)
+        .filter_map(|i| save::read_meta(dir, i).ok().map(|m| (i, m.saved)))
+        .filter(|(_, t)| t.is_finite())
+        .max_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(i, _)| i)
 }
