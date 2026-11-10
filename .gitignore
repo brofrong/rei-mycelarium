@@ -9,3 +9,5 @@ __pycache__/
 re/lifted/
 .claude/
 rust/target/
+re/decomp/
+.DS_Store
